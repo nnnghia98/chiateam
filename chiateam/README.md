@@ -4,11 +4,10 @@ A Telegram bot for managing team members and randomly splitting them into groups
 
 ## Features
 
-- Add/remove team members
-- Random team splitting
-- Member list management
-- Team switching functionality
-- Vietnamese language support
+- Thêm/xoá member khỏi list
+- Chia team
+- Đổi team
+- Support Tiếng Việt
 
 ## Setup
 

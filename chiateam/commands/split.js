@@ -23,8 +23,6 @@ const splitCommand = (bot, members, lastMembersBeforeSplit, groupA, groupB) => {
     )}\n\n👤 *Team B:*\n${groupB.join('\n')}`;
 
     bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
-
-    members.clear(); // Clear list after split
   });
 };
 

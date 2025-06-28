@@ -15,6 +15,7 @@ const unknownCommand = bot => {
       '/remove',
       '/reset',
       '/addlist',
+      '/teams',
       // '/switch'
     ];
 
