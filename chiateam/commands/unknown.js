@@ -10,12 +10,11 @@ const unknownCommand = bot => {
       '/start',
       '/addme',
       '/chiateam',
-      '/unsplit',
       '/list',
       '/remove',
       '/reset',
       '/addlist',
-      '/teams',
+      '/team',
       // '/switch'
     ];
 

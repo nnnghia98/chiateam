@@ -1,8 +1,21 @@
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
+const { isAdmin } = require('./utils/validate');
 
 // Get bot token from environment variables
 const token = process.env.TELEGRAM_BOT_TOKEN;
+
+// Import commands
+const startCommand = require('./commands/start');
+const addMeCommand = require('./commands/addme');
+const splitCommand = require('./commands/split');
+const listCommand = require('./commands/list');
+const removeCommand = require('./commands/remove');
+const resetCommand = require('./commands/reset');
+const addListCommand = require('./commands/addlist');
+const teamCommand = require('./commands/team');
+const unknownCommand = require('./commands/unknown');
+// const switchCommand = require('./commands/switch');
 
 if (!token) {
   console.error('❌ TELEGRAM_BOT_TOKEN is not set in environment variables');
@@ -15,6 +28,13 @@ const bot = new TelegramBot(token, { polling: true });
 
 // Store members who typed /addme
 const members = new Map();
+
+// Store last member list before split
+const lastMembersBeforeSplit = new Map();
+
+// Store current groups after split
+const groupA = [];
+const groupB = [];
 
 bot.on('callback_query', callbackQuery => {
   const msg = callbackQuery.message;
@@ -32,50 +52,27 @@ bot.on('callback_query', callbackQuery => {
   bot.answerCallbackQuery(callbackQuery.id, { text: 'Menu cleared.' });
 });
 
+// Initialize all commands once
+startCommand(bot);
+addMeCommand(bot, members);
+splitCommand(bot, members, lastMembersBeforeSplit, groupA, groupB);
+listCommand(bot, members);
+removeCommand(bot, members);
+resetCommand(bot, members);
+addListCommand(bot, members);
+teamCommand(bot, groupA, groupB);
+unknownCommand(bot);
+// switchCommand(bot, groupA, groupB);
+
 // PAUSE MODE: Listen to all commands and show only a pause message
 bot.on('message', msg => {
-  if (msg.text && msg.text.startsWith('/')) {
-    bot.sendMessage(msg.chat.id, '🚧 Bot đang bảo trì. Vui lòng quay lại sau.');
+  if (msg.text && msg.text.startsWith('/') && !isAdmin(msg.from.id)) {
+    bot.sendMessage(
+      msg.chat.id,
+      '🚧 Bot đang bảo trì. Vui lòng quay lại sau. EST. 23h 30/6/2025 năm dương lịch tính theo giờ Việt Nam.'
+    );
     return;
   }
 });
-
-// Store last member list before split
-// eslint-disable-next-line prefer-const
-let lastMembersBeforeSplit = new Map();
-
-// Store current groups after split
-// eslint-disable-next-line prefer-const
-let groupA = [];
-// eslint-disable-next-line prefer-const
-let groupB = [];
-
-// Import commands
-// const startCommand = require('./commands/start');
-// const addMeCommand = require('./commands/addme');
-// const splitCommand = require('./commands/split');
-// // const unSplitCommand = require('./commands/unsplit');
-// const listCommand = require('./commands/list');
-// const removeCommand = require('./commands/remove');
-// const resetCommand = require('./commands/reset');
-// const addListCommand = require('./commands/addlist');
-// const switchCommand = require('./commands/switch');
-// const unknownCommand = require('./commands/unknown');
-// const menuCommand = require('./commands/menu');
-// const teamsCommand = require('./commands/teams');
-
-// // Initialize all commands
-// startCommand(bot);
-// addMeCommand(bot, members);
-// splitCommand(bot, members, lastMembersBeforeSplit, groupA, groupB);
-// // unSplitCommand(bot, members, lastMembersBeforeSplit);
-// listCommand(bot, members);
-// removeCommand(bot, members);
-// resetCommand(bot, members);
-// addListCommand(bot, members);
-// switchCommand(bot, groupA, groupB);
-// unknownCommand(bot);
-// menuCommand(bot);
-// teamsCommand(bot, groupA, groupB);
 
 console.log('🤖 Bot is running...');

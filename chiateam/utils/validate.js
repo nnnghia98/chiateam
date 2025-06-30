@@ -12,7 +12,13 @@ function isDuplicateName(name, nameList) {
   );
 }
 
+function isAdmin(userId) {
+  const ownerId = process.env.BOT_OWNER_ID;
+  return ownerId && String(userId) === String(ownerId);
+}
+
 module.exports = {
   isValidName,
   isDuplicateName,
+  isAdmin,
 };

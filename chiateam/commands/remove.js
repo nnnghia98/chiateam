@@ -42,10 +42,13 @@ const removeCommand = (bot, members) => {
         bot.sendMessage(msg.chat.id, '⚠️ Tên không hợp lệ.');
         return;
       }
-      // Remove by name (case-insensitive, exact match)
-      const nameToRemove = targetToRemove.trim().toLowerCase();
+
+      // Remove by name (exact case-sensitive match)
       for (const [userId, name] of members) {
-        if (name.trim().toLowerCase() === nameToRemove) {
+        // Extract just the name part (before any @username)
+        const nameOnly = name.split(' (')[0].trim();
+
+        if (nameOnly === targetToRemove) {
           members.delete(userId);
           bot.sendMessage(msg.chat.id, `❌ Đã cút *${name}* khỏi /list`, {
             parse_mode: 'Markdown',

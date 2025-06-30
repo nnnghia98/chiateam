@@ -1,5 +1,5 @@
 const teamsCommand = (bot, groupA, groupB) => {
-  bot.onText(/\/teams/, msg => {
+  bot.onText(/\/team/, msg => {
     if (groupA.length === 0 && groupB.length === 0) {
       bot.sendMessage(
         msg.chat.id,
@@ -8,7 +8,7 @@ const teamsCommand = (bot, groupA, groupB) => {
       return;
     }
 
-    const message = `🎲 *Teams hiện tại* 🎲\n\n👤 *Team A:*\n${groupA.join(
+    const message = `🎲 *Team hiện tại* 🎲\n\n👤 *Team A:*\n${groupA.join(
       '\n'
     )}\n\n👤 *Team B:*\n${groupB.join('\n')}`;
 

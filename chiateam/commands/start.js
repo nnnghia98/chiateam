@@ -7,8 +7,9 @@ const startCommand = bot => {
         '• /addlist + [name 1, name 2, name 3, ...] -Thêm người khác vào list\n' +
         '• /list - Xem danh sách hiện tại\n' +
         '• /chiateam - Chia team\n' +
+        '• /team - Xem team đã chia\n' +
         '• /remove + [name 1, name 2] - Cho cút\n' +
-        '• /reset - Xóa toàn bộ list'
+        '• /reset - Xóa toàn bộ list - Only admin'
     );
   });
 };
