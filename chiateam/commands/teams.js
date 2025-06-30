@@ -3,7 +3,7 @@ const teamsCommand = (bot, groupA, groupB) => {
     if (groupA.length === 0 && groupB.length === 0) {
       bot.sendMessage(
         msg.chat.id,
-        '⚠️ Chưa có team nào được chia. Dùng /split trước'
+        '⚠️ Chưa có team nào được chia. Dùng /chiateam trước'
       );
       return;
     }

@@ -41,7 +41,7 @@ A Telegram bot for managing team members and randomly splitting them into groups
 - `/start` - Welcome message
 - `/addme` - Add yourself to the team list
 - `/list` - Show current team members
-- `/split` - Randomly split members into two teams
+- `/chiateam` - Randomly split members into two teams
 - `/unsplit` - Restore the list before the last split
 - `/remove <name>` - Remove a member by name
 - `/remove @<user_id>` - Remove a member by user ID

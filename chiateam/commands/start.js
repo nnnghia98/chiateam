@@ -1,28 +1,14 @@
 const startCommand = bot => {
   bot.onText(/\/start/, msg => {
-    const inlineKeyboard = {
-      inline_keyboard: [
-        [
-          { text: '➕ Thêm tôi', callback_data: 'addme' },
-          { text: '👥 Danh sách', callback_data: 'list' },
-        ],
-        [
-          { text: '🎲 Chia team', callback_data: 'split' },
-          { text: '🔄 Khôi phục', callback_data: 'unsplit' },
-        ],
-        [{ text: '🗑 Xóa list', callback_data: 'reset' }],
-      ],
-    };
-
     bot.sendMessage(
       msg.chat.id,
-      '👋 Hê lô! Chọn một tùy chọn bên dưới hoặc dùng lệnh:\n\n' +
+      '👋 Full lệnh + cú pháp có thể dùng, ko có mà dùng = ngu:\n\n' +
         '• /addme - Thêm mình vào list\n' +
+        '• /addlist + [name 1, name 2, name 3, ...] -Thêm người khác vào list\n' +
         '• /list - Xem danh sách hiện tại\n' +
-        '• /split - Chia team\n' +
-        '• /unsplit - Khôi phục list trước khi chia\n' +
-        '• /reset - Xóa toàn bộ list',
-      { reply_markup: inlineKeyboard }
+        '• /chiateam - Chia team\n' +
+        '• /remove + [name 1, name 2] - Cho cút\n' +
+        '• /reset - Xóa toàn bộ list'
     );
   });
 };

@@ -1,3 +1,5 @@
+const { isValidName } = require('../utils/validate');
+
 const removeCommand = (bot, members) => {
   bot.onText(/\/remove (.+)/, (msg, match) => {
     const targetToRemove = match[1].trim();
@@ -36,16 +38,20 @@ const removeCommand = (bot, members) => {
         removed = true;
       }
     } else {
-      // Remove by name (existing logic)
-      const nameToRemove = targetToRemove.toLowerCase();
+      if (!isValidName(targetToRemove)) {
+        bot.sendMessage(msg.chat.id, '⚠️ Tên không hợp lệ.');
+        return;
+      }
+      // Remove by name (case-insensitive, exact match)
+      const nameToRemove = targetToRemove.trim().toLowerCase();
       for (const [userId, name] of members) {
-        if (name.toLowerCase().includes(nameToRemove)) {
+        if (name.trim().toLowerCase() === nameToRemove) {
           members.delete(userId);
           bot.sendMessage(msg.chat.id, `❌ Đã cút *${name}* khỏi /list`, {
             parse_mode: 'Markdown',
           });
           removed = true;
-          break; // Remove only first match, adjust if you want to remove all
+          break; // Remove only first match
         }
       }
     }

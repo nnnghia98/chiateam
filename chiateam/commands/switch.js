@@ -5,7 +5,7 @@ const switchCommand = (bot, groupA, groupB) => {
     if (groupA.length === 0 || groupB.length === 0) {
       bot.sendMessage(
         msg.chat.id,
-        '⚠️ Không có team nào để chia. Dùng /split trước'
+        '⚠️ Không có team nào để chia. Dùng /chiateam trước'
       );
       return;
     }

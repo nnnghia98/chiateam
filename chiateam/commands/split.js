@@ -1,7 +1,7 @@
 const shuffleArray = require('../utils/shuffle');
 
 const splitCommand = (bot, members, lastMembersBeforeSplit, groupA, groupB) => {
-  bot.onText(/\/split/, msg => {
+  bot.onText(/\/chiateam/, msg => {
     if (members.size < 2) {
       bot.sendMessage(msg.chat.id, '❗ Không đủ người để chia');
       return;

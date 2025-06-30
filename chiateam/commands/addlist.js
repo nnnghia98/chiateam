@@ -1,3 +1,5 @@
+const { isValidName, isDuplicateName } = require('../utils/validate');
+
 const addListCommand = (bot, members) => {
   bot.onText(/\/addlist\s*\[(.+)\]/, (msg, match) => {
     const rawNames = match[1];
@@ -15,18 +17,30 @@ const addListCommand = (bot, members) => {
       return;
     }
 
-    const existingNames = Array.from(members.values()).map(name =>
-      name.toLowerCase()
-    );
-
+    const allNames = Array.from(members.values());
     let addedCount = 0;
+    const invalidNames = [];
     namesToAdd.forEach(name => {
-      if (!existingNames.includes(name.toLowerCase())) {
+      if (!isValidName(name)) {
+        invalidNames.push(name);
+        return;
+      }
+      if (!isDuplicateName(name, allNames)) {
         const fakeId = Date.now() + Math.random();
         members.set(fakeId, name);
+        allNames.push(name); // update for next duplicate check
         addedCount++;
       }
     });
+
+    if (invalidNames.length > 0) {
+      bot.sendMessage(
+        msg.chat.id,
+        `⚠️ Các tên không hợp lệ (bị bỏ qua): ${invalidNames.join(', ')}`
+      );
+
+      return;
+    }
 
     if (addedCount === 0) {
       bot.sendMessage(

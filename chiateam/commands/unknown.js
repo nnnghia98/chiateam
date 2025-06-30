@@ -9,7 +9,7 @@ const unknownCommand = bot => {
     const knownCommands = [
       '/start',
       '/addme',
-      '/split',
+      '/chiateam',
       '/unsplit',
       '/list',
       '/remove',
