@@ -64,15 +64,15 @@ teamCommand(bot, groupA, groupB);
 unknownCommand(bot);
 // switchCommand(bot, groupA, groupB);
 
-// PAUSE MODE: Listen to all commands and show only a pause message
-bot.on('message', msg => {
-  if (msg.text && msg.text.startsWith('/') && !isAdmin(msg.from.id)) {
-    bot.sendMessage(
-      msg.chat.id,
-      '🚧 Bot đang bảo trì. Vui lòng quay lại sau. EST. 23h 30/6/2025 năm dương lịch tính theo giờ Việt Nam.'
-    );
-    return;
-  }
-});
+// // PAUSE MODE: Listen to all commands and show only a pause message
+// bot.on('message', msg => {
+//   if (msg.text && msg.text.startsWith('/') && !isAdmin(msg.from.id)) {
+//     bot.sendMessage(
+//       msg.chat.id,
+//       '🚧 Bot đang bảo trì. Vui lòng quay lại sau. EST. 23h 30/6/2025 năm dương lịch tính theo giờ Việt Nam.'
+//     );
+//     return;
+//   }
+// });
 
 console.log('🤖 Bot is running...');

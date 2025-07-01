@@ -1,8 +1,8 @@
 // Checks if a name contains only alphabet characters and optionally a number at the end
 function isValidName(name) {
-  // Accepts: Nghia, Nghia1, Nghia123, NGHIA, NghiaNguyen, etc.
-  // Rejects: Nghia 1, Nghia!, Nghia_1, etc.
-  return /^[A-Za-z]+\d*$/.test(name);
+  // Accepts: Nghĩa, Nghĩa1, Nghĩa123, NGHĨA, NghĩaNguyễn, etc.
+  // Rejects: Nghĩa 1, Nghĩa!, Nghĩa_1, etc.
+  return /^[\p{L}]+\d*$/u.test(name);
 }
 
 // Checks if a name already exists in a list of names (case-insensitive)
@@ -14,7 +14,20 @@ function isDuplicateName(name, nameList) {
 
 function isAdmin(userId) {
   const ownerId = process.env.BOT_OWNER_ID;
-  return ownerId && String(userId) === String(ownerId);
+  const adminIds = process.env.BOT_ADMIN_IDS;
+
+  // Check if user is the main owner
+  if (ownerId && String(userId) === String(ownerId)) {
+    return true;
+  }
+
+  // Check if user is in the admin list
+  if (adminIds) {
+    const adminList = adminIds.split(',').map(id => id.trim());
+    return adminList.includes(String(userId));
+  }
+
+  return false;
 }
 
 module.exports = {
