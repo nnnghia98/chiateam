@@ -16,6 +16,7 @@ const teamCommand = require('./commands/team');
 const unknownCommand = require('./commands/unknown');
 const addToTeam1Command = require('./commands/addtoteam1');
 const addToTeam2Command = require('./commands/addtoteam2');
+const resetTeamCommand = require('./commands/resetteam');
 // const switchCommand = require('./commands/switch');
 
 if (!token) {
@@ -62,6 +63,7 @@ removeCommand(bot, members);
 resetCommand(bot, members);
 addListCommand(bot, members);
 teamCommand(bot, groupA, groupB);
+resetTeamCommand(bot, groupA, groupB);
 unknownCommand(bot);
 addToTeam1Command(bot, members, groupA);
 addToTeam2Command(bot, members, groupB);
