@@ -1,33 +1,44 @@
-const removeCommand = (bot, members) => {
-  // Show numbered list for removal
-  bot.onText(/\/remove$/, msg => {
+const addToTeam1Command = (bot, members, groupA) => {
+  // Handle the main command to show the list
+  bot.onText(/\/addtoteam1$/, msg => {
     const allNames = Array.from(members.values());
+
     if (allNames.length === 0) {
-      bot.sendMessage(msg.chat.id, '⚠️ Danh sách trống.');
+      bot.sendMessage(msg.chat.id, '⚠️ Danh sách trống. Thêm member trước.');
       return;
     }
+
     const numberedList = allNames
       .map((name, index) => `${index + 1}. ${name}`)
       .join('\n');
-    const message = `📋 *Danh sách member hiện tại:*\n\n${numberedList}\n\n💡 *Cách sử dụng:*\n• \`/remove 1,3,5\` - Xóa member số 1, 3, 5\n• \`/remove 1-3\` - Xóa member từ 1 đến 3\n• \`/remove all\` - Xóa tất cả`;
+
+    const message = `📋 *Danh sách member hiện tại:*\n\n${numberedList}\n\n💡 *Cách sử dụng:*\n• \`/addtoteam1 1,3,5\` - Chọn member số 1, 3, 5\n• \`/addtoteam1 1-3\` - Chọn member từ 1 đến 3\n• \`/addtoteam1 all\` - Chọn tất cả`;
+
     bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
   });
 
-  // Remove by number(s), range(s), or all
-  bot.onText(/\/remove (.+)/, (msg, match) => {
+  // Handle selection by numbers
+  bot.onText(/\/addtoteam1 (.+)/, (msg, match) => {
     const selection = match[1].trim();
     const allNames = Array.from(members.values());
+
     if (allNames.length === 0) {
-      bot.sendMessage(msg.chat.id, '⚠️ Danh sách trống.');
+      bot.sendMessage(msg.chat.id, '⚠️ Danh sách trống. Thêm member trước.');
       return;
     }
+
     let selectedIndices = [];
+
     if (selection.toLowerCase() === 'all') {
+      // Select all members
       selectedIndices = allNames.map((_, index) => index);
     } else {
+      // Parse selection (e.g., "1,3,5" or "1-3")
       const parts = selection.split(',').map(part => part.trim());
+
       for (const part of parts) {
         if (part.includes('-')) {
+          // Range selection (e.g., "1-3")
           const [start, end] = part.split('-').map(num => parseInt(num.trim()));
           if (
             !isNaN(start) &&
@@ -43,6 +54,7 @@ const removeCommand = (bot, members) => {
             }
           }
         } else {
+          // Single number selection
           const num = parseInt(part);
           if (!isNaN(num) && num > 0 && num <= allNames.length) {
             const index = num - 1;
@@ -53,35 +65,39 @@ const removeCommand = (bot, members) => {
         }
       }
     }
+
     if (selectedIndices.length === 0) {
       bot.sendMessage(
         msg.chat.id,
-        '⚠️ Không có lựa chọn hợp lệ. Ví dụ:\n`/remove 1,3,5` hoặc `/remove 1-3` hoặc `/remove all`',
+        '⚠️ Không có lựa chọn hợp lệ. Ví dụ:\n`/addtoteam1 1,3,5` hoặc `/addtoteam1 1-3` hoặc `/addtoteam1 all`',
         { parse_mode: 'Markdown' }
       );
       return;
     }
-    selectedIndices.sort((a, b) => b - a); // Remove from end to avoid index shift
-    const removedNames = [];
-    for (const index of selectedIndices) {
-      const name = allNames[index];
-      // Remove from members
+
+    // Sort indices to maintain order
+    selectedIndices.sort((a, b) => a - b);
+
+    const selectedNames = selectedIndices.map(index => allNames[index]);
+
+    // Remove selected members from main list
+    selectedNames.forEach(name => {
       for (const [userId, memberName] of members) {
         const nameOnly = memberName.split(' (')[0].trim();
         if (nameOnly === name.split(' (')[0].trim()) {
           members.delete(userId);
-          removedNames.push(name);
           break;
         }
       }
-    }
-    if (removedNames.length === 0) {
-      bot.sendMessage(msg.chat.id, '⚠️ Không có member nào bị xóa.');
-      return;
-    }
-    const message = `✅ Đã xóa ${removedNames.length} member(s):\n${removedNames.join('\n')}`;
+    });
+
+    // Add to Team A
+    groupA.push(...selectedNames);
+
+    const message = `✅ Đã thêm ${selectedNames.length} member(s) vào Team A:\n${selectedNames.join('\n')}\n\n👤 *Team A hiện tại:*\n${groupA.join('\n')}`;
+
     bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
   });
 };
 
-module.exports = removeCommand;
+module.exports = addToTeam1Command;

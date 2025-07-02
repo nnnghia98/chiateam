@@ -1,8 +1,8 @@
 // Checks if a name contains only alphabet characters and optionally a number at the end
 function isValidName(name) {
-  // Accepts: Nghĩa, Nghĩa1, Nghĩa123, NGHĨA, NghĩaNguyễn, etc.
-  // Rejects: Nghĩa 1, Nghĩa!, Nghĩa_1, etc.
-  return /^[\p{L}]+\d*$/u.test(name);
+  // Accepts: Nghia, Nghia1, Nghia123, NGHIA, NghiaNguyen, Nghia Nguyen, Nguyen Van A, Nghia 1, Nghĩa, Nguyễn, etc.
+  // Rejects: Nghia!, Nghia_1, etc.
+  return /^[\p{L}\s]+\d*$/u.test(name);
 }
 
 // Checks if a name already exists in a list of names (case-insensitive)

@@ -1,6 +1,5 @@
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
-const { isAdmin } = require('./utils/validate');
 
 // Get bot token from environment variables
 const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -15,6 +14,8 @@ const resetCommand = require('./commands/reset');
 const addListCommand = require('./commands/addlist');
 const teamCommand = require('./commands/team');
 const unknownCommand = require('./commands/unknown');
+const addToTeam1Command = require('./commands/addtoteam1');
+const addToTeam2Command = require('./commands/addtoteam2');
 // const switchCommand = require('./commands/switch');
 
 if (!token) {
@@ -62,14 +63,15 @@ resetCommand(bot, members);
 addListCommand(bot, members);
 teamCommand(bot, groupA, groupB);
 unknownCommand(bot);
-// switchCommand(bot, groupA, groupB);
+addToTeam1Command(bot, members, groupA);
+addToTeam2Command(bot, members, groupB);
 
 // // PAUSE MODE: Listen to all commands and show only a pause message
 // bot.on('message', msg => {
-//   if (msg.text && msg.text.startsWith('/') && !isAdmin(msg.from.id)) {
+//   if (msg.text && msg.text.startsWith('/')) {
 //     bot.sendMessage(
 //       msg.chat.id,
-//       '🚧 Bot đang bảo trì. Vui lòng quay lại sau. EST. 23h 30/6/2025 năm dương lịch tính theo giờ Việt Nam.'
+//       '🚧 Bot đang bảo trì. Vui lòng quay lại sau. EST. 17h 02/07/2025 năm dương lịch tính theo giờ Việt Nam.'
 //     );
 //     return;
 //   }
