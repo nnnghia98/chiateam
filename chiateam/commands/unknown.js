@@ -17,7 +17,7 @@ const unknownCommand = bot => {
       '/addtoteam1',
       '/addtoteam2',
       '/team',
-      // '/switch'
+      '/resetteam',
     ];
 
     const command = msg.text.split(' ')[0];

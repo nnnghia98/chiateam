@@ -17,7 +17,6 @@ const unknownCommand = require('./commands/unknown');
 const addToTeam1Command = require('./commands/addtoteam1');
 const addToTeam2Command = require('./commands/addtoteam2');
 const resetTeamCommand = require('./commands/resetteam');
-// const switchCommand = require('./commands/switch');
 
 if (!token) {
   console.error('❌ TELEGRAM_BOT_TOKEN is not set in environment variables');
