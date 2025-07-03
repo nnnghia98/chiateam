@@ -1,7 +1,18 @@
 const { isValidName, isDuplicateName } = require('../utils/validate');
 
 const addListCommand = (bot, members) => {
-  bot.onText(/\/addlist\s*\[(.+)\]/, (msg, match) => {
+  // Show usage if /add is called without arguments
+  bot.onText(/\/add$/, msg => {
+    bot.sendMessage(
+      msg.chat.id,
+      '📋 *Cách sử dụng /add:*\n' +
+        '• `/add [name 1, name 2, name 3, ...]` - Thêm nhiều member vào list cùng lúc\n' +
+        '\nVí dụ: `/add [Nghia, Nghia 1, Nghia 2]`',
+      { parse_mode: 'Markdown' }
+    );
+  });
+
+  bot.onText(/\/add\s*\[(.+)\]/, (msg, match) => {
     const rawNames = match[1];
     const namesToAdd = rawNames
       .split(',')
@@ -11,7 +22,7 @@ const addListCommand = (bot, members) => {
     if (namesToAdd.length === 0) {
       bot.sendMessage(
         msg.chat.id,
-        '⚠️ Nhập list member để thêm. Ví dụ:\n`/addlist [Nghia, Nghia 1, Nghia 2]`',
+        '⚠️ Nhập list member để thêm. Ví dụ:\n`/add [Nghia, Nghia 1, Nghia 2]`',
         { parse_mode: 'Markdown' }
       );
       return;

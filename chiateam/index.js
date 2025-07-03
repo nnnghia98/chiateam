@@ -50,7 +50,7 @@ removeCommand(bot, members);
 resetCommand(bot, members);
 addListCommand(bot, members);
 teamCommand(bot, groupA, groupB);
-resetTeamCommand(bot, groupA, groupB);
+resetTeamCommand(bot, members, groupA, groupB);
 unknownCommand(bot);
 addToTeam1Command(bot, members, groupA);
 addToTeam2Command(bot, members, groupB);

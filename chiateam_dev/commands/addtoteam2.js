@@ -1,4 +1,4 @@
-const addToTeam2Command = (bot, members, groupB) => {
+const addToTeam2Command = (bot, members, teamB) => {
   // Handle the main command to show the list
   bot.onText(/\/addtoteam2$/, msg => {
     const allNames = Array.from(members.values());
@@ -92,9 +92,9 @@ const addToTeam2Command = (bot, members, groupB) => {
     });
 
     // Add to Team B
-    groupB.push(...selectedNames);
+    teamB.push(...selectedNames);
 
-    const message = `✅ Đã thêm ${selectedNames.length} member(s) vào Team B:\n${selectedNames.join('\n')}\n\n👤 *Team B hiện tại:*\n${groupB.join('\n')}`;
+    const message = `✅ Đã thêm ${selectedNames.length} member(s) vào Team B:\n${selectedNames.join('\n')}\n\n👤 *Team B hiện tại:*\n${teamB.join('\n')}`;
 
     bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
   });

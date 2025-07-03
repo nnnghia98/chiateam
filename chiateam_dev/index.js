@@ -22,8 +22,8 @@ const members = new Map();
 const lastMembersBeforeSplit = new Map();
 
 // Store current groups after split
-const groupA = [];
-const groupB = [];
+const teamA = [];
+const teamB = [];
 
 bot.on('callback_query', callbackQuery => {
   const msg = callbackQuery.message;
@@ -44,16 +44,16 @@ bot.on('callback_query', callbackQuery => {
 // Initialize all commands once
 startCommand(bot);
 addMeCommand(bot, members);
-splitCommand(bot, members, lastMembersBeforeSplit, groupA, groupB);
+splitCommand(bot, members, lastMembersBeforeSplit, teamA, teamB);
 listCommand(bot, members);
 removeCommand(bot, members);
 resetCommand(bot, members);
 addListCommand(bot, members);
-teamCommand(bot, groupA, groupB);
-resetTeamCommand(bot, groupA, groupB);
+teamCommand(bot, teamA, teamB);
+resetTeamCommand(bot, teamA, teamB);
 unknownCommand(bot);
-addToTeam1Command(bot, members, groupA);
-addToTeam2Command(bot, members, groupB);
+addToTeam1Command(bot, members, teamA);
+addToTeam2Command(bot, members, teamB);
 
 // // PAUSE MODE: Listen to all commands and show only a pause message
 // bot.on('message', msg => {
