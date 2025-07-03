@@ -1,4 +1,4 @@
-const knownCommands = [
+const commands = [
   '/start',
   '/addme',
   '/add',
@@ -10,6 +10,8 @@ const knownCommands = [
   '/remove',
   '/reset',
   '/resetteam',
+  '/tiensan',
+  '/chiatien',
 ];
 
-module.exports = knownCommands;
+module.exports = { commands };

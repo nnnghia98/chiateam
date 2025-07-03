@@ -1,31 +1,17 @@
+const { commands } = require('../utils/constants');
+
 const unknownCommand = bot => {
   bot.on('message', msg => {
-    // Skip if it's not a command (doesn't start with /)
     if (!msg.text || !msg.text.startsWith('/')) {
       return;
     }
 
-    // Skip if it's a known command
-    const knownCommands = [
-      '/start',
-      '/addme',
-      '/chiateam',
-      '/list',
-      '/remove',
-      '/reset',
-      '/addlist',
-      '/addtoteam1',
-      '/addtoteam2',
-      '/team',
-      '/resetteam',
-    ];
-
     const command = msg.text.split(' ')[0];
-    if (knownCommands.includes(command)) {
+
+    if (commands.includes(command)) {
       return;
     }
 
-    // Handle unknown command
     const userName = msg.from.first_name || msg.from.username || 'Unknown User';
     bot.sendMessage(msg.chat.id, `${userName}: chưa integrate, gọi cái lồn`);
   });

@@ -2,13 +2,16 @@ const removeCommand = (bot, members) => {
   // Show numbered list for removal
   bot.onText(/\/remove$/, msg => {
     const allNames = Array.from(members.values());
+
     if (allNames.length === 0) {
       bot.sendMessage(msg.chat.id, '⚠️ Danh sách trống.');
       return;
     }
+
     const numberedList = allNames
       .map((name, index) => `${index + 1}. ${name}`)
       .join('\n');
+
     const message = `📋 *Danh sách member hiện tại:*\n\n${numberedList}\n\n💡 *Cách sử dụng:*\n• \`/remove 1,3,5\` - Xóa member số 1, 3, 5\n• \`/remove 1-3\` - Xóa member từ 1 đến 3\n• \`/remove all\` - Xóa tất cả`;
     bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
   });

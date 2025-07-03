@@ -12,7 +12,9 @@ const startCommand = bot => {
         '• /addtoteam2 - Chọn member để thêm vào Team B\n' +
         '• /remove - Chọn người cút\n' +
         '• /resetteam - Xoá 2 team, trả member về lại list\n' +
-        '• /reset - Xóa toàn bộ list (Only admin)\n'
+        '• /reset - Xóa toàn bộ list (Only admin)\n' +
+        '• /tiensan + số tiền - Thêm tiền sân\n' +
+        '• /chiatien - Chia tiền\n'
     );
   });
 };

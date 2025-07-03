@@ -92,9 +92,12 @@ const addToTeam2Command = (bot, members, teamB) => {
     });
 
     // Add to Team B
-    teamB.push(...selectedNames);
+    selectedNames.forEach((name, idx) => {
+      const fakeId = Date.now() + Math.random() + idx;
+      teamB.set(fakeId, name);
+    });
 
-    const message = `✅ Đã thêm ${selectedNames.length} member(s) vào Team B:\n${selectedNames.join('\n')}\n\n👤 *Team B hiện tại:*\n${teamB.join('\n')}`;
+    const message = `✅ Đã thêm ${selectedNames.length} member(s) vào Team B:\n${selectedNames.join('\n')}\n\n👤 *Team B hiện tại:*\n${Array.from(teamB.values()).join('\n')}`;
 
     bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
   });

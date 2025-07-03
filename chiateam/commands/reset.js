@@ -1,7 +1,7 @@
 const { isAdmin } = require('../utils/validate');
 
 const resetCommand = (bot, members) => {
-  bot.onText(/\/reset/, msg => {
+  bot.onText(/^\/reset$/, msg => {
     if (!isAdmin(msg.from.id)) {
       bot.sendMessage(msg.chat.id, '⛔ Chỉ admin mới có quyền reset list.');
       return;

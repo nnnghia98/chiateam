@@ -4,26 +4,28 @@ const bot = require('./bot/init');
 
 const startCommand = require('./commands/start');
 const addMeCommand = require('./commands/addme');
-const splitCommand = require('./commands/split');
+const addCommand = require('./commands/add');
 const listCommand = require('./commands/list');
+const splitCommand = require('./commands/split');
+const teamCommand = require('./commands/team');
 const removeCommand = require('./commands/remove');
 const resetCommand = require('./commands/reset');
-const addListCommand = require('./commands/addlist');
-const teamCommand = require('./commands/team');
-const unknownCommand = require('./commands/unknown');
 const addToTeam1Command = require('./commands/addtoteam1');
 const addToTeam2Command = require('./commands/addtoteam2');
 const resetTeamCommand = require('./commands/resetteam');
+const unknownCommand = require('./commands/unknown');
+const tiensanCommand = require('./commands/tiensan');
+const chiatienCommand = require('./commands/chiatien');
 
 // Store members who typed /addme
 const members = new Map();
 
-// Store last member list before split
-const lastMembersBeforeSplit = new Map();
-
 // Store current groups after split
-const teamA = [];
-const teamB = [];
+const teamA = new Map();
+const teamB = new Map();
+
+// Store tiensan
+let tiensan = null;
 
 bot.on('callback_query', callbackQuery => {
   const msg = callbackQuery.message;
@@ -44,13 +46,21 @@ bot.on('callback_query', callbackQuery => {
 // Initialize all commands once
 startCommand(bot);
 addMeCommand(bot, members);
-splitCommand(bot, members, lastMembersBeforeSplit, teamA, teamB);
+splitCommand(bot, members, teamA, teamB);
+resetTeamCommand(bot, members, teamA, teamB);
 listCommand(bot, members);
 removeCommand(bot, members);
 resetCommand(bot, members);
-addListCommand(bot, members);
+addCommand(bot, members);
 teamCommand(bot, teamA, teamB);
-resetTeamCommand(bot, teamA, teamB);
+tiensanCommand(
+  bot,
+  () => tiensan,
+  val => {
+    tiensan = val;
+  }
+);
+chiatienCommand(bot, () => tiensan, teamA, teamB);
 unknownCommand(bot);
 addToTeam1Command(bot, members, teamA);
 addToTeam2Command(bot, members, teamB);
