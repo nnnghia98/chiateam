@@ -14,7 +14,9 @@ const startCommand = bot => {
         '• /resetteam - Xoá 2 team, trả member về lại list\n' +
         '• /reset - Xóa toàn bộ list (Only admin)\n' +
         '• /tiensan + số tiền - Thêm tiền sân\n' +
-        '• /chiatien - Chia tiền\n'
+        '• /chiatien - Chia tiền\n' +
+        '• /vote - Tạo vote\n' +
+        '• /clearvote - Xóa tất cả vote\n'
     );
   });
 };

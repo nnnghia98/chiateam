@@ -1,4 +1,4 @@
-const { commands } = require('../utils/constants');
+const { commands } = require('../../utils/constants');
 
 const unknownCommand = bot => {
   bot.on('message', msg => {

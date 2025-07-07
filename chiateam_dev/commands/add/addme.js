@@ -1,4 +1,4 @@
-const { isValidName, isDuplicateName } = require('../utils/validate');
+const { isValidName, isDuplicateName } = require('../../utils/validate');
 
 const addMeCommand = (bot, members) => {
   bot.onText(/\/addme/, msg => {

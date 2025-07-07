@@ -2,20 +2,21 @@ require('dotenv').config();
 
 const bot = require('./bot/init');
 
-const startCommand = require('./commands/start');
-const addMeCommand = require('./commands/addme');
-const addCommand = require('./commands/add');
-const listCommand = require('./commands/list');
-const splitCommand = require('./commands/split');
-const teamCommand = require('./commands/team');
-const removeCommand = require('./commands/remove');
-const resetCommand = require('./commands/reset');
-const addToTeam1Command = require('./commands/addtoteam1');
-const addToTeam2Command = require('./commands/addtoteam2');
-const resetTeamCommand = require('./commands/resetteam');
-const unknownCommand = require('./commands/unknown');
-const tiensanCommand = require('./commands/tiensan');
-const chiatienCommand = require('./commands/chiatien');
+const startCommand = require('./commands/common/start');
+const addMeCommand = require('./commands/add/addme');
+const addCommand = require('./commands/add/add');
+const listCommand = require('./commands/list/list');
+const chiateamCommand = require('./commands/team/chiateam');
+const teamCommand = require('./commands/team/team');
+const removeCommand = require('./commands/remove/remove');
+const resetCommand = require('./commands/reset/reset');
+const addToTeam1Command = require('./commands/add/addtoteam1');
+const addToTeam2Command = require('./commands/add/addtoteam2');
+const resetTeamCommand = require('./commands/reset/resetteam');
+const unknownCommand = require('./commands/common/unknown');
+const tiensanCommand = require('./commands/san/tiensan');
+const chiatienCommand = require('./commands/tien/chiatien');
+const voteCommand = require('./commands/vote/vote');
 
 // Store members who typed /addme
 const members = new Map();
@@ -46,7 +47,7 @@ bot.on('callback_query', callbackQuery => {
 // Initialize all commands once
 startCommand(bot);
 addMeCommand(bot, members);
-splitCommand(bot, members, teamA, teamB);
+chiateamCommand(bot, members, teamA, teamB);
 resetTeamCommand(bot, members, teamA, teamB);
 listCommand(bot, members);
 removeCommand(bot, members);
@@ -61,6 +62,7 @@ tiensanCommand(
   }
 );
 chiatienCommand(bot, () => tiensan, teamA, teamB);
+voteCommand(bot);
 unknownCommand(bot);
 addToTeam1Command(bot, members, teamA);
 addToTeam2Command(bot, members, teamB);

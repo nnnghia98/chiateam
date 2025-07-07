@@ -1,4 +1,4 @@
-const { isValidName, isDuplicateName } = require('../utils/validate');
+const { isValidName, isDuplicateName } = require('../../utils/validate');
 
 const addListCommand = (bot, members) => {
   // Show usage if /add is called without arguments

@@ -1,4 +1,4 @@
-const { formatMoney } = require('../utils/format');
+const { formatMoney } = require('../../utils/format');
 
 module.exports = (bot, getTiensan, teamA, teamB) => {
   bot.onText(/\/chiatien$/, msg => {

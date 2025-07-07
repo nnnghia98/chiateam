@@ -12,6 +12,13 @@ const commands = [
   '/resetteam',
   '/tiensan',
   '/chiatien',
+  '/vote',
+  '/clearvote',
+  '/san',
+  '/clearsan',
+  '/demvote',
+  '/resetteam1',
+  '/resetteam2',
 ];
 
 module.exports = { commands };

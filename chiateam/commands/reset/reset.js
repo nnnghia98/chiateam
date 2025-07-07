@@ -1,4 +1,4 @@
-const { isAdmin } = require('../utils/validate');
+const { isAdmin } = require('../../utils/validate');
 
 const resetCommand = (bot, members) => {
   bot.onText(/^\/reset$/, msg => {

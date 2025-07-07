@@ -1,4 +1,4 @@
-const shuffleArray = require('../utils/shuffle');
+const shuffleArray = require('../../utils/shuffle');
 
 const splitCommand = (bot, members, teamA, teamB) => {
   bot.onText(/\/chiateam/, msg => {
@@ -17,10 +17,10 @@ const splitCommand = (bot, members, teamA, teamB) => {
       const newNames = Array.from(members.values());
       shuffleArray(newNames);
 
-      // Distribute new members alternately between teams
+      // Add new members to the team with fewer members
       newNames.forEach((name, index) => {
         const fakeId = Date.now() + Math.random() + index;
-        if (index % 2 === 0) {
+        if (teamA.size <= teamB.size) {
           teamA.set(fakeId, name);
         } else {
           teamB.set(fakeId, name);
@@ -30,9 +30,9 @@ const splitCommand = (bot, members, teamA, teamB) => {
       // Clear the main list after adding to teams
       members.clear();
 
-      const message = `🎲 *Thêm member mới vào team* 🎲\n\n�� *Team A:*\n${Array.from(
+      const message = `🎲 *Thêm member mới vào team* 🎲\n\n👤 *Team A:*\n${Array.from(
         teamA.values()
-      ).join('\n')}\n\n�� *Team B:*\n${Array.from(teamB.values()).join('\n')}`;
+      ).join('\n')}\n\n👤 *Team B:*\n${Array.from(teamB.values()).join('\n')}`;
 
       bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
       return;
