@@ -1,7 +1,13 @@
 const shuffleArray = require('../../utils/shuffle');
+const { isAdmin } = require('../../utils/validate');
 
 const splitCommand = (bot, members, teamA, teamB) => {
   bot.onText(/\/chiateam/, msg => {
+    if (!isAdmin(msg.from.id)) {
+      bot.sendMessage(msg.chat.id, '⛔ Chỉ admin mới có quyền chia team.');
+      return;
+    }
+
     if (members.size < 2 && teamA.size === 0 && teamB.size === 0) {
       bot.sendMessage(msg.chat.id, '❗ Không đủ người để chia');
       return;

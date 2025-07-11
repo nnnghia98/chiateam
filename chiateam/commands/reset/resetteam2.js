@@ -1,6 +1,13 @@
+const { isAdmin } = require('../../utils/validate');
+
 const resetteam2Command = (bot, teamB, members) => {
   // Show numbered list for reset from teamB
   bot.onText(/\/resetteam2$/, msg => {
+    if (!isAdmin(msg.from.id)) {
+      bot.sendMessage(msg.chat.id, '⛔ Chỉ admin mới có quyền reset team.');
+      return;
+    }
+
     const teamBNames = Array.from(teamB.values());
 
     if (teamBNames.length === 0) {
@@ -18,6 +25,11 @@ const resetteam2Command = (bot, teamB, members) => {
 
   // Reset member(s) from teamB back to main list
   bot.onText(/\/resetteam2 (.+)/, (msg, match) => {
+    if (!isAdmin(msg.from.id)) {
+      bot.sendMessage(msg.chat.id, '⛔ Chỉ admin mới có quyền reset team.');
+      return;
+    }
+
     const selection = match[1].trim();
     const teamBNames = Array.from(teamB.values());
 
