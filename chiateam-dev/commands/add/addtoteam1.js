@@ -1,6 +1,6 @@
 const addToTeam1Command = (bot, members, teamA) => {
   // Handle the main command to show the list
-  bot.onText(/\/addtoteam1$/, msg => {
+  bot.onText(/^\/addtoteam1$/, msg => {
     const allNames = Array.from(members.values());
 
     if (allNames.length === 0) {
