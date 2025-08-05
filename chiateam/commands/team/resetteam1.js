@@ -1,55 +1,51 @@
-const { isAdmin } = require('../../utils/validate');
+const { RESET_TEAM_INDIVIDUAL } = require('../../utils/messages');
 
-const resetteam2Command = (bot, teamB, members) => {
-  // Show numbered list for reset from teamB
-  bot.onText(/\/resetteam2$/, msg => {
-    if (!isAdmin(msg.from.id)) {
-      bot.sendMessage(msg.chat.id, '⛔ Chỉ admin mới có quyền reset team.');
+const resetteam1Command = (bot, teamA, members) => {
+  bot.onText(/^\/resetteam1$/, msg => {
+    const teamANames = Array.from(teamA.values());
+
+    if (teamANames.length === 0) {
+      bot.sendMessage(
+        msg.chat.id,
+        RESET_TEAM_INDIVIDUAL.emptyTeam.replace('{team}', 'Team A')
+      );
       return;
     }
 
-    const teamBNames = Array.from(teamB.values());
-
-    if (teamBNames.length === 0) {
-      bot.sendMessage(msg.chat.id, '⚠️ Team B trống.');
-      return;
-    }
-
-    const numberedList = teamBNames
+    const numberedList = teamANames
       .map((name, index) => `${index + 1}. ${name}`)
       .join('\n');
 
-    const message = `👤 *Team B hiện tại:*\n\n${numberedList}\n\n💡 *Cách sử dụng:*\n• \`/resetteam2 1,3,5\` - Reset member số 1, 3, 5 về list\n• \`/resetteam2 1-3\` - Reset member từ 1 đến 3 về list\n• \`/resetteam2 all\` - Reset tất cả member về list\n• \`/resetteam2 "John"\` - Reset member theo tên`;
+    const message = RESET_TEAM_INDIVIDUAL.usage
+      .replace('{team}', 'Team A')
+      .replace('{teamNum}', '1')
+      .replace('{numberedList}', numberedList);
     bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
   });
 
-  // Reset member(s) from teamB back to main list
-  bot.onText(/\/resetteam2 (.+)/, (msg, match) => {
-    if (!isAdmin(msg.from.id)) {
-      bot.sendMessage(msg.chat.id, '⛔ Chỉ admin mới có quyền reset team.');
-      return;
-    }
-
+  bot.onText(/^\/resetteam1 (.+)$/, (msg, match) => {
     const selection = match[1].trim();
-    const teamBNames = Array.from(teamB.values());
+    const teamANames = Array.from(teamA.values());
 
-    if (teamBNames.length === 0) {
-      bot.sendMessage(msg.chat.id, '⚠️ Team B trống.');
+    if (teamANames.length === 0) {
+      bot.sendMessage(
+        msg.chat.id,
+        RESET_TEAM_INDIVIDUAL.emptyTeam.replace('{team}', 'Team A')
+      );
       return;
     }
 
     let selectedIndices = [];
 
     if (selection.toLowerCase() === 'all') {
-      selectedIndices = teamBNames.map((_, index) => index);
+      selectedIndices = teamANames.map((_, index) => index);
     } else {
       const parts = selection.split(',').map(part => part.trim());
 
       for (const part of parts) {
-        // Check if it's a quoted name
         if (part.startsWith('"') && part.endsWith('"')) {
           const nameToFind = part.slice(1, -1).trim();
-          const nameIndex = teamBNames.findIndex(name =>
+          const nameIndex = teamANames.findIndex(name =>
             name.toLowerCase().includes(nameToFind.toLowerCase())
           );
           if (nameIndex !== -1) {
@@ -61,7 +57,7 @@ const resetteam2Command = (bot, teamB, members) => {
             !isNaN(start) &&
             !isNaN(end) &&
             start > 0 &&
-            end <= teamBNames.length &&
+            end <= teamANames.length &&
             start <= end
           ) {
             for (let i = start - 1; i < end; i++) {
@@ -72,14 +68,13 @@ const resetteam2Command = (bot, teamB, members) => {
           }
         } else {
           const num = parseInt(part);
-          if (!isNaN(num) && num > 0 && num <= teamBNames.length) {
+          if (!isNaN(num) && num > 0 && num <= teamANames.length) {
             const index = num - 1;
             if (!selectedIndices.includes(index)) {
               selectedIndices.push(index);
             }
           } else {
-            // Try to find by name
-            const nameIndex = teamBNames.findIndex(name =>
+            const nameIndex = teamANames.findIndex(name =>
               name.toLowerCase().includes(part.toLowerCase())
             );
             if (nameIndex !== -1) {
@@ -93,24 +88,22 @@ const resetteam2Command = (bot, teamB, members) => {
     if (selectedIndices.length === 0) {
       bot.sendMessage(
         msg.chat.id,
-        '⚠️ Không có lựa chọn hợp lệ. Ví dụ:\n`/resetteam2 1,3,5` hoặc `/resetteam2 1-3` hoặc `/resetteam2 all` hoặc `/resetteam2 "John"`',
+        RESET_TEAM_INDIVIDUAL.invalidSelection.replace(/{teamNum}/g, '1'),
         { parse_mode: 'Markdown' }
       );
       return;
     }
 
-    // Remove duplicates and sort
     selectedIndices = [...new Set(selectedIndices)].sort((a, b) => b - a);
     const resetNames = [];
 
     for (const index of selectedIndices) {
-      const name = teamBNames[index];
+      const name = teamANames[index];
 
-      // Find and remove from teamB
-      for (const [userId, memberName] of teamB) {
+      for (const [userId, memberName] of teamA) {
         const nameOnly = memberName.split(' (')[0].trim();
         if (nameOnly === name.split(' (')[0].trim()) {
-          teamB.delete(userId);
+          teamA.delete(userId);
           resetNames.push(name);
           break;
         }
@@ -118,11 +111,10 @@ const resetteam2Command = (bot, teamB, members) => {
     }
 
     if (resetNames.length === 0) {
-      bot.sendMessage(msg.chat.id, '⚠️ Không có member nào được reset.');
+      bot.sendMessage(msg.chat.id, RESET_TEAM_INDIVIDUAL.noResetMembers);
       return;
     }
 
-    // Add reset members back to main list
     let addedCount = 0;
     resetNames.forEach(name => {
       const fakeId = Date.now() + Math.random() + addedCount;
@@ -130,9 +122,12 @@ const resetteam2Command = (bot, teamB, members) => {
       addedCount++;
     });
 
-    const message = `✅ Đã reset ${resetNames.length} member(s) từ Team B về list:\n${resetNames.join('\n')}`;
+    const message = RESET_TEAM_INDIVIDUAL.success
+      .replace('{count}', resetNames.length)
+      .replace('{team}', 'Team A')
+      .replace('{resetNames}', resetNames.join('\n'));
     bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
   });
 };
 
-module.exports = resetteam2Command;
+module.exports = resetteam1Command;

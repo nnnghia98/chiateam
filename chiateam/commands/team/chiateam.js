@@ -1,19 +1,12 @@
 const shuffleArray = require('../../utils/shuffle');
-const { isAdmin } = require('../../utils/validate');
 
 const splitCommand = (bot, members, teamA, teamB) => {
-  bot.onText(/\/chiateam/, msg => {
-    if (!isAdmin(msg.from.id)) {
-      bot.sendMessage(msg.chat.id, '⛔ Chỉ admin mới có quyền chia team.');
-      return;
-    }
-
+  bot.onText(/^\/chiateam$/, msg => {
     if (members.size < 2 && teamA.size === 0 && teamB.size === 0) {
       bot.sendMessage(msg.chat.id, '❗ Không đủ người để chia');
       return;
     }
 
-    // If teams already exist, add new members to teams
     if (teamA.size > 0 || teamB.size > 0) {
       if (members.size === 0) {
         bot.sendMessage(msg.chat.id, '❗ Không có member mới để thêm vào team');
@@ -23,7 +16,6 @@ const splitCommand = (bot, members, teamA, teamB) => {
       const newNames = Array.from(members.values());
       shuffleArray(newNames);
 
-      // Add new members to the team with fewer members
       newNames.forEach((name, index) => {
         const fakeId = Date.now() + Math.random() + index;
         if (teamA.size <= teamB.size) {
@@ -33,7 +25,6 @@ const splitCommand = (bot, members, teamA, teamB) => {
         }
       });
 
-      // Clear the main list after adding to teams
       members.clear();
 
       const message = `🎲 *Thêm member mới vào team* 🎲\n\n👤 *Team A:*\n${Array.from(
@@ -59,7 +50,6 @@ const splitCommand = (bot, members, teamA, teamB) => {
       teamB.set(fakeId, name);
     });
 
-    // Clear the main list after creating teams
     members.clear();
 
     const message = `🎲 *Chia team* 🎲\n\n👤 *Team A:*\n${Array.from(

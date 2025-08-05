@@ -1,5 +1,5 @@
 const teamsCommand = (bot, teamA, teamB) => {
-  bot.onText(/\/team/, msg => {
+  bot.onText(/^\/team$/, msg => {
     if (teamA.size === 0 && teamB.size === 0) {
       bot.sendMessage(
         msg.chat.id,

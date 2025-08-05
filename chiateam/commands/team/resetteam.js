@@ -1,18 +1,18 @@
 const { isAdmin } = require('../../utils/validate');
+const { RESET_TEAM, VALIDATION } = require('../../utils/messages');
 
 const resetTeamCommand = (bot, members, teamA, teamB) => {
-  bot.onText(/\/resetteam/, msg => {
+  bot.onText(/^\/resetteam$/, msg => {
     if (!isAdmin(msg.from.id)) {
-      bot.sendMessage(msg.chat.id, '⛔ Chỉ admin mới có quyền reset team.');
+      bot.sendMessage(msg.chat.id, VALIDATION.onlyAdmin);
       return;
     }
 
     if (teamA.size === 0 && teamB.size === 0) {
-      bot.sendMessage(msg.chat.id, '📝 Không có team nào để xóa.');
+      bot.sendMessage(msg.chat.id, RESET_TEAM.emptyList);
       return;
     }
 
-    // Restore all members from both teams back to the main list
     const allTeamMembers = [...teamA.values(), ...teamB.values()];
     let restoredCount = 0;
 
@@ -22,14 +22,10 @@ const resetTeamCommand = (bot, members, teamA, teamB) => {
       restoredCount++;
     });
 
-    // Clear both teams
     teamA.clear();
     teamB.clear();
 
-    bot.sendMessage(
-      msg.chat.id,
-      '✅ Đã xóa toàn bộ team và chuyển member về danh sách chính.'
-    );
+    bot.sendMessage(msg.chat.id, RESET_TEAM.success);
   });
 };
 
