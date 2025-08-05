@@ -16,7 +16,11 @@ const startCommand = bot => {
         '• /tiensan + số tiền - Thêm tiền sân\n' +
         '• /chiatien - Chia tiền\n' +
         '• /vote - Tạo vote\n' +
-        '• /clearvote - Xóa tất cả vote\n'
+        '• /clearvote - Xóa tất cả vote\n' +
+        '• /leaderboard - Xem bảng xếp hạng\n' +
+        '• /update-leaderboard WIN/LOSE [id1,id2,id3] - Cập nhật thống kê\n' +
+        '• /resetteam2 - Xoá member từ Team B\n' +
+        '• /player-stats [player_id] - Xem thông số chi tiết player\n'
     );
   });
 };
