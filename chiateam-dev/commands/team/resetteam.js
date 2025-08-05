@@ -1,15 +1,16 @@
 const { isAdmin } = require('../../utils/validate');
 const { RESET_TEAM, VALIDATION } = require('../../utils/messages');
+const { getChatId } = require('../../utils/chat');
 
 const resetTeamCommand = (bot, members, teamA, teamB) => {
   bot.onText(/^\/resetteam$/, msg => {
     if (!isAdmin(msg.from.id)) {
-      bot.sendMessage(msg.chat.id, VALIDATION.onlyAdmin);
+      bot.sendMessage(getChatId(msg, 'DEFAULT'), VALIDATION.onlyAdmin);
       return;
     }
 
     if (teamA.size === 0 && teamB.size === 0) {
-      bot.sendMessage(msg.chat.id, RESET_TEAM.emptyList);
+      bot.sendMessage(getChatId(msg, 'DEFAULT'), RESET_TEAM.emptyList);
       return;
     }
 
@@ -25,7 +26,7 @@ const resetTeamCommand = (bot, members, teamA, teamB) => {
     teamA.clear();
     teamB.clear();
 
-    bot.sendMessage(msg.chat.id, RESET_TEAM.success);
+    bot.sendMessage(getChatId(msg, 'DEFAULT'), RESET_TEAM.success);
   });
 };
 

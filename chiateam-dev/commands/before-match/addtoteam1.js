@@ -1,11 +1,12 @@
 const { ADD_TO_TEAM } = require('../../utils/messages');
+const { getChatId } = require('../../utils/chat');
 
 const addToTeam1Command = (bot, members, teamA) => {
   bot.onText(/^\/addtoteam1$/, msg => {
     const allNames = Array.from(members.values());
 
     if (allNames.length === 0) {
-      bot.sendMessage(msg.chat.id, ADD_TO_TEAM.emptyList);
+      bot.sendMessage(getChatId(msg, 'DEFAULT'), ADD_TO_TEAM.emptyList);
       return;
     }
 
@@ -13,11 +14,13 @@ const addToTeam1Command = (bot, members, teamA) => {
       .map((name, index) => `${index + 1}. ${name}`)
       .join('\n');
 
-    const message = ADD_TO_TEAM.usage
+    const message = ADD_TO_TEAM.instruction
       .replace('{numberedList}', numberedList)
       .replace(/{team}/g, '1');
 
-    bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
+    bot.sendMessage(getChatId(msg, 'DEFAULT'), message, {
+      parse_mode: 'Markdown',
+    });
   });
 
   bot.onText(/^\/addtoteam1 (.+)$/, (msg, match) => {
@@ -25,7 +28,7 @@ const addToTeam1Command = (bot, members, teamA) => {
     const allNames = Array.from(members.values());
 
     if (allNames.length === 0) {
-      bot.sendMessage(msg.chat.id, ADD_TO_TEAM.emptyList);
+      bot.sendMessage(getChatId(msg, 'DEFAULT'), ADD_TO_TEAM.emptyList);
       return;
     }
 
@@ -66,7 +69,7 @@ const addToTeam1Command = (bot, members, teamA) => {
 
     if (selectedIndices.length === 0) {
       bot.sendMessage(
-        msg.chat.id,
+        getChatId(msg, 'DEFAULT'),
         ADD_TO_TEAM.invalidSelection.replace(/{team}/g, '1'),
         { parse_mode: 'Markdown' }
       );
@@ -98,7 +101,9 @@ const addToTeam1Command = (bot, members, teamA) => {
       .replace('{selectedNames}', selectedNames.join('\n'))
       .replace('{teamMembers}', Array.from(teamA.values()).join('\n'));
 
-    bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
+    bot.sendMessage(getChatId(msg, 'DEFAULT'), message, {
+      parse_mode: 'Markdown',
+    });
   });
 };
 

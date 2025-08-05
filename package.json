@@ -8,7 +8,9 @@
   ],
   "scripts": {
     "dev": "yarn workspace chiateam-dev dev",
-    "start": "yarn workspace chiateam dev"
+    "start": "yarn workspace chiateam dev",
+    "init-dev-db": "yarn workspace chiateam-dev init-db",
+    "init-db": "yarn workspace chiateam init-db"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
