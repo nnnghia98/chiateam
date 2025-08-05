@@ -17,6 +17,9 @@ const unknownCommand = require('./commands/common/unknown');
 const tiensanCommand = require('./commands/san/tiensan');
 const chiatienCommand = require('./commands/tien/chiatien');
 const voteCommand = require('./commands/vote/vote');
+const leaderboardCommand = require('./commands/leaderboard/leaderboard');
+const updateLeaderboardCommand = require('./commands/leaderboard/update-leaderboard');
+const playerStatsCommand = require('./commands/leaderboard/player-stats');
 
 // Store members who typed /addme
 const members = new Map();
@@ -66,6 +69,11 @@ voteCommand(bot);
 unknownCommand(bot);
 addToTeam1Command(bot, members, teamA);
 addToTeam2Command(bot, members, teamB);
+
+// Initialize leaderboard commands
+leaderboardCommand(bot);
+updateLeaderboardCommand(bot);
+playerStatsCommand(bot);
 
 // // PAUSE MODE: Listen to all commands and show only a pause message
 // bot.on('message', msg => {
