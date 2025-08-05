@@ -1,27 +1,26 @@
+const { getChatId } = require('../../utils/chat');
 const { formatMoney } = require('../../utils/format');
+const { CHIA_TIEN } = require('../../utils/messages');
 
 module.exports = (bot, getTiensan, teamA, teamB) => {
   bot.onText(/^\/chiatien$/, msg => {
     const tiensan = getTiensan();
     if (!tiensan) {
-      bot.sendMessage(
-        msg.chat.id,
-        '💸 Bạn chưa thêm tiền sân. Dùng /tiensan [số tiền] trước.'
-      );
+      bot.sendMessage(getChatId(msg, 'DEFAULT'), CHIA_TIEN.instruction);
       return;
     }
     const totalMembers = teamA.size + teamB.size;
     if (totalMembers === 0) {
-      bot.sendMessage(
-        msg.chat.id,
-        '⚠️ Không có thành viên nào trong team để chia tiền.'
-      );
+      bot.sendMessage(getChatId(msg, 'DEFAULT'), CHIA_TIEN.noMembers);
       return;
     }
     const perMember = Math.ceil(tiensan / totalMembers);
     bot.sendMessage(
-      msg.chat.id,
-      `💸 Tổng tiền: ${formatMoney(tiensan)} VND\n👥 Số người: ${totalMembers}\n\nMỗi người phải trả: ${formatMoney(perMember)} VND`
+      getChatId(msg, 'ANNOUNCEMENT'),
+      CHIA_TIEN.totalMembers
+        .replace('{tiensan}', formatMoney(tiensan))
+        .replace('{totalMembers}', totalMembers)
+        .replace('{perMember}', formatMoney(perMember))
     );
   });
 };

@@ -23,7 +23,7 @@ const ADD_ME = {
 
 const ADD_TO_TEAM = {
   emptyList: '⚠️ Danh sách trống. Thêm member trước.',
-  usage:
+  instruction:
     '📋 *Danh sách member hiện tại:*\n\n{numberedList}\n\n💡 *Cách sử dụng:*\n• `/addtoteam{team} 1,3,5` - Chọn member số 1, 3, 5\n• `/addtoteam{team} 1-3` - Chọn member từ 1 đến 3\n• `/addtoteam{team} all` - Chọn tất cả',
   invalidSelection:
     '⚠️ Không có lựa chọn hợp lệ. Ví dụ:\n`/addtoteam{team} 1,3,5` hoặc `/addtoteam{team} 1-3` hoặc `/addtoteam{team} all`',
@@ -38,7 +38,7 @@ const LIST = {
 
 const REMOVE = {
   emptyList: '⚠️ List trống.',
-  usage:
+  instruction:
     '📋 *Danh sách member hiện tại:*\n\n{numberedList}\n\n💡 *Cách sử dụng:*\n• `/remove 1,3,5` - Xóa member số 1, 3, 5\n• `/remove 1-3` - Xóa member từ 1 đến 3\n• `/remove all` - Xóa tất cả (Admin only)',
   invalidSelection:
     '⚠️ Không có lựa chọn hợp lệ. Ví dụ:\n`/remove 1,3,5` hoặc `/remove 1-3` hoặc `/remove all`',
@@ -58,12 +58,35 @@ const RESET_TEAM = {
 
 const RESET_TEAM_INDIVIDUAL = {
   emptyTeam: '⚠️ {team} trống.',
-  usage:
+  instruction:
     '👤 *{team} hiện tại:*\n\n{numberedList}\n\n💡 *Cách sử dụng:*\n• `/resetteam{teamNum} 1,3,5` - Reset member số 1, 3, 5 về list\n• `/resetteam{teamNum} 1-3` - Reset member từ 1 đến 3 về list\n• `/resetteam{teamNum} all` - Reset tất cả member về list\n• `/resetteam{teamNum} "John"` - Reset member theo tên',
   invalidSelection:
     '⚠️ Không có lựa chọn hợp lệ. Ví dụ:\n`/resetteam{teamNum} 1,3,5` hoặc `/resetteam{teamNum} 1-3` hoặc `/resetteam{teamNum} all` hoặc `/resetteam{teamNum} "John"`',
   noResetMembers: '⚠️ Không có member nào được reset.',
   success: '✅ Đã reset {count} member(s) từ {team} về list:\n{resetNames}',
+};
+
+const UNKNOWN = { warning: 'chưa integrate, gọi cái lồn' };
+
+const CHIA_TIEN = {
+  instruction: '💸 Bạn chưa thêm tiền sân. Dùng /tiensan [số tiền] trước.',
+  noMembers: '⚠️ Không có thành viên nào trong team để chia tiền.',
+  totalMembers:
+    '💸 Tổng tiền: {tiensan} VND\n👥 Số người: {totalMembers}\n\nMỗi người phải trả: {perMember} VND',
+};
+
+const TIEN_SAN = {
+  instruction: '⚠️ Vui lòng nhập số tiền hợp lệ. Ví dụ: /tiensan 1000000',
+  noTiensan: '⚠️ Chưa thêm tiền sân.',
+  noMembers: '⚠️ Không có thành viên nào trong team để chia tiền.',
+  success: '✅ Đã thêm tiền sân: {value} VND',
+};
+
+const SAN = {
+  noSan: '⚠️ Chưa lưu sân nào. Dùng /san [tên sân] để lưu.',
+  currentSan: 'Sân: {value}',
+  successSan: '✅ Đã lưu sân: {value}',
+  successDeleteSan: '✅ Đã xóa sân.',
 };
 
 module.exports = {
@@ -76,4 +99,8 @@ module.exports = {
   RESET,
   RESET_TEAM,
   RESET_TEAM_INDIVIDUAL,
+  UNKNOWN,
+  CHIA_TIEN,
+  TIEN_SAN,
+  SAN,
 };

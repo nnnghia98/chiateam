@@ -1,4 +1,6 @@
 const { COMMANDS } = require('../../utils/constants');
+const { UNKNOWN } = require('../../utils/messages');
+const { getChatId } = require('../../utils/chat');
 
 const unknownCommand = bot => {
   bot.on('message', msg => {
@@ -13,7 +15,10 @@ const unknownCommand = bot => {
     }
 
     const userName = msg.from.first_name || msg.from.username || 'Unknown User';
-    bot.sendMessage(msg.chat.id, `${userName}: chưa integrate, gọi cái lồn`);
+    bot.sendMessage(
+      getChatId(msg, 'DEFAULT'),
+      `${userName}: ${UNKNOWN.warning}`
+    );
   });
 };
 

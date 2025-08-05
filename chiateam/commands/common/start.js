@@ -25,13 +25,13 @@ const startCommand = bot => {
 • \`/chiatien\` - Chia tiền
 
 🗳 *Vote:*
-• \`/vote\` - Tạo vote
+• \`/taovote\` - Tạo vote
 • \`/clearvote\` - Xóa tất cả vote
 
 🏆 *Thống kê:*
 • \`/leaderboard\` - Xem bảng xếp hạng
 • \`/update-leaderboard\` - Cập nhật thống kê
-• \`/player-stats\` - Xem thông số chi tiết
+• \`/player\` - Xem thông số chi tiết
 
 💡 Dùng sai cú pháp = ngu!`,
       { parse_mode: 'Markdown' }
