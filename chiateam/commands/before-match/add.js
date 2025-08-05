@@ -1,10 +1,13 @@
 const { isValidName, isDuplicateName } = require('../../utils/validate');
 const { ADD } = require('../../utils/messages');
 const { PATTERNS } = require('../../utils/constants');
+const { getChatId } = require('../../utils/chat');
 
 const addListCommand = (bot, members) => {
   bot.onText(PATTERNS.add, msg => {
-    bot.sendMessage(msg.chat.id, ADD.instruction, { parse_mode: 'Markdown' });
+    bot.sendMessage(getChatId(msg, 'DEFAULT'), ADD.instruction, {
+      parse_mode: 'Markdown',
+    });
   });
 
   bot.onText(PATTERNS.add_list, (msg, match) => {
@@ -15,7 +18,9 @@ const addListCommand = (bot, members) => {
       .filter(n => n);
 
     if (namesToAdd.length === 0) {
-      bot.sendMessage(msg.chat.id, ADD.warning, { parse_mode: 'Markdown' });
+      bot.sendMessage(getChatId(msg, 'DEFAULT'), ADD.warning, {
+        parse_mode: 'Markdown',
+      });
       return;
     }
 
@@ -37,7 +42,7 @@ const addListCommand = (bot, members) => {
 
     if (invalidNames.length > 0) {
       bot.sendMessage(
-        msg.chat.id,
+        getChatId(msg, 'DEFAULT'),
         `${ADD.invalidNames} ${invalidNames.join(', ')}`
       );
 
@@ -45,10 +50,10 @@ const addListCommand = (bot, members) => {
     }
 
     if (addedCount === 0) {
-      bot.sendMessage(msg.chat.id, ADD.noNewMembers);
+      bot.sendMessage(getChatId(msg, 'DEFAULT'), ADD.noNewMembers);
     } else {
       bot.sendMessage(
-        msg.chat.id,
+        getChatId(msg, 'DEFAULT'),
         ADD.success.replace('${addedCount}', addedCount)
       );
     }

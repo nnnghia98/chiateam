@@ -1,12 +1,13 @@
 const { isAdmin } = require('../../utils/validate');
 const { REMOVE, VALIDATION } = require('../../utils/messages');
+const { getChatId } = require('../../utils/chat');
 
 const removeCommand = (bot, members) => {
   bot.onText(/^\/remove$/, msg => {
     const allNames = Array.from(members.values());
 
     if (allNames.length === 0) {
-      bot.sendMessage(msg.chat.id, REMOVE.emptyList);
+      bot.sendMessage(getChatId(msg, 'DEFAULT'), REMOVE.emptyList);
       return;
     }
 
@@ -14,20 +15,22 @@ const removeCommand = (bot, members) => {
       .map((name, index) => `${index + 1}. ${name}`)
       .join('\n');
 
-    const message = REMOVE.usage.replace('{numberedList}', numberedList);
-    bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
+    const message = REMOVE.instruction.replace('{numberedList}', numberedList);
+    bot.sendMessage(getChatId(msg, 'DEFAULT'), message, {
+      parse_mode: 'Markdown',
+    });
   });
 
   bot.onText(/^\/remove (.+)$/, (msg, match) => {
     if (!isAdmin(msg.from.id)) {
-      bot.sendMessage(msg.chat.id, VALIDATION.onlyAdmin);
+      bot.sendMessage(getChatId(msg, 'DEFAULT'), VALIDATION.onlyAdmin);
       return;
     }
 
     const selection = match[1].trim();
     const allNames = Array.from(members.values());
     if (allNames.length === 0) {
-      bot.sendMessage(msg.chat.id, REMOVE.emptyList);
+      bot.sendMessage(getChatId(msg, 'DEFAULT'), REMOVE.emptyList);
       return;
     }
 
@@ -64,7 +67,7 @@ const removeCommand = (bot, members) => {
       }
     }
     if (selectedIndices.length === 0) {
-      bot.sendMessage(msg.chat.id, REMOVE.invalidSelection, {
+      bot.sendMessage(getChatId(msg, 'DEFAULT'), REMOVE.invalidSelection, {
         parse_mode: 'Markdown',
       });
       return;
@@ -83,13 +86,15 @@ const removeCommand = (bot, members) => {
       }
     }
     if (removedNames.length === 0) {
-      bot.sendMessage(msg.chat.id, REMOVE.noRemovedMembers);
+      bot.sendMessage(getChatId(msg, 'DEFAULT'), REMOVE.noRemovedMembers);
       return;
     }
     const message = REMOVE.success
       .replace('{count}', removedNames.length)
       .replace('{removedNames}', removedNames.join('\n'));
-    bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
+    bot.sendMessage(getChatId(msg, 'DEFAULT'), message, {
+      parse_mode: 'Markdown',
+    });
   });
 };
 

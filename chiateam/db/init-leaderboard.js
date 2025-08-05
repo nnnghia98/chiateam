@@ -54,11 +54,11 @@ if (require.main === module) {
   initLeaderboardDB()
     .then(() => closeDatabase())
     .then(() => {
-      console.log('🎉 Database setup completed!');
+      console.log('🎉 Leaderboard database initialized!');
       process.exit(0);
     })
     .catch(error => {
-      console.error('❌ Database setup failed:', error);
+      console.error('❌ Failed to initialize leaderboard database:', error);
       process.exit(1);
     });
 }

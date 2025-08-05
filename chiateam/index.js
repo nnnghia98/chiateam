@@ -1,15 +1,15 @@
 require('dotenv').config();
 
 const bot = require('./bot/init');
-const { initLeaderboardDB } = require('./db/init-leaderboard');
+// const { initLeaderboardDB } = require('./db/init-leaderboard');
 
-initLeaderboardDB()
-  .then(() => {
-    console.log('✅ Leaderboard database initialized');
-  })
-  .catch(error => {
-    console.error('❌ Failed to initialize leaderboard database:', error);
-  });
+// initLeaderboardDB()
+//   .then(() => {
+//     console.log('✅ Leaderboard database initialized');
+//   })
+//   .catch(error => {
+//     console.error('❌ Failed to initialize leaderboard database:', error);
+//   });
 
 const startCommand = require('./commands/common/start');
 const addMeCommand = require('./commands/before-match/addme');
@@ -25,10 +25,11 @@ const resetTeamCommand = require('./commands/team/resetteam');
 const unknownCommand = require('./commands/common/unknown');
 const tiensanCommand = require('./commands/after-match/tiensan');
 const chiatienCommand = require('./commands/after-match/chiatien');
-const voteCommand = require('./commands/before-match/vote');
+const taovoteCommand = require('./commands/before-match/taovote');
 const leaderboardCommand = require('./commands/leaderboard/leaderboard');
 const updateLeaderboardCommand = require('./commands/leaderboard/update-leaderboard');
-const playerStatsCommand = require('./commands/leaderboard/player-stats');
+const playerCommand = require('./commands/leaderboard/player');
+const sanCommand = require('./commands/before-match/san');
 
 const members = new Map();
 
@@ -69,13 +70,13 @@ tiensanCommand(
   }
 );
 chiatienCommand(bot, () => tiensan, teamA, teamB);
-voteCommand(bot);
+taovoteCommand(bot);
 addToTeam1Command(bot, members, teamA);
 addToTeam2Command(bot, members, teamB);
-
+sanCommand(bot);
 leaderboardCommand(bot);
 updateLeaderboardCommand(bot);
-playerStatsCommand(bot);
+playerCommand(bot);
 
 // // PAUSE MODE: Listen to all commands and show only a pause message
 // bot.on('message', msg => {
