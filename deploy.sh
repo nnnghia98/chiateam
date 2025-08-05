@@ -31,18 +31,22 @@ echo "✅ Package.json name set to: chiateam"
 
 # Remove development-specific files from production
 echo "🧹 Cleaning up production-specific files..."
-cd chiateam
 
 # Remove dev-specific files and directories
-rm -rf db/*.db 2>/dev/null || true
-rm -rf node_modules 2>/dev/null || true
-rm -rf .git 2>/dev/null || true
-rm -rf .gitignore 2>/dev/null || true
+rm -rf chiateam/db/*.db 2>/dev/null || true
+rm -rf chiateam/node_modules 2>/dev/null || true
+rm -rf chiateam/.git 2>/dev/null || true
+rm -rf chiateam/.gitignore 2>/dev/null || true
 
-# Install production dependencies
-echo "📦 Installing production dependencies..."
-npm install --production
+# Remove lockfiles to avoid frozen lockfile issues
+echo "🔓 Removing lockfiles to avoid frozen lockfile issues..."
+rm -f chiateam/yarn.lock 2>/dev/null || true
+rm -f chiateam/package-lock.json 2>/dev/null || true
+
+# Install production dependencies with Yarn
+echo "📦 Installing production dependencies with Yarn..."
+yarn install
 
 echo "✅ Production deployment completed!"
 echo "📍 Production code is now in /chiateam"
-echo "🔧 To start production bot: cd chiateam && npm start" 
+echo "🔧 To start production bot: cd chiateam && yarn start" 
