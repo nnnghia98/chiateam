@@ -1,18 +1,13 @@
 const { isValidName, isDuplicateName } = require('../../utils/validate');
+const { ADD } = require('../../utils/messages');
+const { PATTERNS } = require('../../utils/constants');
 
 const addListCommand = (bot, members) => {
-  // Show usage if /add is called without arguments
-  bot.onText(/\/add$/, msg => {
-    bot.sendMessage(
-      msg.chat.id,
-      '📋 *Cách sử dụng /add:*\n' +
-        '• `/add [name 1, name 2, name 3, ...]` - Thêm nhiều member vào list cùng lúc\n' +
-        '\nVí dụ: `/add [Nghia, Nghia 1, Nghia 2]`',
-      { parse_mode: 'Markdown' }
-    );
+  bot.onText(PATTERNS.add, msg => {
+    bot.sendMessage(msg.chat.id, ADD.instruction, { parse_mode: 'Markdown' });
   });
 
-  bot.onText(/\/add\s*\[(.+)\]/, (msg, match) => {
+  bot.onText(PATTERNS.add_list, (msg, match) => {
     const rawNames = match[1];
     const namesToAdd = rawNames
       .split(',')
@@ -20,11 +15,7 @@ const addListCommand = (bot, members) => {
       .filter(n => n);
 
     if (namesToAdd.length === 0) {
-      bot.sendMessage(
-        msg.chat.id,
-        '⚠️ Nhập list member để thêm. Ví dụ:\n`/add [Nghia, Nghia 1, Nghia 2]`',
-        { parse_mode: 'Markdown' }
-      );
+      bot.sendMessage(msg.chat.id, ADD.warning, { parse_mode: 'Markdown' });
       return;
     }
 
@@ -39,7 +30,7 @@ const addListCommand = (bot, members) => {
       if (!isDuplicateName(name, allNames)) {
         const fakeId = Date.now() + Math.random();
         members.set(fakeId, name);
-        allNames.push(name); // update for next duplicate check
+        allNames.push(name);
         addedCount++;
       }
     });
@@ -47,21 +38,18 @@ const addListCommand = (bot, members) => {
     if (invalidNames.length > 0) {
       bot.sendMessage(
         msg.chat.id,
-        `⚠️ Các tên không hợp lệ (bị bỏ qua): ${invalidNames.join(', ')}`
+        `${ADD.invalidNames} ${invalidNames.join(', ')}`
       );
 
       return;
     }
 
     if (addedCount === 0) {
-      bot.sendMessage(
-        msg.chat.id,
-        '⚠️ Không có member mới được thêm. Tất cả member đã có trong /list'
-      );
+      bot.sendMessage(msg.chat.id, ADD.noNewMembers);
     } else {
       bot.sendMessage(
         msg.chat.id,
-        `✅ Đã thêm ${addedCount} member(s) vào /list`
+        ADD.success.replace('${addedCount}', addedCount)
       );
     }
   });

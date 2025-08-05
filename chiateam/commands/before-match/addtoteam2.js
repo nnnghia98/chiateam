@@ -1,10 +1,11 @@
-const addToTeam1Command = (bot, members, teamA) => {
-  // Handle the main command to show the list
-  bot.onText(/\/addtoteam1$/, msg => {
+const { ADD_TO_TEAM } = require('../../utils/messages');
+
+const addToTeam2Command = (bot, members, teamB) => {
+  bot.onText(/^\/addtoteam2$/, msg => {
     const allNames = Array.from(members.values());
 
     if (allNames.length === 0) {
-      bot.sendMessage(msg.chat.id, '⚠️ Danh sách trống. Thêm member trước.');
+      bot.sendMessage(msg.chat.id, ADD_TO_TEAM.emptyList);
       return;
     }
 
@@ -12,33 +13,31 @@ const addToTeam1Command = (bot, members, teamA) => {
       .map((name, index) => `${index + 1}. ${name}`)
       .join('\n');
 
-    const message = `📋 *Danh sách member hiện tại:*\n\n${numberedList}\n\n💡 *Cách sử dụng:*\n• \`/addtoteam1 1,3,5\` - Chọn member số 1, 3, 5\n• \`/addtoteam1 1-3\` - Chọn member từ 1 đến 3\n• \`/addtoteam1 all\` - Chọn tất cả`;
+    const message = ADD_TO_TEAM.usage
+      .replace('{numberedList}', numberedList)
+      .replace(/{team}/g, '2');
 
     bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
   });
 
-  // Handle selection by numbers
-  bot.onText(/\/addtoteam1 (.+)/, (msg, match) => {
+  bot.onText(/^\/addtoteam2 (.+)$/, (msg, match) => {
     const selection = match[1].trim();
     const allNames = Array.from(members.values());
 
     if (allNames.length === 0) {
-      bot.sendMessage(msg.chat.id, '⚠️ Danh sách trống. Thêm member trước.');
+      bot.sendMessage(msg.chat.id, ADD_TO_TEAM.emptyList);
       return;
     }
 
     let selectedIndices = [];
 
     if (selection.toLowerCase() === 'all') {
-      // Select all members
       selectedIndices = allNames.map((_, index) => index);
     } else {
-      // Parse selection (e.g., "1,3,5" or "1-3")
       const parts = selection.split(',').map(part => part.trim());
 
       for (const part of parts) {
         if (part.includes('-')) {
-          // Range selection (e.g., "1-3")
           const [start, end] = part.split('-').map(num => parseInt(num.trim()));
           if (
             !isNaN(start) &&
@@ -54,7 +53,6 @@ const addToTeam1Command = (bot, members, teamA) => {
             }
           }
         } else {
-          // Single number selection
           const num = parseInt(part);
           if (!isNaN(num) && num > 0 && num <= allNames.length) {
             const index = num - 1;
@@ -69,13 +67,12 @@ const addToTeam1Command = (bot, members, teamA) => {
     if (selectedIndices.length === 0) {
       bot.sendMessage(
         msg.chat.id,
-        '⚠️ Không có lựa chọn hợp lệ. Ví dụ:\n`/addtoteam1 1,3,5` hoặc `/addtoteam1 1-3` hoặc `/addtoteam1 all`',
+        ADD_TO_TEAM.invalidSelection.replace(/{team}/g, '2'),
         { parse_mode: 'Markdown' }
       );
       return;
     }
 
-    // Sort indices to maintain order
     selectedIndices.sort((a, b) => a - b);
 
     const selectedNames = selectedIndices.map(index => allNames[index]);
@@ -91,16 +88,20 @@ const addToTeam1Command = (bot, members, teamA) => {
       }
     });
 
-    // Add to Team A
+    // Add to Team B
     selectedNames.forEach((name, idx) => {
       const fakeId = Date.now() + Math.random() + idx;
-      teamA.set(fakeId, name);
+      teamB.set(fakeId, name);
     });
 
-    const message = `✅ Đã thêm ${selectedNames.length} member(s) vào Team A:\n${selectedNames.join('\n')}\n\n👤 *Team A hiện tại:*\n${Array.from(teamA.values()).join('\n')}`;
+    const message = ADD_TO_TEAM.success
+      .replace('{count}', selectedNames.length)
+      .replace('{team}', 'Team B')
+      .replace('{selectedNames}', selectedNames.join('\n'))
+      .replace('{teamMembers}', Array.from(teamB.values()).join('\n'));
 
     bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
   });
 };
 
-module.exports = addToTeam1Command;
+module.exports = addToTeam2Command;

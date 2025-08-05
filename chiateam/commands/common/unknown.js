@@ -1,4 +1,4 @@
-const { commands } = require('../../utils/constants');
+const { COMMANDS } = require('../../utils/constants');
 
 const unknownCommand = bot => {
   bot.on('message', msg => {
@@ -8,7 +8,7 @@ const unknownCommand = bot => {
 
     const command = msg.text.split(' ')[0];
 
-    if (commands.includes(command)) {
+    if (COMMANDS.includes(command)) {
       return;
     }
 

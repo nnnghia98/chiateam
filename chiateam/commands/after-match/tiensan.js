@@ -9,7 +9,7 @@ function getOpts(msg) {
 }
 
 module.exports = (bot, getTiensan, setTiensan) => {
-  bot.onText(/\/tiensan (.+)/, (msg, match) => {
+  bot.onText(/^\/tiensan (.+)$/, (msg, match) => {
     const input = match[1].replace(/[^\d]/g, '');
     if (!input || isNaN(Number(input))) {
       bot.sendMessage(
@@ -28,7 +28,7 @@ module.exports = (bot, getTiensan, setTiensan) => {
     );
   });
 
-  bot.onText(/\/tiensan$/, msg => {
+  bot.onText(/^\/tiensan$/, msg => {
     const tiensan = getTiensan();
     if (!tiensan) {
       bot.sendMessage(msg.chat.id, 'Chưa thêm tiền sân', getOpts(msg));
@@ -37,8 +37,7 @@ module.exports = (bot, getTiensan, setTiensan) => {
     }
   });
 
-  // /san [string]: set once, then just show
-  bot.onText(/\/san(?:\s+(.+))?/, (msg, match) => {
+  bot.onText(/^\/san(?:\s+(.+))?$/, (msg, match) => {
     const currentSan = sanStrings.get(msg.chat.id);
     const input = match[1] && match[1].trim();
     if (input) {
@@ -61,8 +60,7 @@ module.exports = (bot, getTiensan, setTiensan) => {
     }
   });
 
-  // /clearsan: remove the string
-  bot.onText(/\/clearsan/, msg => {
+  bot.onText(/^\/clearsan$/, msg => {
     if (sanStrings.has(msg.chat.id)) {
       sanStrings.delete(msg.chat.id);
       bot.sendMessage(msg.chat.id, '✅ Đã xóa sân.', getOpts(msg));

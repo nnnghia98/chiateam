@@ -1,7 +1,7 @@
 const { formatMoney } = require('../../utils/format');
 
 module.exports = (bot, getTiensan, teamA, teamB) => {
-  bot.onText(/\/chiatien$/, msg => {
+  bot.onText(/^\/chiatien$/, msg => {
     const tiensan = getTiensan();
     if (!tiensan) {
       bot.sendMessage(
