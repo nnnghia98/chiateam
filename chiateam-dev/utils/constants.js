@@ -19,6 +19,9 @@ const COMMANDS = [
   '/demvote',
   '/resetteam1',
   '/resetteam2',
+  '/leaderboard',
+  '/update-leaderboard',
+  '/player-stats',
 ];
 
 const PATTERNS = {
