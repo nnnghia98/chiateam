@@ -1,11 +1,16 @@
+const { LIST } = require('../../utils/messages');
+
 const listCommand = (bot, members) => {
-  bot.onText(/\/list/, msg => {
+  bot.onText(/^\/list$/, msg => {
     if (members.size === 0) {
-      bot.sendMessage(msg.chat.id, '/list trống');
+      bot.sendMessage(msg.chat.id, LIST.emptyList);
       return;
     }
     const names = Array.from(members.values());
-    bot.sendMessage(msg.chat.id, `👥 Danh sách hiện tại:\n${names.join('\n')}`);
+    bot.sendMessage(
+      msg.chat.id,
+      LIST.success.replace('{names}', names.join('\n'))
+    );
   });
 };
 

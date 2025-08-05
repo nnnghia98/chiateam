@@ -1,6 +1,5 @@
 const { formatMoney } = require('../../utils/format');
 
-// Store /san string per chat
 const sanStrings = new Map();
 
 function getOpts(msg) {

@@ -1,4 +1,3 @@
-// Store the single active vote
 let activeVote = null;
 
 function getOpts(msg) {
@@ -8,7 +7,6 @@ function getOpts(msg) {
 }
 
 const voteCommand = bot => {
-  // Handle poll answer updates to track votes
   bot.on('poll_answer', pollAnswer => {
     if (!activeVote || pollAnswer.poll_id !== activeVote.id) {
       return;
@@ -18,7 +16,6 @@ const voteCommand = bot => {
     const userName =
       pollAnswer.user.first_name || pollAnswer.user.username || 'Unknown';
 
-    // Update votes tracking
     activeVote.votes[userId] = {
       id: userId,
       name: userName,
@@ -28,8 +25,7 @@ const voteCommand = bot => {
     activeVote.totalVoters = Object.keys(activeVote.votes).length;
   });
 
-  // Show usage if /vote is called without arguments
-  bot.onText(/\/vote$/, msg => {
+  bot.onText(/^\/vote$/, msg => {
     bot.sendMessage(
       msg.chat.id,
       '📊 *Cách sử dụng /vote:*\n' +
@@ -41,7 +37,7 @@ const voteCommand = bot => {
     );
   });
 
-  bot.onText(/\/vote\s+(.+)/, async (msg, match) => {
+  bot.onText(/^\/vote\s+(.+)$/, async (msg, match) => {
     const pollText = match[1];
     const parts = pollText
       .split('|')
@@ -80,7 +76,6 @@ const voteCommand = bot => {
     const question = parts[0];
     const options = parts.slice(1);
 
-    // Always create a new poll
     bot
       .sendPoll(msg.chat.id, question, options, {
         is_anonymous: false,
@@ -88,7 +83,6 @@ const voteCommand = bot => {
         explanation: `Vote được tạo bởi ${msg.from.first_name || msg.from.username || 'Unknown'}`,
       })
       .then(pollMessage => {
-        // Store vote information
         const voteId = pollMessage.poll.id;
         activeVote = {
           id: voteId,
@@ -112,8 +106,7 @@ const voteCommand = bot => {
       });
   });
 
-  // Command to clear the active vote
-  bot.onText(/\/clearvote/, msg => {
+  bot.onText(/^\/clearvote$/, msg => {
     if (!activeVote) {
       bot.sendMessage(
         msg.chat.id,
@@ -128,8 +121,7 @@ const voteCommand = bot => {
     bot.sendMessage(msg.chat.id, '🗑️ Đã xoá vote.', getOpts(msg));
   });
 
-  // Command to show vote results
-  bot.onText(/\/demvote/, msg => {
+  bot.onText(/^\/demvote$/, msg => {
     if (!activeVote) {
       bot.sendMessage(
         msg.chat.id,
