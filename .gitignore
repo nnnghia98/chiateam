@@ -248,6 +248,11 @@ $RECYCLE.BIN/
 *.swo
 *~
 
+# Database files
+*.db
+/chiateam-dev/db/*.db
+/chiateam/db/*.db
+
 # Telegram Bot specific
 config.json
 bot-token.txt node_modules/

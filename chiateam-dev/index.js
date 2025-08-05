@@ -1,6 +1,15 @@
 require('dotenv').config();
 
 const bot = require('./bot/init');
+const { initLeaderboardDB } = require('./db/init-leaderboard');
+
+initLeaderboardDB()
+  .then(() => {
+    console.log('✅ Leaderboard database initialized');
+  })
+  .catch(error => {
+    console.error('❌ Failed to initialize leaderboard database:', error);
+  });
 
 const startCommand = require('./commands/common/start');
 const addMeCommand = require('./commands/before-match/addme');
@@ -14,27 +23,23 @@ const addToTeam1Command = require('./commands/before-match/addtoteam1');
 const addToTeam2Command = require('./commands/before-match/addtoteam2');
 const resetTeamCommand = require('./commands/team/resetteam');
 const unknownCommand = require('./commands/common/unknown');
-const tiensanCommand = require('./commands/san/tiensan');
-const chiatienCommand = require('./commands/tien/chiatien');
-const voteCommand = require('./commands/vote/vote');
+const tiensanCommand = require('./commands/after-match/tiensan');
+const chiatienCommand = require('./commands/after-match/chiatien');
+const voteCommand = require('./commands/before-match/vote');
 const leaderboardCommand = require('./commands/leaderboard/leaderboard');
 const updateLeaderboardCommand = require('./commands/leaderboard/update-leaderboard');
 const playerStatsCommand = require('./commands/leaderboard/player-stats');
 
-// Store members who typed /addme
 const members = new Map();
 
-// Store current groups after split
 const teamA = new Map();
 const teamB = new Map();
 
-// Store tiensan
 let tiensan = null;
 
 bot.on('callback_query', callbackQuery => {
   const msg = callbackQuery.message;
 
-  // Remove inline keyboard from the message
   bot.editMessageReplyMarkup(
     { inline_keyboard: [] },
     {
@@ -43,11 +48,9 @@ bot.on('callback_query', callbackQuery => {
     }
   );
 
-  // Acknowledge the button press
   bot.answerCallbackQuery(callbackQuery.id, { text: 'Menu cleared.' });
 });
 
-// Initialize all commands once
 startCommand(bot);
 unknownCommand(bot);
 addMeCommand(bot, members);
@@ -70,7 +73,6 @@ voteCommand(bot);
 addToTeam1Command(bot, members, teamA);
 addToTeam2Command(bot, members, teamB);
 
-// Initialize leaderboard commands
 leaderboardCommand(bot);
 updateLeaderboardCommand(bot);
 playerStatsCommand(bot);
