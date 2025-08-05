@@ -1,4 +1,4 @@
-const commands = [
+const COMMANDS = [
   '/start',
   '/addme',
   '/add',
@@ -21,4 +21,10 @@ const commands = [
   '/resetteam2',
 ];
 
-module.exports = { commands };
+const PATTERNS = {
+  add: /^\/add$/,
+  add_list: /^\/add\s*\[(.+)\]$/,
+  add_me: /^\/addme$/,
+};
+
+module.exports = { COMMANDS, PATTERNS };

@@ -1,6 +1,6 @@
 const { isValidName, isDuplicateName } = require('../../utils/validate');
-const { ADD } = require('./messages');
-const { PATTERNS } = require('./constants');
+const { ADD } = require('../../utils/messages');
+const { PATTERNS } = require('../../utils/constants');
 
 const addListCommand = (bot, members) => {
   bot.onText(PATTERNS.add, msg => {

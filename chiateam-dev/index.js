@@ -3,16 +3,16 @@ require('dotenv').config();
 const bot = require('./bot/init');
 
 const startCommand = require('./commands/common/start');
-const addMeCommand = require('./commands/add/addme');
-const addCommand = require('./commands/add/add');
+const addMeCommand = require('./commands/before-match/addme');
+const addCommand = require('./commands/before-match/add');
 const listCommand = require('./commands/list/list');
 const chiateamCommand = require('./commands/team/chiateam');
 const teamCommand = require('./commands/team/team');
-const removeCommand = require('./commands/remove/remove');
-const resetCommand = require('./commands/reset/reset');
-const addToTeam1Command = require('./commands/add/addtoteam1');
-const addToTeam2Command = require('./commands/add/addtoteam2');
-const resetTeamCommand = require('./commands/reset/resetteam');
+const removeCommand = require('./commands/list/remove');
+const resetCommand = require('./commands/list/reset');
+const addToTeam1Command = require('./commands/before-match/addtoteam1');
+const addToTeam2Command = require('./commands/before-match/addtoteam2');
+const resetTeamCommand = require('./commands/team/resetteam');
 const unknownCommand = require('./commands/common/unknown');
 const tiensanCommand = require('./commands/san/tiensan');
 const chiatienCommand = require('./commands/tien/chiatien');
@@ -49,6 +49,7 @@ bot.on('callback_query', callbackQuery => {
 
 // Initialize all commands once
 startCommand(bot);
+unknownCommand(bot);
 addMeCommand(bot, members);
 chiateamCommand(bot, members, teamA, teamB);
 resetTeamCommand(bot, members, teamA, teamB);
@@ -66,7 +67,6 @@ tiensanCommand(
 );
 chiatienCommand(bot, () => tiensan, teamA, teamB);
 voteCommand(bot);
-unknownCommand(bot);
 addToTeam1Command(bot, members, teamA);
 addToTeam2Command(bot, members, teamB);
 
