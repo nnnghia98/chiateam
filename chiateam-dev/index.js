@@ -28,6 +28,7 @@ const chiatienCommand = require('./commands/after-match/chiatien');
 const taovoteCommand = require('./commands/before-match/taovote');
 const leaderboardCommand = require('./commands/leaderboard/leaderboard');
 const updateLeaderboardCommand = require('./commands/leaderboard/update-leaderboard');
+const editStatsCommand = require('./commands/leaderboard/edit-stats');
 const playerCommand = require('./commands/leaderboard/player');
 const sanCommand = require('./commands/before-match/san');
 
@@ -76,6 +77,7 @@ addToTeam2Command(bot, members, teamB);
 sanCommand(bot);
 leaderboardCommand(bot);
 updateLeaderboardCommand(bot);
+editStatsCommand(bot);
 playerCommand(bot);
 
 // // PAUSE MODE: Listen to all commands and show only a pause message
