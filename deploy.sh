@@ -33,7 +33,6 @@ echo "✅ Package.json name set to: chiateam"
 echo "🧹 Cleaning up production-specific files..."
 
 # Remove dev-specific files and directories
-rm -rf chiateam/db/*.db 2>/dev/null || true
 rm -rf chiateam/node_modules 2>/dev/null || true
 rm -rf chiateam/.git 2>/dev/null || true
 rm -rf chiateam/.gitignore 2>/dev/null || true

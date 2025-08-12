@@ -1,36 +1,27 @@
-require('dotenv').config();
-
-const bot = require('./bot/init');
-// const { initLeaderboardDB } = require('./db/init-leaderboard');
-
-// initLeaderboardDB()
-//   .then(() => {
-//     console.log('✅ Leaderboard database initialized');
-//   })
-//   .catch(error => {
-//     console.error('❌ Failed to initialize leaderboard database:', error);
-//   });
-
-const startCommand = require('./commands/common/start');
-const addMeCommand = require('./commands/before-match/addme');
-const addCommand = require('./commands/before-match/add');
-const listCommand = require('./commands/list/list');
-const chiateamCommand = require('./commands/team/chiateam');
-const teamCommand = require('./commands/team/team');
-const removeCommand = require('./commands/list/remove');
-const resetCommand = require('./commands/list/reset');
-const addToTeam1Command = require('./commands/before-match/addtoteam1');
-const addToTeam2Command = require('./commands/before-match/addtoteam2');
-const resetTeamCommand = require('./commands/team/resetteam');
-const unknownCommand = require('./commands/common/unknown');
-const tiensanCommand = require('./commands/after-match/tiensan');
-const chiatienCommand = require('./commands/after-match/chiatien');
-const taovoteCommand = require('./commands/before-match/taovote');
-const leaderboardCommand = require('./commands/leaderboard/leaderboard');
-const updateLeaderboardCommand = require('./commands/leaderboard/update-leaderboard');
-const editStatsCommand = require('./commands/leaderboard/edit-stats');
-const playerCommand = require('./commands/leaderboard/player');
-const sanCommand = require('./commands/before-match/san');
+const {
+  startCommand,
+  addMeCommand,
+  addCommand,
+  listCommand,
+  chiateamCommand,
+  teamCommand,
+  removeCommand,
+  resetCommand,
+  addToTeam1Command,
+  addToTeam2Command,
+  resetTeamCommand,
+  unknownCommand,
+  tiensanCommand,
+  chiaTienCommand,
+  taoVoteCommand,
+  leaderboardCommand,
+  updateLeaderboardCommand,
+  editStatsCommand,
+  playerCommand,
+  sanCommand,
+  resetTeam1Command,
+  resetTeam2Command,
+} = require('./commands');
 
 const members = new Map();
 
@@ -39,56 +30,32 @@ const teamB = new Map();
 
 let tiensan = null;
 
-bot.on('callback_query', callbackQuery => {
-  const msg = callbackQuery.message;
-
-  bot.editMessageReplyMarkup(
-    { inline_keyboard: [] },
-    {
-      chat_id: msg.chat.id,
-      message_id: msg.message_id,
-    }
-  );
-
-  bot.answerCallbackQuery(callbackQuery.id, { text: 'Menu cleared.' });
-});
-
-startCommand(bot);
-unknownCommand(bot);
-addMeCommand(bot, members);
-chiateamCommand(bot, members, teamA, teamB);
-resetTeamCommand(bot, members, teamA, teamB);
-listCommand(bot, members);
-removeCommand(bot, members);
-resetCommand(bot, members);
-addCommand(bot, members);
-teamCommand(bot, teamA, teamB);
+startCommand();
+unknownCommand();
+addMeCommand(members);
+chiateamCommand(members, teamA, teamB);
+resetTeamCommand(members, teamA, teamB);
+listCommand(members);
+removeCommand(members);
+resetCommand(members);
+addCommand(members);
+teamCommand(teamA, teamB);
 tiensanCommand(
-  bot,
   () => tiensan,
   val => {
     tiensan = val;
   }
 );
-chiatienCommand(bot, () => tiensan, teamA, teamB);
-taovoteCommand(bot);
-addToTeam1Command(bot, members, teamA);
-addToTeam2Command(bot, members, teamB);
-sanCommand(bot);
-leaderboardCommand(bot);
-updateLeaderboardCommand(bot);
-editStatsCommand(bot);
-playerCommand(bot);
-
-// // PAUSE MODE: Listen to all commands and show only a pause message
-// bot.on('message', msg => {
-//   if (msg.text && msg.text.startsWith('/')) {
-//     bot.sendMessage(
-//       msg.chat.id,
-//       '🚧 Bot đang bảo trì. Vui lòng quay lại sau. EST. 17h 02/07/2025 năm dương lịch tính theo giờ Việt Nam.'
-//     );
-//     return;
-//   }
-// });
+chiaTienCommand(() => tiensan, teamA, teamB);
+taoVoteCommand();
+addToTeam1Command(members, teamA);
+addToTeam2Command(members, teamB);
+sanCommand();
+leaderboardCommand();
+updateLeaderboardCommand();
+editStatsCommand();
+playerCommand();
+resetTeam1Command(teamA, members);
+resetTeam2Command(teamB, members);
 
 console.log('🤖 Bot is running...');

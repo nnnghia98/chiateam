@@ -1,25 +1,11 @@
-const { getChatId } = require('../../utils/chat');
-const TAO_VOTE = {
-  instruction:
-    '📊 *Cách sử dụng /taovote:*\n' +
-    '• `/taovote [question]` - Tạo vote với câu hỏi và 4 lựa chọn cố định (0, +1, +2, +3, +4)\n' +
-    '• `/clearvote` - Xóa tất cả vote đang hoạt động\n' +
-    '\nVí dụ: `/taovote Sân XX ngày YY giờ ZZ`\n' +
-    '\n*Lưu ý:* Vote sẽ có 4 lựa chọn: 0, +1, +2, +3, +4',
-  shortInstruction:
-    '⚠️ Cần nhập câu hỏi cho vote.\n' +
-    'Ví dụ: `/taovote Sân XX ngày YY giờ ZZ`',
-  voteExists:
-    '⚠️ Hiện tại đã có một vote đang hoạt động. Hãy xoá vote cũ trước khi tạo vote mới bằng lệnh /clearvote.',
-  explanation: 'Vote được tạo bởi',
-  error: '❌ Có lỗi xảy ra khi tạo vote. Vui lòng thử lại.',
-  noVote: '📭 Không có vote nào đang hoạt động để xóa.',
-  result: '📊 *Kết quả vote hiện tại:*\n*${question}*\n\n',
-};
+const { getChatId, sendMessage } = require('../../utils/chat');
+const { TAO_VOTE } = require('../../utils/messages');
+
+const bot = require('../../bot');
 
 let activeVote = null;
 
-const voteCommand = bot => {
+const voteCommand = () => {
   bot.on('poll_answer', pollAnswer => {
     if (!activeVote || pollAnswer.poll_id !== activeVote.id) {
       return;
@@ -39,7 +25,7 @@ const voteCommand = bot => {
   });
 
   bot.onText(/^\/taovote$/, msg => {
-    bot.sendMessage(getChatId(msg, 'DEFAULT'), TAO_VOTE.instruction, {
+    sendMessage(msg, 'DEFAULT', TAO_VOTE.instruction, {
       parse_mode: 'Markdown',
     });
   });
@@ -48,12 +34,12 @@ const voteCommand = bot => {
     const question = match[1].trim();
 
     if (!question) {
-      bot.sendMessage(getChatId(msg, 'DEFAULT'), TAO_VOTE.shortInstruction);
+      sendMessage(msg, 'DEFAULT', TAO_VOTE.shortInstruction);
       return;
     }
 
     if (activeVote) {
-      bot.sendMessage(getChatId(msg, 'DEFAULT'), TAO_VOTE.voteExists);
+      sendMessage(msg, 'DEFAULT', TAO_VOTE.voteExists);
       return;
     }
 
@@ -82,24 +68,24 @@ const voteCommand = bot => {
       })
       .catch(error => {
         console.error('Error creating vote:', error);
-        bot.sendMessage(getChatId(msg, 'DEFAULT'), TAO_VOTE.error);
+        sendMessage(msg, 'DEFAULT', TAO_VOTE.error);
       });
   });
 
   bot.onText(/^\/clearvote$/, msg => {
     if (!activeVote) {
-      bot.sendMessage(getChatId(msg, 'DEFAULT'), TAO_VOTE.noVote);
+      sendMessage(msg, 'DEFAULT', TAO_VOTE.noVote);
       return;
     }
 
     activeVote = null;
 
-    bot.sendMessage(getChatId(msg, 'DEFAULT'), '🗑️ Đã xoá vote.');
+    sendMessage(msg, 'DEFAULT', '🗑️ Đã xoá vote.');
   });
 
   bot.onText(/^\/demvote$/, msg => {
     if (!activeVote) {
-      bot.sendMessage(getChatId(msg, 'DEFAULT'), TAO_VOTE.noVote);
+      sendMessage(msg, 'DEFAULT', TAO_VOTE.noVote);
       return;
     }
 
@@ -122,7 +108,7 @@ const voteCommand = bot => {
 
     resultText += `*Số người vote:* ${totalVoters || 0}`;
 
-    bot.sendMessage(getChatId(msg, 'MAIN'), resultText, {
+    sendMessage(msg, 'MAIN', resultText, {
       parse_mode: 'Markdown',
     });
   });

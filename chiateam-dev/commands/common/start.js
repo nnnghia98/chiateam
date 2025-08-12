@@ -1,7 +1,11 @@
-const startCommand = bot => {
+const { sendMessage } = require('../../utils/chat');
+const bot = require('../../bot');
+
+const startCommand = () => {
   bot.onText(/^\/start$/, msg => {
-    bot.sendMessage(
-      msg.chat.id,
+    sendMessage(
+      msg,
+      'MAIN',
       `👋 *DANH SÁCH LỆNH HƯỚNG DẪN*
 
 📝 *Quản lý danh sách:*
