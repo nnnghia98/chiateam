@@ -45,6 +45,9 @@ const playerStatsCommand = () => {
       const totalGames = playerStats.total_match;
       const totalWins = playerStats.total_win;
       const totalLosses = playerStats.total_lose;
+      const totalDraws = playerStats.total_draw || 0;
+      const totalGoals = playerStats.goal || 0;
+      const totalAssists = playerStats.assist || 0;
 
       // Calculate win/loss ratio
       const winLossRatio =
@@ -63,10 +66,13 @@ const playerStatsCommand = () => {
       message += `📅 **Ngày tạo:** ${new Date(playerStats.created_at).toLocaleDateString('vi-VN')}\n`;
       message += `🔄 **Cập nhật lần cuối:** ${new Date(playerStats.updated_at).toLocaleDateString('vi-VN')}\n\n`;
 
-      message += '�� **THỐNG KÊ CHI TIẾT:**\n';
+      message += '📊 **THỐNG KÊ CHI TIẾT:**\n';
       message += `   • 🎮 **Tổng trận:** ${totalGames}\n`;
       message += `   • ✅ **Thắng:** ${totalWins}\n`;
       message += `   • ❌ **Thua:** ${totalLosses}\n`;
+      message += `   • 🤝 **Hòa:** ${totalDraws}\n`;
+      message += `   • ⚽ **Bàn thắng:** ${totalGoals}\n`;
+      message += `   • 🎯 **Kiến tạo:** ${totalAssists}\n`;
       message += `   • 🎯 **Tỷ lệ thắng:** ${winratePercent}%\n`;
       message += `   • ⚖️ **Tỷ lệ W/L:** ${winLossRatio}\n\n`;
 
@@ -92,7 +98,11 @@ const playerStatsCommand = () => {
       message += '💡 **Lệnh liên quan:**\n';
       message += '• `/leaderboard` - Xem bảng xếp hạng\n';
       message +=
-        '• `/update-leaderboard WIN/LOSE [id1,id2,id3]` - Cập nhật thống kê';
+        '• `/update-leaderboard WIN/LOSE/DRAW [id1,id2,id3]` - Cập nhật thống kê\n';
+      message +=
+        '• `/update-leaderboard GOAL player_number value` - Cập nhật bàn thắng\n';
+      message +=
+        '• `/update-leaderboard ASSIST player_number value` - Cập nhật kiến tạo';
 
       sendMessage(msg, 'STATISTICS', message, {
         parse_mode: 'Markdown',
@@ -121,7 +131,8 @@ const playerStatsCommand = () => {
         '💡 **Lưu ý:**\n' +
         '• Số áo phải là số nguyên dương\n' +
         '• Player phải có dữ liệu thống kê để xem được\n' +
-        '• Sử dụng `/update-leaderboard` để thêm dữ liệu',
+        '• Sử dụng `/update-leaderboard` để thêm dữ liệu\n' +
+        '• Sử dụng `/update-leaderboard GOAL/ASSIST` để cập nhật bàn thắng/kiến tạo',
       { parse_mode: 'Markdown' }
     );
   });

@@ -230,11 +230,95 @@ function closeDatabase() {
   });
 }
 
+// Update player goal count
+async function updatePlayerGoal(playerId, goalValue) {
+  return new Promise((resolve, reject) => {
+    const sql = `
+      UPDATE leaderboard 
+      SET goal = COALESCE(goal, 0) + ?, updated_at = CURRENT_TIMESTAMP
+      WHERE player_number = ?
+    `;
+
+    db.run(sql, [goalValue, playerId], function (err) {
+      if (err) {
+        console.error(`❌ Error updating goal for player ${playerId}:`, err);
+        reject(err);
+      } else {
+        if (this.changes === 0) {
+          // Player doesn't exist, create new record with default values
+          const insertSQL = `
+            INSERT INTO leaderboard (player_number, total_match, total_win, total_lose, total_draw, goal, assist, winrate, updated_at) 
+            VALUES (?, 0, 0, 0, 0, ?, 0, 0.0, CURRENT_TIMESTAMP)
+          `;
+          db.run(insertSQL, [playerId, goalValue], function (insertErr) {
+            if (insertErr) {
+              console.error(`❌ Error creating player ${playerId}:`, insertErr);
+              reject(insertErr);
+            } else {
+              console.log(
+                `✅ Created new player ${playerId} with ${goalValue} goals`
+              );
+              resolve();
+            }
+          });
+        } else {
+          console.log(`✅ Updated goal for player ${playerId}: +${goalValue}`);
+          resolve();
+        }
+      }
+    });
+  });
+}
+
+// Update player assist count
+async function updatePlayerAssist(playerId, assistValue) {
+  return new Promise((resolve, reject) => {
+    const sql = `
+      UPDATE leaderboard 
+      SET assist = COALESCE(assist, 0) + ?, updated_at = CURRENT_TIMESTAMP
+      WHERE player_number = ?
+    `;
+
+    db.run(sql, [assistValue, playerId], function (err) {
+      if (err) {
+        console.error(`❌ Error updating assist for player ${playerId}:`, err);
+        reject(err);
+      } else {
+        if (this.changes === 0) {
+          // Player doesn't exist, create new record with default values
+          const insertSQL = `
+            INSERT INTO leaderboard (player_number, total_match, total_win, total_lose, total_draw, goal, assist, winrate, updated_at) 
+            VALUES (?, 0, 0, 0, 0, 0, ?, 0.0, CURRENT_TIMESTAMP)
+          `;
+          db.run(insertSQL, [playerId, assistValue], function (insertErr) {
+            if (insertErr) {
+              console.error(`❌ Error creating player ${playerId}:`, insertErr);
+              reject(insertErr);
+            } else {
+              console.log(
+                `✅ Created new player ${playerId} with ${assistValue} assists`
+              );
+              resolve();
+            }
+          });
+        } else {
+          console.log(
+            `✅ Updated assist for player ${playerId}: +${assistValue}`
+          );
+          resolve();
+        }
+      }
+    });
+  });
+}
+
 module.exports = {
   getLeaderboard,
   updatePlayerStats,
   updatePlayerStatsDirect,
   getPlayerStats,
   getMultiplePlayerStats,
+  updatePlayerGoal,
+  updatePlayerAssist,
   closeDatabase,
 };

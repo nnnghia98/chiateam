@@ -1,5 +1,10 @@
-const { updatePlayerStats } = require('../../db/leaderboard');
+const {
+  updatePlayerStats,
+  updatePlayerGoal,
+  updatePlayerAssist,
+} = require('../../db/leaderboard');
 const { sendMessage } = require('../../utils/chat');
+const { UPDATE_LEADERBOARD } = require('../../utils/messages');
 
 const bot = require('../../bot');
 
@@ -9,46 +14,86 @@ const updateLeaderboardCommand = () => {
     try {
       const args = match[1].trim();
 
-      // Parse the command: WIN/LOSE/DRAW [id1,id2,id3]
+      // Parse the command: WIN/LOSE/DRAW [id1,id2,id3] or GOAL/ASSIST player_number value
       const parts = args.split(' ');
 
       if (parts.length < 2) {
-        sendMessage(
-          msg,
-          'DEFAULT',
-          '❌ **Cú pháp không đúng!**\n\n' +
-            '📝 **Cách sử dụng:**\n' +
-            '`/update-leaderboard WIN [id1,id2,id3]`\n' +
-            '`/update-leaderboard LOSE [id1,id2,id3]`\n' +
-            '`/update-leaderboard DRAW [id1,id2,id3]`\n\n' +
-            '**Ví dụ:**\n' +
-            '`/update-leaderboard WIN [1001,1002,1003]`\n' +
-            '`/update-leaderboard LOSE [1004,1005]`\n' +
-            '`/update-leaderboard DRAW [1006,1007]`',
-          { parse_mode: 'Markdown' }
-        );
+        sendMessage(msg, 'DEFAULT', UPDATE_LEADERBOARD.invalidSyntax, {
+          parse_mode: 'Markdown',
+        });
         return;
       }
 
       const result = parts[0].toUpperCase();
       const playerIdsString = parts.slice(1).join(' ');
 
+      // Handle GOAL and ASSIST cases
+      if (result === 'GOAL' || result === 'ASSIST') {
+        if (parts.length !== 3) {
+          const message = UPDATE_LEADERBOARD.invalidGoalAssistSyntax.replace(
+            '{result}',
+            result
+          );
+          sendMessage(msg, 'DEFAULT', message, { parse_mode: 'Markdown' });
+          return;
+        }
+
+        const playerNumber = parseInt(parts[1]);
+        const value = parseInt(parts[2]);
+
+        if (isNaN(playerNumber) || playerNumber <= 0) {
+          sendMessage(msg, 'DEFAULT', UPDATE_LEADERBOARD.invalidPlayerNumber, {
+            parse_mode: 'Markdown',
+          });
+          return;
+        }
+
+        if (isNaN(value)) {
+          sendMessage(msg, 'DEFAULT', UPDATE_LEADERBOARD.invalidValue, {
+            parse_mode: 'Markdown',
+          });
+          return;
+        }
+
+        try {
+          if (result === 'GOAL') {
+            await updatePlayerGoal(playerNumber, value);
+          } else {
+            await updatePlayerAssist(playerNumber, value);
+          }
+
+          const valueText = value >= 0 ? `+${value}` : value.toString();
+          let message;
+
+          if (result === 'GOAL') {
+            message = UPDATE_LEADERBOARD.goalUpdateSuccess
+              .replace('{playerNumber}', playerNumber)
+              .replace('{valueText}', valueText);
+          } else {
+            message = UPDATE_LEADERBOARD.assistUpdateSuccess
+              .replace('{playerNumber}', playerNumber)
+              .replace('{valueText}', valueText);
+          }
+
+          sendMessage(msg, 'STATISTICS', message, {
+            parse_mode: 'Markdown',
+          });
+        } catch (error) {
+          console.error(`Error updating ${result.toLowerCase()}:`, error);
+          const errorMessage =
+            result === 'GOAL'
+              ? UPDATE_LEADERBOARD.goalUpdateError
+              : UPDATE_LEADERBOARD.assistUpdateError;
+          sendMessage(msg, 'DEFAULT', errorMessage);
+        }
+        return;
+      }
+
       // Validate result - chỉ chấp nhận WIN, LOSE hoặc DRAW
       if (result !== 'WIN' && result !== 'LOSE' && result !== 'DRAW') {
-        sendMessage(
-          msg,
-          'DEFAULT',
-          '❌ **Kết quả không hợp lệ!**\n\n' +
-            '📝 **Chỉ chấp nhận:**\n' +
-            '• `WIN` - Cập nhật thắng\n' +
-            '• `LOSE` - Cập nhật thua\n' +
-            '• `DRAW` - Cập nhật hòa\n\n' +
-            '📝 **Ví dụ đúng:**\n' +
-            '`/update-leaderboard WIN [1001,1002,1003]`\n' +
-            '`/update-leaderboard LOSE [1004,1005]`\n' +
-            '`/update-leaderboard DRAW [1006,1007]`',
-          { parse_mode: 'Markdown' }
-        );
+        sendMessage(msg, 'DEFAULT', UPDATE_LEADERBOARD.invalidResult, {
+          parse_mode: 'Markdown',
+        });
         return;
       }
 
@@ -72,29 +117,22 @@ const updateLeaderboardCommand = () => {
       }
 
       if (playerIds.length === 0) {
-        sendMessage(
-          msg,
-          'DEFAULT',
-          '❌ **Không tìm thấy ID người chơi hợp lệ!**\n\n' +
-            '📝 **Ví dụ đúng:**\n' +
-            '`/update-leaderboard WIN [1001,1002,1003]`\n' +
-            '`/update-leaderboard LOSE [1004,1005]`\n\n' +
-            '📝 **Lưu ý:** ID phải là số nguyên hợp lệ',
-          { parse_mode: 'Markdown' }
-        );
+        sendMessage(msg, 'DEFAULT', UPDATE_LEADERBOARD.noValidPlayerIds, {
+          parse_mode: 'Markdown',
+        });
         return;
       }
 
       // Validate player IDs - kiểm tra ID có hợp lệ không
       const invalidIds = playerIds.filter(id => id <= 0);
       if (invalidIds.length > 0) {
-        sendMessage(
-          msg,
-          'DEFAULT',
-          `❌ **ID người chơi không hợp lệ:** ${invalidIds.join(', ')}\n\n` +
-            '📝 **Lưu ý:** ID phải là số nguyên dương',
-          { parse_mode: 'Markdown' }
+        const message = UPDATE_LEADERBOARD.invalidPlayerIds.replace(
+          '{invalidIds}',
+          invalidIds.join(', ')
         );
+        sendMessage(msg, 'DEFAULT', message, {
+          parse_mode: 'Markdown',
+        });
         return;
       }
 
@@ -133,31 +171,15 @@ const updateLeaderboardCommand = () => {
       });
     } catch (error) {
       console.error('Error updating leaderboard:', error);
-      sendMessage(
-        msg,
-        'DEFAULT',
-        '❌ Có lỗi xảy ra khi cập nhật thống kê. Vui lòng thử lại sau.'
-      );
+      sendMessage(msg, 'DEFAULT', UPDATE_LEADERBOARD.updateError);
     }
   });
 
   // Handle command without parameters
   bot.onText(/^\/update-leaderboard$/, msg => {
-    sendMessage(
-      msg,
-      'DEFAULT',
-      '📝 **Cách sử dụng lệnh update-leaderboard:**\n\n' +
-        '📝 **Cú pháp:**\n' +
-        '`/update-leaderboard WIN [id1,id2,id3]` - Cập nhật thắng\n' +
-        '`/update-leaderboard LOSE [id1,id2,id3]` - Cập nhật thua\n' +
-        '`/update-leaderboard DRAW [id1,id2,id3]` - Cập nhật hòa\n\n' +
-        '**Ví dụ:**\n' +
-        '`/update-leaderboard WIN [1001,1002,1003]`\n' +
-        '`/update-leaderboard LOSE [1004,1005]`\n' +
-        '`/update-leaderboard DRAW [1006,1007]`\n\n' +
-        '💡 Sử dụng `/leaderboard` để xem bảng xếp hạng',
-      { parse_mode: 'Markdown' }
-    );
+    sendMessage(msg, 'DEFAULT', UPDATE_LEADERBOARD.updateUsage, {
+      parse_mode: 'Markdown',
+    });
   });
 };
 
