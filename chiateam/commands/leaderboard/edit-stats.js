@@ -15,16 +15,16 @@ const editStatsCommand = () => {
       // Parse the command: player_id total_match total_win total_lose
       const parts = args.split(' ');
 
-      if (parts.length !== 4) {
+      if (parts.length !== 5) {
         sendMessage(
           msg,
           'DEFAULT',
           '❌ **Cú pháp không đúng!**\n\n' +
             '�� **Cách sử dụng:**\n' +
-            '`/edit-stats player_id total_match total_win total_lose`\n\n' +
+            '`/edit-stats player_id total_match total_win total_lose total_draw`\n\n' +
             '**Ví dụ:**\n' +
-            '`/edit-stats 1001 10 7 3`\n' +
-            '`/edit-stats 1002 5 2 3`',
+            '`/edit-stats 1001 10 7 2 1`\n' +
+            '`/edit-stats 1002 5 2 2 1`',
           { parse_mode: 'Markdown' }
         );
         return;
@@ -34,6 +34,7 @@ const editStatsCommand = () => {
       const totalMatch = parseInt(parts[1]);
       const totalWin = parseInt(parts[2]);
       const totalLose = parseInt(parts[3]);
+      const totalDraw = parseInt(parts[4]);
 
       // Validate player ID
       if (isNaN(playerId) || playerId <= 0) {
@@ -81,8 +82,19 @@ const editStatsCommand = () => {
         return;
       }
 
-      // Validate logic: total_match = total_win + total_lose
-      if (totalMatch !== totalWin + totalLose) {
+      if (isNaN(totalDraw) || totalDraw < 0) {
+        sendMessage(
+          msg,
+          'DEFAULT',
+          '❌ **Số trận hòa không hợp lệ!**\n\n' +
+            '📝 **Lưu ý:** Số trận hòa phải là số nguyên không âm',
+          { parse_mode: 'Markdown' }
+        );
+        return;
+      }
+
+      // Validate logic: total_match = total_win + total_lose + total_draw
+      if (totalMatch !== totalWin + totalLose + totalDraw) {
         sendMessage(
           msg,
           'DEFAULT',

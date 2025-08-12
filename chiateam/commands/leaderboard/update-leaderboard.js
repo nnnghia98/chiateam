@@ -9,7 +9,7 @@ const updateLeaderboardCommand = () => {
     try {
       const args = match[1].trim();
 
-      // Parse the command: WIN/LOSE [id1,id2,id3]
+      // Parse the command: WIN/LOSE/DRAW [id1,id2,id3]
       const parts = args.split(' ');
 
       if (parts.length < 2) {
@@ -19,10 +19,12 @@ const updateLeaderboardCommand = () => {
           '❌ **Cú pháp không đúng!**\n\n' +
             '📝 **Cách sử dụng:**\n' +
             '`/update-leaderboard WIN [id1,id2,id3]`\n' +
-            '`/update-leaderboard LOSE [id1,id2,id3]`\n\n' +
+            '`/update-leaderboard LOSE [id1,id2,id3]`\n' +
+            '`/update-leaderboard DRAW [id1,id2,id3]`\n\n' +
             '**Ví dụ:**\n' +
             '`/update-leaderboard WIN [1001,1002,1003]`\n' +
-            '`/update-leaderboard LOSE [1004,1005]`',
+            '`/update-leaderboard LOSE [1004,1005]`\n' +
+            '`/update-leaderboard DRAW [1006,1007]`',
           { parse_mode: 'Markdown' }
         );
         return;
@@ -31,18 +33,20 @@ const updateLeaderboardCommand = () => {
       const result = parts[0].toUpperCase();
       const playerIdsString = parts.slice(1).join(' ');
 
-      // Validate result - chỉ chấp nhận WIN hoặc LOSE
-      if (result !== 'WIN' && result !== 'LOSE') {
+      // Validate result - chỉ chấp nhận WIN, LOSE hoặc DRAW
+      if (result !== 'WIN' && result !== 'LOSE' && result !== 'DRAW') {
         sendMessage(
           msg,
           'DEFAULT',
           '❌ **Kết quả không hợp lệ!**\n\n' +
             '📝 **Chỉ chấp nhận:**\n' +
             '• `WIN` - Cập nhật thắng\n' +
-            '• `LOSE` - Cập nhật thua\n\n' +
+            '• `LOSE` - Cập nhật thua\n' +
+            '• `DRAW` - Cập nhật hòa\n\n' +
             '📝 **Ví dụ đúng:**\n' +
             '`/update-leaderboard WIN [1001,1002,1003]`\n' +
-            '`/update-leaderboard LOSE [1004,1005]`',
+            '`/update-leaderboard LOSE [1004,1005]`\n' +
+            '`/update-leaderboard DRAW [1006,1007]`',
           { parse_mode: 'Markdown' }
         );
         return;
@@ -98,8 +102,10 @@ const updateLeaderboardCommand = () => {
       await updatePlayerStats(playerIds, result);
 
       // Create response message
-      const resultEmoji = result === 'WIN' ? '✅' : '❌';
-      const resultText = result === 'WIN' ? 'THẮNG' : 'THUA';
+      const resultEmoji =
+        result === 'WIN' ? '✅' : result === 'LOSE' ? '❌' : '🤝';
+      const resultText =
+        result === 'WIN' ? 'THẮNG' : result === 'LOSE' ? 'THUA' : 'HÒA';
 
       let message = `${resultEmoji} **CẬP NHẬT THỐNG KÊ** ${resultEmoji}\n\n`;
       message += `🎯 **Kết quả:** ${resultText}\n`;
@@ -109,7 +115,15 @@ const updateLeaderboardCommand = () => {
       // Update statistics for each player
       message += '📊 **Thay đổi thống kê:**\n';
       playerIds.forEach(playerId => {
-        message += `   • ID ${playerId}: +1 trận, +1 ${result === 'WIN' ? 'thắng' : 'thua'}\n`;
+        let statChange = '';
+        if (result === 'WIN') {
+          statChange = '+1 thắng';
+        } else if (result === 'LOSE') {
+          statChange = '+1 thua';
+        } else {
+          statChange = '+1 hòa';
+        }
+        message += `   • ID ${playerId}: +1 trận, ${statChange}\n`;
       });
 
       message += '\n💡 Sử dụng `/leaderboard` để xem bảng xếp hạng mới';
@@ -135,10 +149,12 @@ const updateLeaderboardCommand = () => {
       '📝 **Cách sử dụng lệnh update-leaderboard:**\n\n' +
         '📝 **Cú pháp:**\n' +
         '`/update-leaderboard WIN [id1,id2,id3]` - Cập nhật thắng\n' +
-        '`/update-leaderboard LOSE [id1,id2,id3]` - Cập nhật thua\n\n' +
+        '`/update-leaderboard LOSE [id1,id2,id3]` - Cập nhật thua\n' +
+        '`/update-leaderboard DRAW [id1,id2,id3]` - Cập nhật hòa\n\n' +
         '**Ví dụ:**\n' +
         '`/update-leaderboard WIN [1001,1002,1003]`\n' +
-        '`/update-leaderboard LOSE [1004,1005]`\n\n' +
+        '`/update-leaderboard LOSE [1004,1005]`\n' +
+        '`/update-leaderboard DRAW [1006,1007]`\n\n' +
         '💡 Sử dụng `/leaderboard` để xem bảng xếp hạng',
       { parse_mode: 'Markdown' }
     );
