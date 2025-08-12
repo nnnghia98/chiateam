@@ -139,6 +139,29 @@ async function updatePlayerStats(playerIds, result) {
   });
 }
 
+// Update player stats directly with specific values
+async function updatePlayerStatsDirect(playerId, totalMatch, totalWin, totalLose) {
+  return new Promise((resolve, reject) => {
+    // Calculate winrate
+    const winrate = totalMatch > 0 ? Math.round((totalWin / totalMatch) * 1000) / 1000 : 0;
+
+    const sql = `
+      INSERT OR REPLACE INTO leaderboard (player_id, total_match, total_win, total_lose, winrate, updated_at) 
+      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `;
+
+    db.run(sql, [playerId, totalMatch, totalWin, totalLose, winrate], function(err) {
+      if (err) {
+        console.error(`❌ Error updating player ${playerId} stats:`, err);
+        reject(err);
+      } else {
+        console.log(`✅ Updated stats for player ${playerId}: ${totalMatch} matches, ${totalWin} wins, ${totalLose} losses`);
+        resolve();
+      }
+    });
+  });
+}
+
 // Get player stats
 async function getPlayerStats(playerId) {
   return new Promise((resolve, reject) => {
@@ -190,6 +213,7 @@ function closeDatabase() {
 module.exports = {
   getLeaderboard,
   updatePlayerStats,
+  updatePlayerStatsDirect,
   getPlayerStats,
   getMultiplePlayerStats,
   closeDatabase,

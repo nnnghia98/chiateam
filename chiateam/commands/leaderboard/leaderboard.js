@@ -1,14 +1,17 @@
 const { getLeaderboard } = require('../../db/leaderboard');
-const { getChatId } = require('../../utils/chat');
+const { sendMessage } = require('../../utils/chat');
 
-const leaderboardCommand = bot => {
+const bot = require('../../bot');
+
+const leaderboardCommand = () => {
   bot.onText(/^\/leaderboard$/, async msg => {
     try {
       const leaderboard = await getLeaderboard();
 
       if (leaderboard.length === 0) {
-        bot.sendMessage(
-          getChatId(msg, 'STATISTICS'),
+        sendMessage(
+          msg,
+          'STATISTICS',
           '📊 Bảng xếp hạng trống. Chưa có dữ liệu thống kê nào.'
         );
         return;
@@ -38,13 +41,14 @@ const leaderboardCommand = bot => {
       message +=
         '💡 Sử dụng `/update-leaderboard WIN/LOSE [id1,id2,id3]` để cập nhật thống kê';
 
-      bot.sendMessage(getChatId(msg, 'STATISTICS'), message, {
+      sendMessage(msg, 'STATISTICS', message, {
         parse_mode: 'Markdown',
       });
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
-      bot.sendMessage(
-        getChatId(msg, 'STATISTICS'),
+      sendMessage(
+        msg,
+        'STATISTICS',
         '❌ Có lỗi xảy ra khi tải bảng xếp hạng. Vui lòng thử lại sau.'
       );
     }

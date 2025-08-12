@@ -21,7 +21,8 @@ const COMMANDS = [
   '/resetteam2',
   '/leaderboard',
   '/update-leaderboard',
-  '/player-stats',
+  '/player',
+  '/edit-stats',
 ];
 
 const PATTERNS = {

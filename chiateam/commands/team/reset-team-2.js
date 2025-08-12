@@ -1,13 +1,16 @@
 const { RESET_TEAM_INDIVIDUAL } = require('../../utils/messages');
-const { getChatId } = require('../../utils/chat');
+const { sendMessage } = require('../../utils/chat');
 
-const resetteam2Command = (bot, teamB, members) => {
+const bot = require('../../bot');
+
+const resetTeam2Command = (teamB, members) => {
   bot.onText(/^\/resetteam2$/, msg => {
     const teamBNames = Array.from(teamB.values());
 
     if (teamBNames.length === 0) {
-      bot.sendMessage(
-        getChatId(msg, 'DEFAULT'),
+      sendMessage(
+        msg,
+        'DEFAULT',
         RESET_TEAM_INDIVIDUAL.emptyTeam.replace('{team}', 'Team B')
       );
       return;
@@ -21,7 +24,7 @@ const resetteam2Command = (bot, teamB, members) => {
       .replace('{team}', 'Team B')
       .replace('{teamNum}', '2')
       .replace('{numberedList}', numberedList);
-    bot.sendMessage(getChatId(msg, 'DEFAULT'), message, {
+    sendMessage(msg, 'DEFAULT', message, {
       parse_mode: 'Markdown',
     });
   });
@@ -31,8 +34,9 @@ const resetteam2Command = (bot, teamB, members) => {
     const teamBNames = Array.from(teamB.values());
 
     if (teamBNames.length === 0) {
-      bot.sendMessage(
-        getChatId(msg, 'DEFAULT'),
+      sendMessage(
+        msg,
+        'DEFAULT',
         RESET_TEAM_INDIVIDUAL.emptyTeam.replace('{team}', 'Team B')
       );
       return;
@@ -89,8 +93,9 @@ const resetteam2Command = (bot, teamB, members) => {
     }
 
     if (selectedIndices.length === 0) {
-      bot.sendMessage(
-        getChatId(msg, 'DEFAULT'),
+      sendMessage(
+        msg,
+        'DEFAULT',
         RESET_TEAM_INDIVIDUAL.invalidSelection.replace(/{teamNum}/g, '2'),
         { parse_mode: 'Markdown' }
       );
@@ -114,10 +119,7 @@ const resetteam2Command = (bot, teamB, members) => {
     }
 
     if (resetNames.length === 0) {
-      bot.sendMessage(
-        getChatId(msg, 'DEFAULT'),
-        RESET_TEAM_INDIVIDUAL.noResetMembers
-      );
+      sendMessage(msg, 'DEFAULT', RESET_TEAM_INDIVIDUAL.noResetMembers);
       return;
     }
 
@@ -132,8 +134,8 @@ const resetteam2Command = (bot, teamB, members) => {
       .replace('{count}', resetNames.length)
       .replace('{team}', 'Team B')
       .replace('{resetNames}', resetNames.join('\n'));
-    bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
+    sendMessage(msg, 'DEFAULT', message, { parse_mode: 'Markdown' });
   });
 };
 
-module.exports = resetteam2Command;
+module.exports = resetTeam2Command;
