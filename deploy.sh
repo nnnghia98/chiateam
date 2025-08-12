@@ -16,9 +16,10 @@ fi
 echo "🗑️  Removing old production code (preserving hidden files)..."
 find chiateam -mindepth 1 -not -name ".*" -delete
 
-# Copy new code from development to production
+# Copy new code from development to production (excluding database files)
 echo "📋 Copying new code from chiateam-dev to chiateam..."
-cp -r chiateam-dev/* chiateam/
+echo "📋 Excluding database files (*.db) from copy..."
+rsync -av --exclude='*.db' chiateam-dev/ chiateam/
 
 # Set the package.json name to "chiateam"
 echo "🔄 Setting package.json name to 'chiateam'..."

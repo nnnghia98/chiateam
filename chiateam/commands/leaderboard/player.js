@@ -1,7 +1,9 @@
 const { getPlayerStats } = require('../../db/leaderboard');
-const { getChatId } = require('../../utils/chat');
+const { sendMessage } = require('../../utils/chat');
 
-const playerStatsCommand = bot => {
+const bot = require('../../bot');
+
+const playerStatsCommand = () => {
   // Handle command with player ID parameter
   bot.onText(/^\/player (.+)$/, async (msg, match) => {
     try {
@@ -9,8 +11,9 @@ const playerStatsCommand = bot => {
 
       // Validate player ID
       if (isNaN(playerId) || playerId <= 0) {
-        bot.sendMessage(
-          getChatId(msg, 'DEFAULT'),
+        sendMessage(
+          msg,
+          'DEFAULT',
           '❌ **Số áo không hợp lệ!**\n\n' +
             '�� **Cách sử dụng:**\n' +
             '`/player [player_no]`\n\n' +
@@ -26,8 +29,9 @@ const playerStatsCommand = bot => {
       const playerStats = await getPlayerStats(playerId);
 
       if (!playerStats) {
-        bot.sendMessage(
-          getChatId(msg, 'DEFAULT'),
+        sendMessage(
+          msg,
+          'DEFAULT',
           `❌ **Không tìm thấy thông số của player số áo: ${playerId}**\n\n` +
             '�� Player này chưa có dữ liệu thống kê nào.\n' +
             'Sử dụng `/update-leaderboard` để thêm dữ liệu cho player này.',
@@ -90,13 +94,14 @@ const playerStatsCommand = bot => {
       message +=
         '• `/update-leaderboard WIN/LOSE [id1,id2,id3]` - Cập nhật thống kê';
 
-      bot.sendMessage(getChatId(msg, 'STATISTICS'), message, {
+      sendMessage(msg, 'STATISTICS', message, {
         parse_mode: 'Markdown',
       });
     } catch (error) {
       console.error('Error fetching player stats:', error);
-      bot.sendMessage(
-        getChatId(msg, 'DEFAULT'),
+      sendMessage(
+        msg,
+        'DEFAULT',
         '❌ Có lỗi xảy ra khi tải thông số player. Vui lòng thử lại sau.'
       );
     }
@@ -104,8 +109,9 @@ const playerStatsCommand = bot => {
 
   // Handle command without parameters
   bot.onText(/^\/player$/, msg => {
-    bot.sendMessage(
-      getChatId(msg, 'DEFAULT'),
+    sendMessage(
+      msg,
+      'DEFAULT',
       '📝 **Cách sử dụng lệnh player:**\n\n' +
         '�� **Cú pháp:**\n' +
         '`/player [player_no]`\n\n' +

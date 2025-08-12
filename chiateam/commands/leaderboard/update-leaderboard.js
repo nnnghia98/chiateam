@@ -1,7 +1,9 @@
 const { updatePlayerStats } = require('../../db/leaderboard');
-const { getChatId } = require('../../utils/chat');
+const { sendMessage } = require('../../utils/chat');
 
-const updateLeaderboardCommand = bot => {
+const bot = require('../../bot');
+
+const updateLeaderboardCommand = () => {
   // Handle command with parameters
   bot.onText(/\/update-leaderboard (.+)/, async (msg, match) => {
     try {
@@ -11,8 +13,9 @@ const updateLeaderboardCommand = bot => {
       const parts = args.split(' ');
 
       if (parts.length < 2) {
-        bot.sendMessage(
-          getChatId(msg, 'DEFAULT'),
+        sendMessage(
+          msg,
+          'DEFAULT',
           '❌ **Cú pháp không đúng!**\n\n' +
             '📝 **Cách sử dụng:**\n' +
             '`/update-leaderboard WIN [id1,id2,id3]`\n' +
@@ -30,8 +33,9 @@ const updateLeaderboardCommand = bot => {
 
       // Validate result - chỉ chấp nhận WIN hoặc LOSE
       if (result !== 'WIN' && result !== 'LOSE') {
-        bot.sendMessage(
-          getChatId(msg, 'DEFAULT'),
+        sendMessage(
+          msg,
+          'DEFAULT',
           '❌ **Kết quả không hợp lệ!**\n\n' +
             '📝 **Chỉ chấp nhận:**\n' +
             '• `WIN` - Cập nhật thắng\n' +
@@ -64,8 +68,9 @@ const updateLeaderboardCommand = bot => {
       }
 
       if (playerIds.length === 0) {
-        bot.sendMessage(
-          getChatId(msg, 'DEFAULT'),
+        sendMessage(
+          msg,
+          'DEFAULT',
           '❌ **Không tìm thấy ID người chơi hợp lệ!**\n\n' +
             '📝 **Ví dụ đúng:**\n' +
             '`/update-leaderboard WIN [1001,1002,1003]`\n' +
@@ -79,8 +84,9 @@ const updateLeaderboardCommand = bot => {
       // Validate player IDs - kiểm tra ID có hợp lệ không
       const invalidIds = playerIds.filter(id => id <= 0);
       if (invalidIds.length > 0) {
-        bot.sendMessage(
-          getChatId(msg, 'DEFAULT'),
+        sendMessage(
+          msg,
+          'DEFAULT',
           `❌ **ID người chơi không hợp lệ:** ${invalidIds.join(', ')}\n\n` +
             '📝 **Lưu ý:** ID phải là số nguyên dương',
           { parse_mode: 'Markdown' }
@@ -108,13 +114,14 @@ const updateLeaderboardCommand = bot => {
 
       message += '\n💡 Sử dụng `/leaderboard` để xem bảng xếp hạng mới';
 
-      bot.sendMessage(getChatId(msg, 'STATISTICS'), message, {
+      sendMessage(msg, 'STATISTICS', message, {
         parse_mode: 'Markdown',
       });
     } catch (error) {
       console.error('Error updating leaderboard:', error);
-      bot.sendMessage(
-        getChatId(msg, 'DEFAULT'),
+      sendMessage(
+        msg,
+        'DEFAULT',
         '❌ Có lỗi xảy ra khi cập nhật thống kê. Vui lòng thử lại sau.'
       );
     }
@@ -122,8 +129,9 @@ const updateLeaderboardCommand = bot => {
 
   // Handle command without parameters
   bot.onText(/^\/update-leaderboard$/, msg => {
-    bot.sendMessage(
-      getChatId(msg, 'DEFAULT'),
+    sendMessage(
+      msg,
+      'DEFAULT',
       '📝 **Cách sử dụng lệnh update-leaderboard:**\n\n' +
         '📝 **Cú pháp:**\n' +
         '`/update-leaderboard WIN [id1,id2,id3]` - Cập nhật thắng\n' +

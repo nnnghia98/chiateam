@@ -89,6 +89,24 @@ const SAN = {
   successDeleteSan: '✅ Đã xóa sân.',
 };
 
+const TAO_VOTE = {
+  instruction:
+    '📊 *Cách sử dụng /taovote:*\n' +
+    '• `/taovote [question]` - Tạo vote với câu hỏi và 4 lựa chọn cố định (0, +1, +2, +3, +4)\n' +
+    '• `/clearvote` - Xóa tất cả vote đang hoạt động\n' +
+    '\nVí dụ: `/taovote Sân XX ngày YY giờ ZZ`\n' +
+    '\n*Lưu ý:* Vote sẽ có 4 lựa chọn: 0, +1, +2, +3, +4',
+  shortInstruction:
+    '⚠️ Cần nhập câu hỏi cho vote.\n' +
+    'Ví dụ: `/taovote Sân XX ngày YY giờ ZZ`',
+  voteExists:
+    '⚠️ Hiện tại đã có một vote đang hoạt động. Hãy xoá vote cũ trước khi tạo vote mới bằng lệnh /clearvote.',
+  explanation: 'Vote được tạo bởi',
+  error: '❌ Có lỗi xảy ra khi tạo vote. Vui lòng thử lại.',
+  noVote: '📭 Không có vote nào đang hoạt động để xóa.',
+  result: '📊 *Kết quả vote hiện tại:*\n*${question}*\n\n',
+};
+
 module.exports = {
   VALIDATION,
   ADD,
@@ -103,4 +121,5 @@ module.exports = {
   CHIA_TIEN,
   TIEN_SAN,
   SAN,
+  TAO_VOTE,
 };
