@@ -107,6 +107,35 @@ const TAO_VOTE = {
   result: '📊 *Kết quả vote hiện tại:*\n*${question}*\n\n',
 };
 
+const UPDATE_LEADERBOARD = {
+  invalidSyntax:
+    '❌ **Cú pháp không đúng!**\n\n📝 **Cách sử dụng:**\n`/update-leaderboard WIN [id1,id2,id3]`\n`/update-leaderboard LOSE [id1,id2,id3]`\n`/update-leaderboard DRAW [id1,id2,id3]`\n`/update-leaderboard GOAL player_number value`\n`/update-leaderboard ASSIST player_number value`\n\n**Ví dụ:**\n`/update-leaderboard WIN [10,17,7]`\n`/update-leaderboard LOSE [20,19]`\n`/update-leaderboard DRAW [8,9]`\n`/update-leaderboard GOAL 10 1`\n`/update-leaderboard ASSIST 10 +1`',
+  invalidGoalAssistSyntax:
+    '❌ **Cú pháp không đúng cho {result}!**\n\n📝 **Cách sử dụng:**\n`/update-leaderboard {result} player_number value`\n\n**Ví dụ:**\n`/update-leaderboard {result} 10 1`\n`/update-leaderboard {result} 10 +1`\n`/update-leaderboard {result} 10 -1`',
+  invalidPlayerNumber:
+    '❌ **Số người chơi không hợp lệ!**\n\n📝 **Lưu ý:** Số người chơi phải là số nguyên dương',
+  invalidValue:
+    '❌ **Giá trị không hợp lệ!**\n\n📝 **Lưu ý:** Giá trị phải là số nguyên (có thể âm hoặc dương)',
+  invalidResult:
+    '❌ **Kết quả không hợp lệ!**\n\n📝 **Chỉ chấp nhận:**\n• `WIN` - Cập nhật thắng\n• `LOSE` - Cập nhật thua\n• `DRAW` - Cập nhật hòa\n• `GOAL` - Cập nhật bàn thắng\n• `ASSIST` - Cập nhật kiến tạo\n\n📝 **Ví dụ đúng:**\n`/update-leaderboard WIN [10,17,7]`\n`/update-leaderboard LOSE [20,19]`\n`/update-leaderboard DRAW [8,9]`\n`/update-leaderboard GOAL 10 1`\n`/update-leaderboard ASSIST 10 +1`',
+  noValidPlayerIds:
+    '❌ **Không tìm thấy ID người chơi hợp lệ!**\n\n📝 **Ví dụ đúng:**\n`/update-leaderboard WIN [10,17,7]`\n`/update-leaderboard LOSE [20,19]`\n`/update-leaderboard DRAW [8,9]`\n\n📝 **Lưu ý:** ID phải là số nguyên hợp lệ',
+  invalidPlayerIds:
+    '❌ **ID người chơi không hợp lệ:** {invalidIds}\n\n📝 **Lưu ý:** ID phải là số nguyên dương',
+  goalUpdateSuccess:
+    '⚽ **CẬP NHẬT BÀN THẮNG** ⚽\n\n👤 **Người chơi:** {playerNumber}\n📊 **Thay đổi:** {valueText} goal\n\n💡 Sử dụng `/leaderboard` để xem bảng xếp hạng mới',
+  assistUpdateSuccess:
+    '🎯 **CẬP NHẬT KIẾN TẠO** 🎯\n\n👤 **Người chơi:** {playerNumber}\n📊 **Thay đổi:** {valueText} assist\n\n💡 Sử dụng `/leaderboard` để xem bảng xếp hạng mới',
+  goalUpdateError: '❌ Có lỗi xảy ra khi cập nhật goal. Vui lòng thử lại sau.',
+  assistUpdateError:
+    '❌ Có lỗi xảy ra khi cập nhật assist. Vui lòng thử lại sau.',
+  updateError: '❌ Có lỗi xảy ra khi cập nhật thống kê. Vui lòng thử lại sau.',
+  updateUsage:
+    '📝 **Cách sử dụng lệnh update-leaderboard:**\n\n📝 **Cú pháp:**\n`/update-leaderboard WIN [id1,id2,id3]` - Cập nhật thắng\n`/update-leaderboard LOSE [id1,id2,id3]` - Cập nhật thua\n`/update-leaderboard DRAW [id1,id2,id3]` - Cập nhật hòa\n`/update-leaderboard GOAL player_number value` - Cập nhật bàn thắng\n`/update-leaderboard ASSIST player_number value` - Cập nhật kiến tạo\n\n**Ví dụ:**\n`/update-leaderboard WIN [10,17,7]`\n`/update-leaderboard LOSE [20,19]`\n`/update-leaderboard DRAW [8,9]`\n`/update-leaderboard GOAL 10 1`\n`/update-leaderboard ASSIST 10 +1`\n\n💡 Sử dụng `/leaderboard` để xem bảng xếp hạng',
+  helpMessage:
+    '📝 **Cách sử dụng lệnh update-leaderboard:**\n\n📝 **Cú pháp:**\n`/update-leaderboard WIN [id1,id2,id3]` - Cập nhật thắng\n`/update-leaderboard LOSE [id1,id2,id3]` - Cập nhật thua\n`/update-leaderboard DRAW [id1,id2,id3]` - Cập nhật hòa\n`/update-leaderboard GOAL player_number value` - Cập nhật bàn thắng\n`/update-leaderboard ASSIST player_number value` - Cập nhật kiến tạo\n\n**Ví dụ:**\n`/update-leaderboard WIN [10,17,7]`\n`/update-leaderboard LOSE [20,19]`\n`/update-leaderboard DRAW [8,9]`\n`/update-leaderboard GOAL 10 1`\n`/update-leaderboard ASSIST 10 +1`\n\n💡 Sử dụng `/leaderboard` để xem bảng xếp hạng',
+};
+
 module.exports = {
   VALIDATION,
   ADD,
@@ -122,4 +151,5 @@ module.exports = {
   TIEN_SAN,
   SAN,
   TAO_VOTE,
+  UPDATE_LEADERBOARD,
 };

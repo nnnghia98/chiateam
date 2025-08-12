@@ -9,14 +9,15 @@
   "scripts": {
     "dev": "yarn workspace chiateam-dev dev",
     "start": "yarn workspace chiateam dev",
-    "start:dev": "NODE_ENV=development yarn workspace chiateam-dev dev",
-    "start:production": "NODE_ENV=production yarn workspace chiateam-dev dev",
-    "init-dev-db": "yarn workspace chiateam-dev init-db",
-    "init-db": "yarn workspace chiateam init-db"
+    "start:dev": "NODE_ENV=development yarn workspace chiateam dev",
+    "start:production": "NODE_ENV=production yarn workspace chiateam dev",
+    "init-db:dev": "yarn workspace chiateam-dev init-db",
+    "init-db:production": "yarn workspace chiateam init-db",
+    "drop-db:dev": "yarn workspace chiateam-dev drop-db",
+    "drop-db:production": "yarn workspace chiateam drop-db"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
-    "mongodb": "^6.5.0",
     "node-telegram-bot-api": "^0.65.1",
     "sqlite3": "^5.1.7"
   },

@@ -32,14 +32,19 @@ const leaderboardCommand = () => {
                 : `${rank}.`;
         const winratePercent = (player.winrate * 100).toFixed(1);
 
-        message += `${medal} **ID: ${player.player_id}**\n`;
-        message += `   📊 Trận: ${player.total_match} | Thắng: ${player.total_win} | Thua: ${player.total_lose}\n`;
+        message += `${medal} **ID: ${player.player_number}**\n`;
+        message += `   📊 Trận: ${player.total_match} | Thắng: ${player.total_win} | Thua: ${player.total_lose} | Hòa: ${player.total_draw || 0}\n`;
+        message += `   ⚽ Bàn thắng: ${player.goal || 0} | 🎯 Kiến tạo: ${player.assist || 0}\n`;
         message += `   🎯 Winrate: ${winratePercent}%\n\n`;
       });
 
-      // Add footer
+      // Add footer with updated commands
       message +=
-        '💡 Sử dụng `/update-leaderboard WIN/LOSE [id1,id2,id3]` để cập nhật thống kê';
+        '💡 Sử dụng `/update-leaderboard WIN/LOSE/DRAW [id1,id2,id3]` để cập nhật thống kê\n';
+      message +=
+        '💡 Sử dụng `/update-leaderboard GOAL player_number value` để cập nhật bàn thắng\n';
+      message +=
+        '💡 Sử dụng `/update-leaderboard ASSIST player_number value` để cập nhật kiến tạo';
 
       sendMessage(msg, 'STATISTICS', message, {
         parse_mode: 'Markdown',

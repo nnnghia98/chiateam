@@ -2,7 +2,7 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
 // Database file path
-const dbPath = path.join(__dirname, 'leaderboard.db');
+const dbPath = path.join(__dirname, 'cham-het.db');
 
 // Create database connection
 const db = new sqlite3.Database(dbPath);
@@ -11,7 +11,7 @@ const db = new sqlite3.Database(dbPath);
 async function getLeaderboard() {
   return new Promise((resolve, reject) => {
     const sql = `
-            SELECT player_id, total_match, total_win, total_lose, winrate 
+            SELECT player_number, total_match, total_win, total_lose, total_draw, goal, assist, winrate 
             FROM leaderboard 
             ORDER BY winrate DESC, total_match DESC, total_win DESC
         `;
@@ -36,24 +36,29 @@ async function updatePlayerStats(playerIds, result) {
       db.run('BEGIN TRANSACTION');
 
       const isWin = result === 'WIN';
+      const isDraw = result === 'DRAW';
       const winIncrement = isWin ? 1 : 0;
       const loseIncrement = isWin ? 0 : 1;
+      const drawIncrement = isDraw ? 1 : 0;
 
       // Prepare statement for better performance
       const updateSQL = `
-                INSERT OR REPLACE INTO leaderboard (player_id, total_match, total_win, total_lose, winrate) 
+                INSERT OR REPLACE INTO leaderboard (player_number, total_match, total_win, total_lose, total_draw, goal, assist, winrate) 
                 VALUES (
                     ?, 
-                    COALESCE((SELECT total_match FROM leaderboard WHERE player_id = ?), 0) + 1,
-                    COALESCE((SELECT total_win FROM leaderboard WHERE player_id = ?), 0) + ?,
-                    COALESCE((SELECT total_lose FROM leaderboard WHERE player_id = ?), 0) + ?,
+                    COALESCE((SELECT total_match FROM leaderboard WHERE player_number = ?), 0) + 1,
+                    COALESCE((SELECT total_win FROM leaderboard WHERE player_number = ?), 0) + ?,
+                    COALESCE((SELECT total_lose FROM leaderboard WHERE player_number = ?), 0) + ?,
+                    COALESCE((SELECT total_draw FROM leaderboard WHERE player_number = ?), 0) + ?,
+                    0,
+                    0,
                     CASE 
-                        WHEN (COALESCE((SELECT total_win FROM leaderboard WHERE player_id = ?), 0) + ?) + 
-                             (COALESCE((SELECT total_lose FROM leaderboard WHERE player_id = ?), 0) + ?) > 0 
+                        WHEN (COALESCE((SELECT total_win FROM leaderboard WHERE player_number = ?), 0) + ?) + 
+                             (COALESCE((SELECT total_lose FROM leaderboard WHERE player_number = ?), 0) + ?) > 0 
                         THEN ROUND(
-                            CAST((COALESCE((SELECT total_win FROM leaderboard WHERE player_id = ?), 0) + ?) AS REAL) / 
-                            CAST((COALESCE((SELECT total_win FROM leaderboard WHERE player_id = ?), 0) + ?) + 
-                                 (COALESCE((SELECT total_lose FROM leaderboard WHERE player_id = ?), 0) + ?) AS REAL), 3
+                            CAST((COALESCE((SELECT total_win FROM leaderboard WHERE player_number = ?), 0) + ?) AS REAL) / 
+                            CAST((COALESCE((SELECT total_win FROM leaderboard WHERE player_number = ?), 0) + ?) + 
+                                 (COALESCE((SELECT total_lose FROM leaderboard WHERE player_number = ?), 0) + ?) AS REAL), 3
                         )
                         ELSE 0.0
                     END
@@ -74,6 +79,8 @@ async function updatePlayerStats(playerIds, result) {
             winIncrement,
             playerId,
             loseIncrement,
+            playerId,
+            drawIncrement,
             playerId,
             winIncrement,
             playerId,
@@ -140,32 +147,45 @@ async function updatePlayerStats(playerIds, result) {
 }
 
 // Update player stats directly with specific values
-async function updatePlayerStatsDirect(playerId, totalMatch, totalWin, totalLose) {
+async function updatePlayerStatsDirect(
+  playerId,
+  totalMatch,
+  totalWin,
+  totalLose,
+  totalDraw = 0
+) {
   return new Promise((resolve, reject) => {
     // Calculate winrate
-    const winrate = totalMatch > 0 ? Math.round((totalWin / totalMatch) * 1000) / 1000 : 0;
+    const winrate =
+      totalMatch > 0 ? Math.round((totalWin / totalMatch) * 1000) / 1000 : 0;
 
     const sql = `
-      INSERT OR REPLACE INTO leaderboard (player_id, total_match, total_win, total_lose, winrate, updated_at) 
-      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      INSERT OR REPLACE INTO leaderboard (player_number, total_match, total_win, total_lose, total_draw, goal, assist, winrate, updated_at) 
+      VALUES (?, ?, ?, ?, ?, 0, 0, ?, CURRENT_TIMESTAMP)
     `;
 
-    db.run(sql, [playerId, totalMatch, totalWin, totalLose, winrate], function(err) {
-      if (err) {
-        console.error(`❌ Error updating player ${playerId} stats:`, err);
-        reject(err);
-      } else {
-        console.log(`✅ Updated stats for player ${playerId}: ${totalMatch} matches, ${totalWin} wins, ${totalLose} losses`);
-        resolve();
+    db.run(
+      sql,
+      [playerId, totalMatch, totalWin, totalLose, totalDraw, winrate],
+      function (err) {
+        if (err) {
+          console.error(`❌ Error updating player ${playerId} stats:`, err);
+          reject(err);
+        } else {
+          console.log(
+            `✅ Updated stats for player ${playerId}: ${totalMatch} matches, ${totalWin} wins, ${totalLose} losses, ${totalDraw} draws`
+          );
+          resolve();
+        }
       }
-    });
+    );
   });
 }
 
 // Get player stats
 async function getPlayerStats(playerId) {
   return new Promise((resolve, reject) => {
-    const sql = 'SELECT * FROM leaderboard WHERE player_id = ?';
+    const sql = 'SELECT * FROM leaderboard WHERE player_number = ?';
 
     db.get(sql, [playerId], (err, row) => {
       if (err) {
@@ -182,7 +202,7 @@ async function getPlayerStats(playerId) {
 async function getMultiplePlayerStats(playerIds) {
   return new Promise((resolve, reject) => {
     const placeholders = playerIds.map(() => '?').join(',');
-    const sql = `SELECT * FROM leaderboard WHERE player_id IN (${placeholders})`;
+    const sql = `SELECT * FROM leaderboard WHERE player_number IN (${placeholders})`;
 
     db.all(sql, playerIds, (err, rows) => {
       if (err) {
@@ -210,11 +230,95 @@ function closeDatabase() {
   });
 }
 
+// Update player goal count
+async function updatePlayerGoal(playerId, goalValue) {
+  return new Promise((resolve, reject) => {
+    const sql = `
+      UPDATE leaderboard 
+      SET goal = COALESCE(goal, 0) + ?, updated_at = CURRENT_TIMESTAMP
+      WHERE player_number = ?
+    `;
+
+    db.run(sql, [goalValue, playerId], function (err) {
+      if (err) {
+        console.error(`❌ Error updating goal for player ${playerId}:`, err);
+        reject(err);
+      } else {
+        if (this.changes === 0) {
+          // Player doesn't exist, create new record with default values
+          const insertSQL = `
+            INSERT INTO leaderboard (player_number, total_match, total_win, total_lose, total_draw, goal, assist, winrate, updated_at) 
+            VALUES (?, 0, 0, 0, 0, ?, 0, 0.0, CURRENT_TIMESTAMP)
+          `;
+          db.run(insertSQL, [playerId, goalValue], function (insertErr) {
+            if (insertErr) {
+              console.error(`❌ Error creating player ${playerId}:`, insertErr);
+              reject(insertErr);
+            } else {
+              console.log(
+                `✅ Created new player ${playerId} with ${goalValue} goals`
+              );
+              resolve();
+            }
+          });
+        } else {
+          console.log(`✅ Updated goal for player ${playerId}: +${goalValue}`);
+          resolve();
+        }
+      }
+    });
+  });
+}
+
+// Update player assist count
+async function updatePlayerAssist(playerId, assistValue) {
+  return new Promise((resolve, reject) => {
+    const sql = `
+      UPDATE leaderboard 
+      SET assist = COALESCE(assist, 0) + ?, updated_at = CURRENT_TIMESTAMP
+      WHERE player_number = ?
+    `;
+
+    db.run(sql, [assistValue, playerId], function (err) {
+      if (err) {
+        console.error(`❌ Error updating assist for player ${playerId}:`, err);
+        reject(err);
+      } else {
+        if (this.changes === 0) {
+          // Player doesn't exist, create new record with default values
+          const insertSQL = `
+            INSERT INTO leaderboard (player_number, total_match, total_win, total_lose, total_draw, goal, assist, winrate, updated_at) 
+            VALUES (?, 0, 0, 0, 0, 0, ?, 0.0, CURRENT_TIMESTAMP)
+          `;
+          db.run(insertSQL, [playerId, assistValue], function (insertErr) {
+            if (insertErr) {
+              console.error(`❌ Error creating player ${playerId}:`, insertErr);
+              reject(insertErr);
+            } else {
+              console.log(
+                `✅ Created new player ${playerId} with ${assistValue} assists`
+              );
+              resolve();
+            }
+          });
+        } else {
+          console.log(
+            `✅ Updated assist for player ${playerId}: +${assistValue}`
+          );
+          resolve();
+        }
+      }
+    });
+  });
+}
+
 module.exports = {
   getLeaderboard,
   updatePlayerStats,
   updatePlayerStatsDirect,
   getPlayerStats,
   getMultiplePlayerStats,
+  updatePlayerGoal,
+  updatePlayerAssist,
   closeDatabase,
 };

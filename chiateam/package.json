@@ -5,6 +5,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "nodemon index.js",
-    "init-db": "node db/init-leaderboard.js"
+    "init-db": "node db/init-database.js",
+    "drop-db": "node db/drop-database.js"
   }
 }
