@@ -1,12 +1,14 @@
 const { ADD_TO_TEAM } = require('../../utils/messages');
-const { getChatId } = require('../../utils/chat');
+const { sendMessage } = require('../../utils/chat');
 
-const addToTeam2Command = (bot, members, teamB) => {
-  bot.onText(/^\/addtoteam2$/, msg => {
+const bot = require('../../bot');
+
+const addToTeam1Command = (members, teamA) => {
+  bot.onText(/^\/addtoteam1$/, msg => {
     const allNames = Array.from(members.values());
 
     if (allNames.length === 0) {
-      bot.sendMessage(getChatId(msg, 'DEFAULT'), ADD_TO_TEAM.emptyList);
+      sendMessage(msg, 'DEFAULT', ADD_TO_TEAM.emptyList);
       return;
     }
 
@@ -16,19 +18,19 @@ const addToTeam2Command = (bot, members, teamB) => {
 
     const message = ADD_TO_TEAM.instruction
       .replace('{numberedList}', numberedList)
-      .replace(/{team}/g, '2');
+      .replace(/{team}/g, '1');
 
-    bot.sendMessage(getChatId(msg, 'DEFAULT'), message, {
+    sendMessage(msg, 'DEFAULT', message, {
       parse_mode: 'Markdown',
     });
   });
 
-  bot.onText(/^\/addtoteam2 (.+)$/, (msg, match) => {
+  bot.onText(/^\/addtoteam1 (.+)$/, (msg, match) => {
     const selection = match[1].trim();
     const allNames = Array.from(members.values());
 
     if (allNames.length === 0) {
-      bot.sendMessage(getChatId(msg, 'DEFAULT'), ADD_TO_TEAM.emptyList);
+      sendMessage(msg, 'DEFAULT', ADD_TO_TEAM.emptyList);
       return;
     }
 
@@ -68,9 +70,10 @@ const addToTeam2Command = (bot, members, teamB) => {
     }
 
     if (selectedIndices.length === 0) {
-      bot.sendMessage(
-        getChatId(msg, 'DEFAULT'),
-        ADD_TO_TEAM.invalidSelection.replace(/{team}/g, '2'),
+      sendMessage(
+        msg,
+        'DEFAULT',
+        ADD_TO_TEAM.invalidSelection.replace(/{team}/g, '1'),
         { parse_mode: 'Markdown' }
       );
       return;
@@ -80,7 +83,6 @@ const addToTeam2Command = (bot, members, teamB) => {
 
     const selectedNames = selectedIndices.map(index => allNames[index]);
 
-    // Remove selected members from main list
     selectedNames.forEach(name => {
       for (const [userId, memberName] of members) {
         const nameOnly = memberName.split(' (')[0].trim();
@@ -91,22 +93,21 @@ const addToTeam2Command = (bot, members, teamB) => {
       }
     });
 
-    // Add to Team B
     selectedNames.forEach((name, idx) => {
       const fakeId = Date.now() + Math.random() + idx;
-      teamB.set(fakeId, name);
+      teamA.set(fakeId, name);
     });
 
     const message = ADD_TO_TEAM.success
       .replace('{count}', selectedNames.length)
-      .replace('{team}', 'Team B')
+      .replace('{team}', 'Team A')
       .replace('{selectedNames}', selectedNames.join('\n'))
-      .replace('{teamMembers}', Array.from(teamB.values()).join('\n'));
+      .replace('{teamMembers}', Array.from(teamA.values()).join('\n'));
 
-    bot.sendMessage(getChatId(msg, 'DEFAULT'), message, {
+    sendMessage(msg, 'DEFAULT', message, {
       parse_mode: 'Markdown',
     });
   });
 };
 
-module.exports = addToTeam2Command;
+module.exports = addToTeam1Command;

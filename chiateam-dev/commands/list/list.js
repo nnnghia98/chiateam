@@ -1,15 +1,18 @@
 const { LIST } = require('../../utils/messages');
-const { getChatId } = require('../../utils/chat');
+const { sendMessage } = require('../../utils/chat');
 
-const listCommand = (bot, members) => {
+const bot = require('../../bot');
+
+const listCommand = members => {
   bot.onText(/^\/list$/, msg => {
     if (members.size === 0) {
-      bot.sendMessage(getChatId(msg, 'DEFAULT'), LIST.emptyList);
+      sendMessage(msg, 'DEFAULT', LIST.emptyList);
       return;
     }
     const names = Array.from(members.values());
-    bot.sendMessage(
-      getChatId(msg, 'DEFAULT'),
+    sendMessage(
+      msg,
+      'DEFAULT',
       LIST.success.replace('{names}', names.join('\n'))
     );
   });

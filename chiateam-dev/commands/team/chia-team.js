@@ -1,19 +1,18 @@
 const shuffleArray = require('../../utils/shuffle');
-const { getChatId } = require('../../utils/chat');
+const { sendMessage } = require('../../utils/chat');
 
-const splitCommand = (bot, members, teamA, teamB) => {
+const bot = require('../../bot');
+
+const splitCommand = (members, teamA, teamB) => {
   bot.onText(/^\/chiateam$/, msg => {
     if (members.size < 2 && teamA.size === 0 && teamB.size === 0) {
-      bot.sendMessage(getChatId(msg, 'DEFAULT'), '❗ Không đủ người để chia');
+      sendMessage(msg, 'DEFAULT', '❗ Không đủ người để chia');
       return;
     }
 
     if (teamA.size > 0 || teamB.size > 0) {
       if (members.size === 0) {
-        bot.sendMessage(
-          getChatId(msg, 'DEFAULT'),
-          '❗ Không có member mới để thêm vào team'
-        );
+        sendMessage(msg, 'DEFAULT', '❗ Không có member mới để thêm vào team');
         return;
       }
 
@@ -35,7 +34,7 @@ const splitCommand = (bot, members, teamA, teamB) => {
         teamA.values()
       ).join('\n')}\n\n👤 *Team B:*\n${Array.from(teamB.values()).join('\n')}`;
 
-      bot.sendMessage(getChatId(msg, 'DEFAULT'), message, {
+      sendMessage(msg, 'DEFAULT', message, {
         parse_mode: 'Markdown',
       });
       return;
@@ -62,7 +61,7 @@ const splitCommand = (bot, members, teamA, teamB) => {
       teamA.values()
     ).join('\n')}\n\n👤 *AWAY:*\n${Array.from(teamB.values()).join('\n')}`;
 
-    bot.sendMessage(getChatId(msg, 'ANNOUNCEMENT'), message, {
+    sendMessage(msg, 'ANNOUNCEMENT', message, {
       parse_mode: 'Markdown',
     });
   });

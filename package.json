@@ -9,6 +9,8 @@
   "scripts": {
     "dev": "yarn workspace chiateam-dev dev",
     "start": "yarn workspace chiateam dev",
+    "start:dev": "NODE_ENV=development yarn workspace chiateam-dev dev",
+    "start:production": "NODE_ENV=production yarn workspace chiateam-dev dev",
     "init-dev-db": "yarn workspace chiateam-dev init-db",
     "init-db": "yarn workspace chiateam init-db"
   },

@@ -1,8 +1,10 @@
 const { COMMANDS } = require('../../utils/constants');
 const { UNKNOWN } = require('../../utils/messages');
-const { getChatId } = require('../../utils/chat');
+const { sendMessage } = require('../../utils/chat');
 
-const unknownCommand = bot => {
+const bot = require('../../bot');
+
+const unknownCommand = () => {
   bot.on('message', msg => {
     if (!msg.text || !msg.text.startsWith('/')) {
       return;
@@ -15,10 +17,7 @@ const unknownCommand = bot => {
     }
 
     const userName = msg.from.first_name || msg.from.username || 'Unknown User';
-    bot.sendMessage(
-      getChatId(msg, 'DEFAULT'),
-      `${userName}: ${UNKNOWN.warning}`
-    );
+    sendMessage(msg, 'DEFAULT', `${userName}: ${UNKNOWN.warning}`);
   });
 };
 

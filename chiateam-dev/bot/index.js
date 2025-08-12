@@ -1,4 +1,10 @@
+const dotenv = require('dotenv');
 const TelegramBot = require('node-telegram-bot-api');
+dotenv.config();
+// dotenv.config({
+//   path: process.env.NODE_ENV === 'production' ? '.env' : '.env.dev',
+// });
+// console.log('Running mode:', process.env.NODE_ENV);
 
 // Get bot token from environment variables
 const token = process.env.TELEGRAM_BOT_TOKEN;

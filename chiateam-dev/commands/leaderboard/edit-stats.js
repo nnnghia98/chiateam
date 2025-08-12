@@ -1,7 +1,12 @@
-const { updatePlayerStatsDirect, getPlayerStats } = require('../../db/leaderboard');
-const { getChatId } = require('../../utils/chat');
+const {
+  updatePlayerStatsDirect,
+  getPlayerStats,
+} = require('../../db/leaderboard');
+const { getChatId, sendMessage } = require('../../utils/chat');
 
-const editStatsCommand = bot => {
+const bot = require('../../bot');
+
+const editStatsCommand = () => {
   // Handle command with parameters
   bot.onText(/\/edit-stats (.+)/, async (msg, match) => {
     try {
@@ -11,8 +16,9 @@ const editStatsCommand = bot => {
       const parts = args.split(' ');
 
       if (parts.length !== 4) {
-        bot.sendMessage(
-          getChatId(msg, 'DEFAULT'),
+        sendMessage(
+          msg,
+          'DEFAULT',
           '❌ **Cú pháp không đúng!**\n\n' +
             '�� **Cách sử dụng:**\n' +
             '`/edit-stats player_id total_match total_win total_lose`\n\n' +
@@ -31,8 +37,9 @@ const editStatsCommand = bot => {
 
       // Validate player ID
       if (isNaN(playerId) || playerId <= 0) {
-        bot.sendMessage(
-          getChatId(msg, 'DEFAULT'),
+        sendMessage(
+          msg,
+          'DEFAULT',
           '❌ **ID người chơi không hợp lệ!**\n\n' +
             '�� **Lưu ý:** ID phải là số nguyên dương',
           { parse_mode: 'Markdown' }
@@ -42,8 +49,9 @@ const editStatsCommand = bot => {
 
       // Validate match statistics
       if (isNaN(totalMatch) || totalMatch < 0) {
-        bot.sendMessage(
-          getChatId(msg, 'DEFAULT'),
+        sendMessage(
+          msg,
+          'DEFAULT',
           '❌ **Số trận đấu không hợp lệ!**\n\n' +
             '�� **Lưu ý:** Số trận phải là số nguyên không âm',
           { parse_mode: 'Markdown' }
@@ -52,8 +60,9 @@ const editStatsCommand = bot => {
       }
 
       if (isNaN(totalWin) || totalWin < 0) {
-        bot.sendMessage(
-          getChatId(msg, 'DEFAULT'),
+        sendMessage(
+          msg,
+          'DEFAULT',
           '❌ **Số trận thắng không hợp lệ!**\n\n' +
             '�� **Lưu ý:** Số trận thắng phải là số nguyên không âm',
           { parse_mode: 'Markdown' }
@@ -62,8 +71,9 @@ const editStatsCommand = bot => {
       }
 
       if (isNaN(totalLose) || totalLose < 0) {
-        bot.sendMessage(
-          getChatId(msg, 'DEFAULT'),
+        sendMessage(
+          msg,
+          'DEFAULT',
           '❌ **Số trận thua không hợp lệ!**\n\n' +
             '�� **Lưu ý:** Số trận thua phải là số nguyên không âm',
           { parse_mode: 'Markdown' }
@@ -73,11 +83,12 @@ const editStatsCommand = bot => {
 
       // Validate logic: total_match = total_win + total_lose
       if (totalMatch !== totalWin + totalLose) {
-        bot.sendMessage(
-          getChatId(msg, 'DEFAULT'),
+        sendMessage(
+          msg,
+          'DEFAULT',
           '❌ **Dữ liệu không hợp lệ!**\n\n' +
             '�� **Lưu ý:** Tổng số trận = Số trận thắng + Số trận thua\n\n' +
-            `�� **Dữ liệu hiện tại:**\n` +
+            '�� **Dữ liệu hiện tại:**\n' +
             `   • Tổng trận: ${totalMatch}\n` +
             `   • Thắng: ${totalWin}\n` +
             `   • Thua: ${totalLose}\n` +
@@ -89,7 +100,8 @@ const editStatsCommand = bot => {
 
       // Get current stats for comparison
       const currentStats = await getPlayerStats(playerId);
-      const winrate = totalMatch > 0 ? Math.round((totalWin / totalMatch) * 1000) / 1000 : 0;
+      const winrate =
+        totalMatch > 0 ? Math.round((totalWin / totalMatch) * 1000) / 1000 : 0;
       const winratePercent = (winrate * 100).toFixed(1);
 
       // Update player statistics
@@ -122,13 +134,14 @@ const editStatsCommand = bot => {
 
       message += '💡 Sử dụng `/leaderboard` để xem bảng xếp hạng mới';
 
-      bot.sendMessage(getChatId(msg, 'STATISTICS'), message, {
+      sendMessage(msg, 'STATISTICS', message, {
         parse_mode: 'Markdown',
       });
     } catch (error) {
       console.error('Error editing stats:', error);
-      bot.sendMessage(
-        getChatId(msg, 'DEFAULT'),
+      sendMessage(
+        msg,
+        'DEFAULT',
         '❌ Có lỗi xảy ra khi chỉnh sửa thống kê. Vui lòng thử lại sau.'
       );
     }
@@ -136,8 +149,9 @@ const editStatsCommand = bot => {
 
   // Handle command without parameters
   bot.onText(/^\/edit-stats$/, msg => {
-    bot.sendMessage(
-      getChatId(msg, 'DEFAULT'),
+    sendMessage(
+      msg,
+      'DEFAULT',
       '📝 **Cách sử dụng lệnh edit-stats:**\n\n' +
         '�� **Cú pháp:**\n' +
         '`/edit-stats player_id total_match total_win total_lose`\n\n' +
@@ -153,4 +167,4 @@ const editStatsCommand = bot => {
   });
 };
 
-module.exports = editStatsCommand; 
+module.exports = editStatsCommand;

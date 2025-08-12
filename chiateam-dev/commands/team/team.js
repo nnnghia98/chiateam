@@ -1,10 +1,13 @@
-const { getChatId } = require('../../utils/chat');
+const { sendMessage } = require('../../utils/chat');
 
-const teamsCommand = (bot, teamA, teamB) => {
+const bot = require('../../bot');
+
+const teamsCommand = (teamA, teamB) => {
   bot.onText(/^\/team$/, msg => {
     if (teamA.size === 0 && teamB.size === 0) {
-      bot.sendMessage(
-        getChatId(msg, 'DEFAULT'),
+      sendMessage(
+        msg,
+        'DEFAULT',
         '⚠️ Chưa có team nào được chia. Dùng /chiateam trước'
       );
       return;
@@ -14,7 +17,7 @@ const teamsCommand = (bot, teamA, teamB) => {
       teamA.values()
     ).join('\n')}\n\n👤 *AWAY:*\n${Array.from(teamB.values()).join('\n')}`;
 
-    bot.sendMessage(getChatId(msg, 'DEFAULT'), message, {
+    sendMessage(msg, 'DEFAULT', message, {
       parse_mode: 'Markdown',
     });
   });
