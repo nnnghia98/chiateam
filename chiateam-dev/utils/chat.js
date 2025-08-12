@@ -1,29 +1,18 @@
 const bot = require('../bot');
 
-function getThreadId(msg, type) {
-  switch (type) {
-    case 'DEFAULT':
-      return process.env.DEFAULT_CHAT_ID;
-    case 'MAIN':
-      return process.env.MAIN_CHAT_ID;
-    case 'ANNOUNCEMENT':
-      return process.env.ANNOUNCEMENT_CHAT_ID;
-    case 'VIP':
-      return process.env.VIP_CHAT_ID;
-    case 'STATISTICS':
-      return process.env.STATISTICS_CHAT_ID;
-    default:
-      return msg.message_thread_id;
-  }
-}
+const THREAD_TYPES = {
+  DEFAULT: process.env.DEFAULT_THREAD_ID,
+  MAIN: process.env.MAIN_THREAD_ID,
+  ANNOUNCEMENT: process.env.ANNOUNCEMENT_THREAD_ID,
+  VIP: process.env.VIP_THREAD_ID,
+  STATISTICS: process.env.STATISTICS_THREAD_ID,
+};
 
-function getChatId(msg) {
-  return process.env.CHAT_ID || msg.chat.id;
-}
+const CHAT_ID = process.env.CHAT_ID;
 
 const sendMessage = (msg, type, message, options) => {
-  const chatId = getChatId(msg);
-  const threadId = getThreadId(msg, type);
+  const chatId = CHAT_ID ?? msg.chat.id;
+  const threadId = THREAD_TYPES[type];
 
   return bot.sendMessage(chatId, message, {
     ...options,
@@ -32,6 +21,7 @@ const sendMessage = (msg, type, message, options) => {
 };
 
 module.exports = {
-  getChatId,
+  CHAT_ID,
+  THREAD_TYPES,
   sendMessage,
 };

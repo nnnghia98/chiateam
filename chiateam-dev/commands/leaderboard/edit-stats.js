@@ -2,7 +2,7 @@ const {
   updatePlayerStatsDirect,
   getPlayerStats,
 } = require('../../db/leaderboard');
-const { getChatId, sendMessage } = require('../../utils/chat');
+const { sendMessage } = require('../../utils/chat');
 
 const bot = require('../../bot');
 

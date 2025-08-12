@@ -1,4 +1,4 @@
-const { getChatId, sendMessage } = require('../../utils/chat');
+const { CHAT_ID, THREAD_TYPES, sendMessage } = require('../../utils/chat');
 const { TAO_VOTE } = require('../../utils/messages');
 
 const bot = require('../../bot');
@@ -47,7 +47,8 @@ const voteCommand = () => {
     const options = ['0', '+1', '+2', '+3', '+4'];
 
     bot
-      .sendPoll(getChatId(msg, 'ANNOUNCEMENT'), question, options, {
+      .sendPoll(CHAT_ID, question, options, {
+        message_thread_id: THREAD_TYPES.ANNOUNCEMENT,
         is_anonymous: false,
         allows_multiple_answers: false,
         explanation: `${TAO_VOTE.explanation} ${msg.from.first_name || msg.from.username || 'Unknown'}`,
