@@ -12,25 +12,48 @@ const db = new sqlite3.Database(dbPath);
 // Initialize database with schema
 async function initLeaderboardDB() {
   return new Promise((resolve, reject) => {
-    // Read schema file
-    fs.readFile(schemaPath, 'utf8', (err, schema) => {
-      if (err) {
-        console.error('Error reading schema file:', err);
-        reject(err);
-        return;
-      }
-
-      // Execute schema
-      db.exec(schema, err => {
+    // Check if table already exists
+    db.get(
+      // eslint-disable-next-line quotes
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='leaderboard'",
+      (err, row) => {
         if (err) {
-          console.error('Error initializing database:', err);
+          console.error('Error checking table existence:', err);
           reject(err);
-        } else {
-          console.log('✅ Leaderboard database initialized successfully');
-          resolve();
+          return;
         }
-      });
-    });
+
+        if (row) {
+          // Table already exists, do nothing
+          console.log(
+            '✅ Leaderboard table already exists. Skipping initialization.'
+          );
+          resolve();
+          return;
+        }
+
+        // Table doesn't exist, create it
+        console.log('📋 Creating new leaderboard table...');
+        fs.readFile(schemaPath, 'utf8', (err, schema) => {
+          if (err) {
+            console.error('Error reading schema file:', err);
+            reject(err);
+            return;
+          }
+
+          // Execute schema
+          db.exec(schema, err => {
+            if (err) {
+              console.error('Error initializing database:', err);
+              reject(err);
+            } else {
+              console.log('✅ Leaderboard database initialized successfully');
+              resolve();
+            }
+          });
+        });
+      }
+    );
   });
 }
 
