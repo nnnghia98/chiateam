@@ -1,8 +1,6 @@
 const fs = require('fs');
-const path = require('path');
 
-// Database file path
-const dbPath = path.join(__dirname, 'cham-het.db');
+const { dbPath } = require('./config');
 
 // Drop/delete database
 async function dropDatabase() {
