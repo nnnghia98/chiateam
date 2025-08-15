@@ -1,13 +1,6 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
 const fs = require('fs');
 
-// Database file path
-const dbPath = path.join(__dirname, 'cham-het.db');
-const schemaPath = path.join(__dirname, '../script/tables.sql');
-
-// Create database connection
-const db = new sqlite3.Database(dbPath);
+const { dbPath, schemaPath, db } = require('./config');
 
 // Initialize all database tables
 async function initDatabase() {

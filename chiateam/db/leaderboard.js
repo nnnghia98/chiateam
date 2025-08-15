@@ -1,11 +1,4 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
-
-// Database file path
-const dbPath = path.join(__dirname, 'cham-het.db');
-
-// Create database connection
-const db = new sqlite3.Database(dbPath);
+const { db } = require('./config');
 
 // Get leaderboard ordered by winrate
 async function getLeaderboard() {
