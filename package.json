@@ -1,17 +1,14 @@
 {
   "name": "chiateam-bot",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
-  "workspaces": [
-    "chiateam",
-    "chiateam-dev"
-  ],
+  "main": "src/index.js",
+  "license": "MIT",
   "scripts": {
-    "start": "yarn workspace chiateam dev",
-    "start:dev": "NODE_ENV=development yarn workspace chiateam dev",
-    "start:production": "NODE_ENV=production yarn workspace chiateam dev",
-    "init-db:production": "yarn workspace chiateam init-db",
-    "drop-db:production": "yarn workspace chiateam drop-db"
+    "dev": "NODE_ENV=development nodemon src/index.js",
+    "start": "NODE_ENV=production nodemon src/index.js",
+    "init-db": "node src/db/init-database.js",
+    "drop-db": "node src/db/drop-database.js"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
