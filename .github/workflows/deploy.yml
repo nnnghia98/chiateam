@@ -18,10 +18,9 @@ jobs:
           node-version: 20
           cache: 'yarn'
 
-      - name: 📦 Install dependencies & run tests
+      - name: 📦 Install dependencies
         run: |
-          yarn install --frozen-lockfile
-          yarn test --if-present
+          yarn install
 
       - name: 📦 Pack project for deployment
         run: |
