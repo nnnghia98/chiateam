@@ -1,0 +1,81 @@
+name: CI/CD to Ubuntu Server
+
+on:
+  push:
+    branches: ['main']
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout source code
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'yarn'
+
+      - name: 📦 Install dependencies & run tests
+        run: |
+          yarn install --frozen-lockfile
+          yarn test --if-present
+
+      - name: 📦 Pack project for deployment
+        run: |
+          tar \
+            --exclude='./.git' \
+            --exclude='./node_modules' \
+            --exclude='./.github' \
+            --exclude='./README.md' \
+            --exclude='./.env' \
+            -czf build.tgz .
+
+      - name: 🚀 Upload & Deploy to Server
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          # SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          APP_DIR: ${{ secrets.APP_DIR }}
+        run: |
+          set -e
+
+          # Tạo private key tạm
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          # Tạo thư mục đích trên server
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 -p ${SSH_PORT:-22} ${SSH_USER}@${SSH_HOST} "mkdir -p ${APP_DIR}"
+
+          # Upload gói code
+          scp -P ${SSH_PORT:-22} -i ~/.ssh/id_ed25519 build.tgz ${SSH_USER}@${SSH_HOST}:${APP_DIR}/
+
+          # Deploy trên server
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 -p ${SSH_PORT:-22} ${SSH_USER}@${SSH_HOST} << 'EOF'
+            set -e
+            cd "$APP_DIR"
+
+            # Giải nén code
+            tar -xzf build.tgz -C "$APP_DIR"
+            rm -f build.tgz
+
+            # Cài dependencies
+            if command -v yarn >/dev/null 2>&1; then
+              yarn install --frozen-lockfile
+            else
+              npm ci || npm install
+            fi
+
+            # Restart app bằng PM2
+            if [ -f "ecosystem.config.js" ]; then
+              pm2 start ecosystem.config.js --only chiateam || pm2 reload chiateam
+            else
+              pm2 describe chiateam >/dev/null 2>&1 && pm2 restart chiateam || pm2 start yarn --name chiateam -- start:production
+            fi
+
+            pm2 save
+          EOF
