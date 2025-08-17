@@ -48,18 +48,19 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
 
           # Tạo thư mục đích trên server
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ${SSH_USER}@${SSH_HOST} "mkdir -p ${APP_DIR}"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ${SSH_USER}@${SSH_HOST} "mkdir -p '${APP_DIR}'"
 
-          # Upload gói code
-          scp -i ~/.ssh/id_ed25519 /tmp/build.tgz ${SSH_USER}@${SSH_HOST}:${APP_DIR}/
+          # Upload gói code (đặt tên rõ ràng)
+          scp -i ~/.ssh/id_ed25519 /tmp/build.tgz ${SSH_USER}@${SSH_HOST}:"${APP_DIR}/build.tgz"
 
-          # Deploy trên server
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ${SSH_USER}@${SSH_HOST} << 'EOF'
+          # Deploy trên server (KHÔNG dùng 'EOF' có quote để cho phép đưa APP_DIR vào)
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ${SSH_USER}@${SSH_HOST} <<EOF
             set -e
-            cd "$APP_DIR"
+            APP_DIR="${APP_DIR}"
+            cd "\$APP_DIR"
 
             # Giải nén code
-            tar -xzf build.tgz -C "$APP_DIR"
+            tar -xzf build.tgz
             rm -f build.tgz
 
             # Cài dependencies
