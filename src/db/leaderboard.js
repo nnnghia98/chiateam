@@ -124,7 +124,7 @@ async function updatePlayerStats(playerIds, result) {
                       reject(commitErr);
                     } else {
                       console.log(
-                        `✅ Successfully updated ${playerIds.length} players`
+                        `✅ Successfully updated ${playerIds.length} player(s)`
                       );
                       resolve();
                     }
