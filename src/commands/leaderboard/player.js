@@ -62,7 +62,7 @@ const playerStatsCommand = () => {
 
       // Create detailed stats message
       let message = `${rankEmoji} **THÔNG SỐ PLAYER** ${rankEmoji}\n\n`;
-      message += `🆔 **Player số áo:** ${playerStats.player_no}\n`;
+      message += `🆔 **Player số áo:** ${playerId}\n`;
       message += `📅 **Ngày tạo:** ${new Date(playerStats.created_at).toLocaleDateString('vi-VN')}\n`;
       message += `🔄 **Cập nhật lần cuối:** ${new Date(playerStats.updated_at).toLocaleDateString('vi-VN')}\n\n`;
 
