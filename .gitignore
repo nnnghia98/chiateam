@@ -257,3 +257,5 @@ $RECYCLE.BIN/
 # Telegram Bot specific
 config.json
 bot-token.txt node_modules/
+
+.DS_Store

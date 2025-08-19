@@ -1,7 +1,7 @@
 const { db } = require('./config');
 
 /**
- * Add a new player to the players table
+ * Add a new player to the player table
  * @param {number} teleId - Telegram user ID
  * @param {string} name - Player name
  * @param {number} number - Player number (optional)
@@ -11,7 +11,7 @@ const { db } = require('./config');
 function addPlayer(teleId, name, number = null, username = null) {
   return new Promise((resolve, reject) => {
     const sql = `
-      INSERT INTO players (tele_id, name, number, username, goal, assist)
+      INSERT INTO player (tele_id, name, number, username, goal, assist)
       VALUES (?, ?, ?, ?, 0, 0)
     `;
 
@@ -34,7 +34,7 @@ function addPlayer(teleId, name, number = null, username = null) {
  */
 function getPlayerByTeleId(teleId) {
   return new Promise((resolve, reject) => {
-    const sql = 'SELECT * FROM players WHERE tele_id = ?';
+    const sql = 'SELECT * FROM player WHERE tele_id = ?';
 
     db.get(sql, [teleId], (err, row) => {
       if (err) {
@@ -53,7 +53,7 @@ function getPlayerByTeleId(teleId) {
  */
 function getPlayerById(id) {
   return new Promise((resolve, reject) => {
-    const sql = 'SELECT * FROM players WHERE id = ?';
+    const sql = 'SELECT * FROM player WHERE id = ?';
 
     db.get(sql, [id], (err, row) => {
       if (err) {
@@ -66,12 +66,12 @@ function getPlayerById(id) {
 }
 
 /**
- * Get all players
- * @returns {Promise<Array>} - Array of all players
+ * Get all player
+ * @returns {Promise<Array>} - Array of all player
  */
 function getAllPlayers() {
   return new Promise((resolve, reject) => {
-    const sql = 'SELECT * FROM players ORDER BY name';
+    const sql = 'SELECT * FROM player ORDER BY name';
 
     db.all(sql, [], (err, rows) => {
       if (err) {
@@ -112,7 +112,7 @@ function updatePlayer(teleId, updates) {
     updateFields.push('updated_at = CURRENT_TIMESTAMP');
     values.push(teleId);
 
-    const sql = `UPDATE players SET ${updateFields.join(', ')} WHERE tele_id = ?`;
+    const sql = `UPDATE player SET ${updateFields.join(', ')} WHERE tele_id = ?`;
 
     db.run(sql, values, function (err) {
       if (err) {
@@ -141,7 +141,7 @@ function updatePlayer(teleId, updates) {
 function updatePlayerStats(teleId, goals = 0, assists = 0) {
   return new Promise((resolve, reject) => {
     const sql = `
-      UPDATE players 
+      UPDATE player 
       SET goal = goal + ?, assist = assist + ?, updated_at = CURRENT_TIMESTAMP
       WHERE tele_id = ?
     `;
@@ -170,7 +170,7 @@ function updatePlayerStats(teleId, goals = 0, assists = 0) {
  */
 function deletePlayer(teleId) {
   return new Promise((resolve, reject) => {
-    const sql = 'DELETE FROM players WHERE tele_id = ?';
+    const sql = 'DELETE FROM player WHERE tele_id = ?';
 
     db.run(sql, [teleId], function (err) {
       if (err) {
@@ -184,13 +184,13 @@ function deletePlayer(teleId) {
 }
 
 /**
- * Get players by number
+ * Get player by number
  * @param {number} number - Player number
- * @returns {Promise<Array>} - Array of players with that number
+ * @returns {Promise<Array>} - Array of player with that number
  */
 function getPlayersByNumber(number) {
   return new Promise((resolve, reject) => {
-    const sql = 'SELECT * FROM players WHERE number = ? ORDER BY name';
+    const sql = 'SELECT * FROM player WHERE number = ? ORDER BY name';
 
     db.all(sql, [number], (err, rows) => {
       if (err) {
@@ -203,14 +203,14 @@ function getPlayersByNumber(number) {
 }
 
 /**
- * Search players by name (partial match)
+ * Search player by name (partial match)
  * @param {string} searchTerm - Search term
- * @returns {Promise<Array>} - Array of matching players
+ * @returns {Promise<Array>} - Array of matching player
  */
 function searchPlayers(searchTerm) {
   return new Promise((resolve, reject) => {
     const sql =
-      'SELECT * FROM players WHERE name LIKE ? OR username LIKE ? ORDER BY name';
+      'SELECT * FROM player WHERE name LIKE ? OR username LIKE ? ORDER BY name';
     const searchPattern = `%${searchTerm}%`;
 
     db.all(sql, [searchPattern, searchPattern], (err, rows) => {

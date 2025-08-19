@@ -1,6 +1,6 @@
 const fs = require('fs');
 
-const { dbPath, schemaPath, db } = require('./config');
+const { dbPath, SCHEMA_PATH, db } = require('./config');
 
 // Initialize all database tables
 async function initDatabase() {
@@ -117,7 +117,7 @@ function createTable(tableName, resolve, reject) {
 
 // Create all tables from schema file
 function createAllTables(resolve, reject) {
-  fs.readFile(schemaPath, 'utf8', (err, schema) => {
+  fs.readFile(SCHEMA_PATH, 'utf8', (err, schema) => {
     if (err) {
       console.error('Error reading schema file:', err);
       reject(err);
