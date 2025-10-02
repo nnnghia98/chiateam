@@ -186,6 +186,25 @@ function deletePlayer(teleId) {
 /**
  * Get player by number
  * @param {number} number - Player number
+ * @returns {Promise<Object|null>} - Player object or null if not found
+ */
+function getPlayerByNumber(number) {
+  return new Promise((resolve, reject) => {
+    const sql = 'SELECT * FROM player WHERE number = ?';
+
+    db.get(sql, [number], (err, row) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      resolve(row);
+    });
+  });
+}
+
+/**
+ * Get players by number
+ * @param {number} number - Player number
  * @returns {Promise<Array>} - Array of player with that number
  */
 function getPlayersByNumber(number) {
@@ -231,6 +250,7 @@ module.exports = {
   updatePlayer,
   updatePlayerStats,
   deletePlayer,
+  getPlayerByNumber,
   getPlayersByNumber,
   searchPlayers,
 };

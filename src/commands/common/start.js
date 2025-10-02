@@ -13,7 +13,7 @@ const startCommand = () => {
 • \`/add\` - Add hộ vào list
 • \`/remove\` - Xóa khỏi list
 • \`/list\` - Xem list
-• \`/reset\` - Xóa toàn bộ list
+• \`/clearlist\` - Xóa toàn bộ list
 
 ⚽ *Quản lý team:*
 • \`/chiateam\` - Chia team
@@ -36,6 +36,7 @@ const startCommand = () => {
 • \`/leaderboard\` - Xem bảng xếp hạng
 • \`/update-leaderboard\` - Cập nhật thống kê
 • \`/player\` - Xem thông số chi tiết
+• \`/register\` - Đăng ký cầu thủ mới
 
 💡 Dùng sai cú pháp = ngu!`,
       { parse_mode: 'Markdown' }

@@ -8,7 +8,7 @@ const COMMANDS = [
   '/addtoteam2',
   '/team',
   '/remove',
-  '/reset',
+  '/clearlist',
   '/resetteam',
   '/tiensan',
   '/chiatien',
@@ -23,6 +23,7 @@ const COMMANDS = [
   '/update-leaderboard',
   '/player',
   '/edit-stats',
+  '/register',
 ];
 
 const PATTERNS = {
