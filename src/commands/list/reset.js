@@ -5,7 +5,7 @@ const { sendMessage } = require('../../utils/chat');
 const bot = require('../../bot');
 
 const resetCommand = members => {
-  bot.onText(/^\/reset$/, msg => {
+  bot.onText(/^\/clearlist$/, msg => {
     if (!isAdmin(msg.from.id)) {
       sendMessage(msg, 'DEFAULT', VALIDATION.onlyAdmin);
       return;

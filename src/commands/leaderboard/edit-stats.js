@@ -8,7 +8,7 @@ const bot = require('../../bot');
 
 const editStatsCommand = () => {
   // Handle command with parameters
-  bot.onText(/\/edit-stats (.+)/, async (msg, match) => {
+  bot.onText(/^\/edit-stats (.+)$/, async (msg, match) => {
     try {
       const args = match[1].trim();
 

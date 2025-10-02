@@ -107,6 +107,38 @@ const TAO_VOTE = {
   result: '📊 *Kết quả vote hiện tại:*\n*${question}*\n\n',
 };
 
+const REGISTER = {
+  instruction: `📋 *Cách sử dụng /register:*
+• \`/register [NUMBER] [NAME]\` - Đăng ký với số áo và tên
+• \`/register [NUMBER] [NAME] [TELE_ID] [USERNAME]\` - Đăng ký với đầy đủ thông tin
+
+Ví dụ: \`/register 10 Nghia\` hoặc \`/register 10 Nghia 123456789 nghia98\`
+
+💡 *Lưu ý:* Nếu không cung cấp TELE_ID và USERNAME, bot sẽ tự động lấy từ chat của bạn.`,
+  warning:
+    '⚠️ Cần ít nhất 2 tham số: NUMBER và NAME.\n\nVí dụ: `/register 10 Nghia`',
+  invalidNumber:
+    '⚠️ Số áo phải là số nguyên dương hợp lệ.\n\nVí dụ: `/register 10 Nghia`',
+  invalidName:
+    '⚠️ Tên không hợp lệ. Tên chỉ được chứa chữ cái, số và khoảng trắng.\n\nVí dụ: `/register 10 Nghia`',
+  duplicateNumber: '⚠️ Số áo ${number} đã được sử dụng bởi ${name}.',
+  duplicateTeleId:
+    '⚠️ Người dùng với ID ${teleId} đã được đăng ký với tên ${name} và số áo ${number}.',
+  success: `✅ *Đăng ký thành công!*
+
+👤 **Thông tin cầu thủ:**
+• **Tên:** \${name}
+• **Số áo:** \${number}
+• **Telegram ID:** \${teleId}
+• **Username:** \${username}
+
+🎯 Bây giờ bạn có thể sử dụng các lệnh:
+• \`/leaderboard\` - Xem bảng xếp hạng
+• \`/player\` - Xem thông số chi tiết
+• \`/update-leaderboard\` - Cập nhật thống kê`,
+  error: '❌ Có lỗi xảy ra khi đăng ký. Vui lòng thử lại sau.',
+};
+
 const UPDATE_LEADERBOARD = {
   invalidSyntax:
     '❌ **Cú pháp không đúng!**\n\n📝 **Cách sử dụng:**\n`/update-leaderboard WIN [id1,id2,id3]`\n`/update-leaderboard LOSE [id1,id2,id3]`\n`/update-leaderboard DRAW [id1,id2,id3]`\n`/update-leaderboard GOAL player_number value`\n`/update-leaderboard ASSIST player_number value`\n\n**Ví dụ:**\n`/update-leaderboard WIN [10,17,7]`\n`/update-leaderboard LOSE [20,19]`\n`/update-leaderboard DRAW [8,9]`\n`/update-leaderboard GOAL 10 1`\n`/update-leaderboard ASSIST 10 +1`',
@@ -151,5 +183,6 @@ module.exports = {
   TIEN_SAN,
   SAN,
   TAO_VOTE,
+  REGISTER,
   UPDATE_LEADERBOARD,
 };

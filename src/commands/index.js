@@ -17,6 +17,7 @@ const leaderboardCommand = require('./leaderboard/leaderboard');
 const updateLeaderboardCommand = require('./leaderboard/update-leaderboard');
 const editStatsCommand = require('./leaderboard/edit-stats');
 const playerCommand = require('./leaderboard/player');
+const registerCommand = require('./leaderboard/register');
 const sanCommand = require('./before-match/san');
 const resetTeam1Command = require('./team/reset-team-1');
 const resetTeam2Command = require('./team/reset-team-2');
@@ -41,6 +42,7 @@ module.exports = {
   updateLeaderboardCommand,
   editStatsCommand,
   playerCommand,
+  registerCommand,
   sanCommand,
   resetTeam1Command,
   resetTeam2Command,
