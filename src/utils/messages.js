@@ -36,19 +36,17 @@ const BENCH = {
   success: '👥 Danh sách hiện tại:\n{names}',
 };
 
-const REMOVE = {
+const REMOVE = {};
+
+const CLEAR_BENCH = {
   emptyBench: '⚠️ Bench trống.',
   instruction:
-    '📋 *Bench hiện tại:*\n\n{numberedList}\n\n💡 *Cách sử dụng:*\n• `/remove 1,3,5` - Xóa member số 1, 3, 5\n• `/remove 1-3` - Xóa member từ 1 đến 3\n• `/remove all` - Xóa tất cả (Admin only)',
+    '📋 *Bench hiện tại:*\n\n{numberedList}\n\n💡 *Cách sử dụng:*\n• `/clearbench 1,3,5` - Xóa member số 1, 3, 5\n• `/clearbench 1-3` - Xóa member từ 1 đến 3\n• `/clearbench all` - Xóa tất cả (Admin only)',
   invalidSelection:
-    '⚠️ Không có lựa chọn hợp lệ. Ví dụ:\n`/remove 1,3,5` hoặc `/remove 1-3` hoặc `/remove all`',
+    '⚠️ Không có lựa chọn hợp lệ. Ví dụ:\n`/clearbench 1,3,5` hoặc `/clearbench 1-3` hoặc `/clearbench all`',
   success: '✅ Đã xóa {count} member(s):\n{removedNames}',
+  clearAllSuccess: '✅ Đã xóa toàn bộ member khỏi bench.',
   noRemovedMembers: '⚠️ Không có member nào bị xóa.',
-};
-
-const RESET = {
-  emptyBench: '📝 /bench trống',
-  success: '✅ /bench đã được xóa',
 };
 
 const CLEAR_TEAM = {
@@ -59,9 +57,9 @@ const CLEAR_TEAM = {
 const CLEAR_TEAM_INDIVIDUAL = {
   emptyTeam: '⚠️ Chưa chia team.',
   instruction:
-    '👤 *{team} hiện tại:*\n\n{numberedList}\n\n💡 *Cách sử dụng:*\n• `/resetteam{teamNum} 1,3,5` - Reset member số 1, 3, 5 về bench\n• `/resetteam{teamNum} 1-3` - Reset member từ 1 đến 3 về bench\n• `/resetteam{teamNum} all` - Reset tất cả member về bench\n• `/resetteam{teamNum} "John"` - Reset member theo tên',
+    '👤 *{team} hiện tại:*\n\n{numberedList}\n\n💡 *Cách sử dụng:*\n• `/clearteam{teamNum} 1,3,5` - Reset member số 1, 3, 5 về bench\n• `/clearteam{teamNum} 1-3` - Reset member từ 1 đến 3 về bench\n• `/clearteam{teamNum} all` - Reset tất cả member về bench\n• `/clearteam{teamNum} "John"` - Reset member theo tên',
   invalidSelection:
-    '⚠️ Không có lựa chọn hợp lệ. Ví dụ:\n`/resetteam{teamNum} 1,3,5` hoặc `/resetteam{teamNum} 1-3` hoặc `/resetteam{teamNum} all` hoặc `/resetteam{teamNum} "John"`',
+    '⚠️ Không có lựa chọn hợp lệ. Ví dụ:\n`/clearteam{teamNum} 1,3,5` hoặc `/clearteam{teamNum} 1-3` hoặc `/clearteam{teamNum} all` hoặc `/clearteam{teamNum} "John"`',
   noResetMembers: '⚠️ Không có member nào được reset.',
   success: '✅ Đã chuyển {count} member(s) từ {team} về bench:\n{resetNames}',
 };
@@ -175,7 +173,7 @@ module.exports = {
   ADD_TO_TEAM,
   BENCH,
   REMOVE,
-  RESET,
+  CLEAR_BENCH,
   CLEAR_TEAM,
   CLEAR_TEAM_INDIVIDUAL,
   UNKNOWN,

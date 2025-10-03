@@ -32,7 +32,7 @@ const clearTeamCommand = ({ teamA, teamB, members }) => {
     teamA.clear();
     teamB.clear();
 
-    sendMessage(msg, 'DEFAULT', CLEAR_TEAM_INDIVIDUAL.success);
+    sendMessage(msg, 'DEFAULT', CLEAR_TEAM.success);
   });
 
   bot.onText(/^\/clearteam (HOME|AWAY)$/, (msg, match) => {

@@ -1,4 +1,4 @@
-const { RESET, REMOVE, VALIDATION } = require('../../utils/messages');
+const { CLEAR_BENCH, VALIDATION } = require('../../utils/messages');
 const { isAdmin } = require('../../utils/validate');
 const { sendMessage } = require('../../utils/chat');
 
@@ -6,22 +6,10 @@ const bot = require('../../bot');
 
 const clearBenchCommand = ({ members }) => {
   bot.onText(/^\/clearbench$/, msg => {
-    // if (!isAdmin(msg.from.id)) {
-    //   sendMessage(msg, 'DEFAULT', VALIDATION.onlyAdmin);
-    //   return;
-    // }
-
-    // if (members.size === 0) {
-    //   sendMessage(msg, 'DEFAULT', RESET.emptyBench);
-    //   return;
-    // }
-
-    // members.clear();
-    // sendMessage(msg, 'DEFAULT', RESET.success);
     const allNames = Array.from(members.values());
 
     if (allNames.length === 0) {
-      sendMessage(msg, 'DEFAULT', REMOVE.emptyBench);
+      sendMessage(msg, 'DEFAULT', CLEAR_BENCH.emptyBench);
       return;
     }
 
@@ -29,7 +17,10 @@ const clearBenchCommand = ({ members }) => {
       .map((name, index) => `${index + 1}. ${name}`)
       .join('\n');
 
-    const message = REMOVE.instruction.replace('{numberedList}', numberedList);
+    const message = CLEAR_BENCH.instruction.replace(
+      '{numberedList}',
+      numberedList
+    );
     sendMessage(msg, 'DEFAULT', message, {
       parse_mode: 'Markdown',
     });
@@ -42,7 +33,7 @@ const clearBenchCommand = ({ members }) => {
     }
 
     if (members.size === 0) {
-      sendMessage(msg, 'DEFAULT', RESET.emptyBench);
+      sendMessage(msg, 'DEFAULT', CLEAR_BENCH.emptyBench);
       return;
     }
 
@@ -52,7 +43,7 @@ const clearBenchCommand = ({ members }) => {
     // Handle clear all
     if (selection.toLowerCase() === 'all') {
       members.clear();
-      sendMessage(msg, 'DEFAULT', RESET.success);
+      sendMessage(msg, 'DEFAULT', CLEAR_BENCH.clearAllSuccess);
       return;
     }
 
@@ -89,7 +80,7 @@ const clearBenchCommand = ({ members }) => {
     }
 
     if (selectedIndices.length === 0) {
-      const invalidMsg = REMOVE.invalidSelection.replaceAll(
+      const invalidMsg = CLEAR_BENCH.invalidSelection.replaceAll(
         '/remove',
         '/clearbench'
       );
@@ -113,12 +104,12 @@ const clearBenchCommand = ({ members }) => {
     }
 
     if (removedNames.length === 0) {
-      const noRemoved = REMOVE.noRemovedMembers;
+      const noRemoved = CLEAR_BENCH.noRemovedMembers;
       sendMessage(msg, 'DEFAULT', noRemoved);
       return;
     }
 
-    const successMsg = REMOVE.success
+    const successMsg = CLEAR_BENCH.success
       .replace('{count}', removedNames.length)
       .replace('{removedNames}', removedNames.join('\n'));
     sendMessage(msg, 'DEFAULT', successMsg, { parse_mode: 'Markdown' });
