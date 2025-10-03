@@ -3,12 +3,10 @@ const COMMANDS = [
   '/addme',
   '/add',
   '/chiateam',
-  '/list',
-  '/addtoteam1',
-  '/addtoteam2',
+  '/bench',
   '/team',
   '/remove',
-  '/clearlist',
+  '/clearbench',
   '/resetteam',
   '/tiensan',
   '/chiatien',
@@ -17,18 +15,18 @@ const COMMANDS = [
   '/demvote',
   '/san',
   '/clearsan',
-  '/resetteam1',
-  '/resetteam2',
+  '/clearteam',
   '/leaderboard',
   '/update-leaderboard',
   '/player',
   '/edit-stats',
   '/register',
+  '/addtoteam',
 ];
 
 const PATTERNS = {
   add: /^\/add$/,
-  add_list: /^\/add\s*\[(.+)\]$/,
+  add_list: /^\/add\s+(.+)$/,
   add_me: /^\/addme$/,
 };
 

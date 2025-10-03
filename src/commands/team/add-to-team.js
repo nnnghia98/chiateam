@@ -3,8 +3,10 @@ const { sendMessage } = require('../../utils/chat');
 
 const bot = require('../../bot');
 
-const addToTeam1Command = (members, teamA) => {
-  bot.onText(/^\/addtoteam1$/, msg => {
+const addToTeamCommand = ({ members, teamA, teamB }) => {
+  bot.onText(/^\/addtoteam (HOME|AWAY)$/, (msg, match) => {
+    const teamType = match[1];
+    const teamName = teamType === 'HOME' ? 'Home' : 'Away';
     const allNames = Array.from(members.values());
 
     if (allNames.length === 0) {
@@ -18,15 +20,18 @@ const addToTeam1Command = (members, teamA) => {
 
     const message = ADD_TO_TEAM.instruction
       .replace('{numberedList}', numberedList)
-      .replace(/{team}/g, '1');
+      .replace(/{team}/g, teamName);
 
-    sendMessage(msg, 'DEFAULT', message, {
+    sendMessage(msg, 'MAIN', message, {
       parse_mode: 'Markdown',
     });
   });
 
-  bot.onText(/^\/addtoteam1 (.+)$/, (msg, match) => {
-    const selection = match[1].trim();
+  bot.onText(/^\/addtoteam (HOME|AWAY) (.+)$/, (msg, match) => {
+    const teamType = match[1];
+    const selection = match[2].trim();
+    const team = teamType === 'HOME' ? teamA : teamB;
+    const teamName = teamType === 'HOME' ? 'Home' : 'Away';
     const allNames = Array.from(members.values());
 
     if (allNames.length === 0) {
@@ -42,7 +47,15 @@ const addToTeam1Command = (members, teamA) => {
       const parts = selection.split(',').map(part => part.trim());
 
       for (const part of parts) {
-        if (part.includes('-')) {
+        if (part.startsWith('"') && part.endsWith('"')) {
+          const nameToFind = part.slice(1, -1).trim();
+          const nameIndex = allNames.findIndex(name =>
+            name.toLowerCase().includes(nameToFind.toLowerCase())
+          );
+          if (nameIndex !== -1) {
+            selectedIndices.push(nameIndex);
+          }
+        } else if (part.includes('-')) {
           const [start, end] = part.split('-').map(num => parseInt(num.trim()));
           if (
             !isNaN(start) &&
@@ -64,6 +77,13 @@ const addToTeam1Command = (members, teamA) => {
             if (!selectedIndices.includes(index)) {
               selectedIndices.push(index);
             }
+          } else {
+            const nameIndex = allNames.findIndex(name =>
+              name.toLowerCase().includes(part.toLowerCase())
+            );
+            if (nameIndex !== -1) {
+              selectedIndices.push(nameIndex);
+            }
           }
         }
       }
@@ -73,16 +93,16 @@ const addToTeam1Command = (members, teamA) => {
       sendMessage(
         msg,
         'DEFAULT',
-        ADD_TO_TEAM.invalidSelection.replace(/{team}/g, '1'),
+        ADD_TO_TEAM.invalidSelection.replace(/{team}/g, teamName),
         { parse_mode: 'Markdown' }
       );
       return;
     }
 
-    selectedIndices.sort((a, b) => a - b);
-
+    selectedIndices = [...new Set(selectedIndices)].sort((a, b) => a - b);
     const selectedNames = selectedIndices.map(index => allNames[index]);
 
+    // Remove selected members from main list
     selectedNames.forEach(name => {
       for (const [userId, memberName] of members) {
         const nameOnly = memberName.split(' (')[0].trim();
@@ -93,16 +113,17 @@ const addToTeam1Command = (members, teamA) => {
       }
     });
 
+    // Add to selected team
     selectedNames.forEach((name, idx) => {
       const fakeId = Date.now() + Math.random() + idx;
-      teamA.set(fakeId, name);
+      team.set(fakeId, name);
     });
 
     const message = ADD_TO_TEAM.success
       .replace('{count}', selectedNames.length)
-      .replace('{team}', 'Team A')
+      .replaceAll('{team}', teamName)
       .replace('{selectedNames}', selectedNames.join('\n'))
-      .replace('{teamMembers}', Array.from(teamA.values()).join('\n'));
+      .replace('{teamMembers}', Array.from(team.values()).join('\n'));
 
     sendMessage(msg, 'DEFAULT', message, {
       parse_mode: 'Markdown',
@@ -110,4 +131,4 @@ const addToTeam1Command = (members, teamA) => {
   });
 };
 
-module.exports = addToTeam1Command;
+module.exports = addToTeamCommand;

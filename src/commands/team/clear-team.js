@@ -1,17 +1,57 @@
-const { RESET_TEAM_INDIVIDUAL } = require('../../utils/messages');
+const {
+  CLEAR_TEAM,
+  CLEAR_TEAM_INDIVIDUAL,
+  VALIDATION,
+} = require('../../utils/messages');
+const { isAdmin } = require('../../utils/validate');
 const { sendMessage } = require('../../utils/chat');
 
 const bot = require('../../bot');
 
-const resetTeam1Command = (teamA, members) => {
-  bot.onText(/^\/resetteam1$/, msg => {
-    const teamANames = Array.from(teamA.values());
+const clearTeamCommand = ({ teamA, teamB, members }) => {
+  bot.onText(/^\/clearteam$/, msg => {
+    if (!isAdmin(msg.from.id)) {
+      sendMessage(msg, 'DEFAULT', VALIDATION.onlyAdmin);
+      return;
+    }
+
+    if (teamA.size === 0 && teamB.size === 0) {
+      sendMessage(msg, 'DEFAULT', CLEAR_TEAM.emptyTeam);
+      return;
+    }
+
+    const allTeamMembers = [...teamA.values(), ...teamB.values()];
+    let restoredCount = 0;
+
+    allTeamMembers.forEach((name, index) => {
+      const fakeId = Date.now() + Math.random() + index;
+      members.set(fakeId, name);
+      restoredCount++;
+    });
+
+    teamA.clear();
+    teamB.clear();
+
+    sendMessage(msg, 'DEFAULT', CLEAR_TEAM.success);
+  });
+
+  bot.onText(/^\/clearteam (HOME|AWAY)$/, (msg, match) => {
+    if (!isAdmin(msg.from.id)) {
+      sendMessage(msg, 'DEFAULT', VALIDATION.onlyAdmin);
+      return;
+    }
+
+    const teamType = match[1];
+    const team = teamType === 'HOME' ? teamA : teamB;
+    const teamName = teamType === 'HOME' ? 'Home' : 'Away';
+    const teamANames = Array.from(team.values());
 
     if (teamANames.length === 0) {
       sendMessage(
         msg,
         'DEFAULT',
-        RESET_TEAM_INDIVIDUAL.emptyTeam.replace('{team}', 'Team A')
+        CLEAR_TEAM_INDIVIDUAL.emptyTeam.replace('{team}', teamName),
+        { parse_mode: 'Markdown' }
       );
       return;
     }
@@ -20,8 +60,8 @@ const resetTeam1Command = (teamA, members) => {
       .map((name, index) => `${index + 1}. ${name}`)
       .join('\n');
 
-    const message = RESET_TEAM_INDIVIDUAL.instruction
-      .replace('{team}', 'Team A')
+    const message = CLEAR_TEAM_INDIVIDUAL.instruction
+      .replace('{team}', teamName)
       .replace('{teamNum}', '1')
       .replace('{numberedList}', numberedList);
     sendMessage(msg, 'DEFAULT', message, {
@@ -29,15 +69,18 @@ const resetTeam1Command = (teamA, members) => {
     });
   });
 
-  bot.onText(/^\/resetteam1 (.+)$/, (msg, match) => {
-    const selection = match[1].trim();
-    const teamANames = Array.from(teamA.values());
+  bot.onText(/^\/clearteam (HOME|AWAY) (.+)$/, (msg, match) => {
+    const teamType = match[1];
+    const selection = match[2].trim();
+    const team = teamType === 'HOME' ? teamA : teamB;
+    const teamName = teamType === 'HOME' ? 'Home' : 'Away';
+    const teamANames = Array.from(team.values());
 
     if (teamANames.length === 0) {
       sendMessage(
         msg,
         'DEFAULT',
-        RESET_TEAM_INDIVIDUAL.emptyTeam.replace('{team}', 'Team A')
+        CLEAR_TEAM_INDIVIDUAL.emptyTeam.replace('{team}', teamName)
       );
       return;
     }
@@ -96,7 +139,7 @@ const resetTeam1Command = (teamA, members) => {
       sendMessage(
         msg,
         'DEFAULT',
-        RESET_TEAM_INDIVIDUAL.invalidSelection.replace(/{teamNum}/g, '1'),
+        CLEAR_TEAM_INDIVIDUAL.invalidSelection.replace(/{teamNum}/g, '1'),
         { parse_mode: 'Markdown' }
       );
       return;
@@ -108,10 +151,10 @@ const resetTeam1Command = (teamA, members) => {
     for (const index of selectedIndices) {
       const name = teamANames[index];
 
-      for (const [userId, memberName] of teamA) {
+      for (const [userId, memberName] of team) {
         const nameOnly = memberName.split(' (')[0].trim();
         if (nameOnly === name.split(' (')[0].trim()) {
-          teamA.delete(userId);
+          team.delete(userId);
           resetNames.push(name);
           break;
         }
@@ -119,7 +162,7 @@ const resetTeam1Command = (teamA, members) => {
     }
 
     if (resetNames.length === 0) {
-      sendMessage(msg, 'DEFAULT', RESET_TEAM_INDIVIDUAL.noResetMembers);
+      sendMessage(msg, 'DEFAULT', CLEAR_TEAM_INDIVIDUAL.noResetMembers);
       return;
     }
 
@@ -130,9 +173,9 @@ const resetTeam1Command = (teamA, members) => {
       addedCount++;
     });
 
-    const message = RESET_TEAM_INDIVIDUAL.success
+    const message = CLEAR_TEAM_INDIVIDUAL.success
       .replace('{count}', resetNames.length)
-      .replace('{team}', 'Team A')
+      .replace('{team}', teamName)
       .replace('{resetNames}', resetNames.join('\n'));
     sendMessage(msg, 'DEFAULT', message, {
       parse_mode: 'Markdown',
@@ -140,4 +183,4 @@ const resetTeam1Command = (teamA, members) => {
   });
 };
 
-module.exports = resetTeam1Command;
+module.exports = clearTeamCommand;

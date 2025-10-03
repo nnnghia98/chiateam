@@ -9,20 +9,16 @@ const startCommand = () => {
       `👋 *DANH SÁCH LỆNH HƯỚNG DẪN*
 
 📝 *Quản lý danh sách:*
-• \`/addme\` - Tự add vào list
-• \`/add\` - Add hộ vào list
-• \`/remove\` - Xóa khỏi list
-• \`/list\` - Xem list
-• \`/clearlist\` - Xóa toàn bộ list
+• \`/addme\` - Tự add vào bench
+• \`/add\` - Add hộ vào bench
+• \`/bench\` - Xem bench
+• \`/clearbench\` - Xóa member khỏi bench
 
 ⚽ *Quản lý team:*
 • \`/chiateam\` - Chia team
 • \`/team\` - Xem team
-• \`/addtoteam1\` - Thêm vào Team A
-• \`/addtoteam2\` - Thêm vào Team B
-• \`/resetteam\` - Hủy team
-• \`/resetteam1\` - Xóa member từ Team A
-• \`/resetteam2\` - Xóa member từ Team B
+• \`/addtoteam\` - Thêm vào Home/Away
+• \`/clearteam\` - Xóa member khỏi team
 
 💰 *Tiền sân:*
 • \`/tiensan\` - Thêm tiền sân
@@ -36,7 +32,6 @@ const startCommand = () => {
 • \`/leaderboard\` - Xem bảng xếp hạng
 • \`/update-leaderboard\` - Cập nhật thống kê
 • \`/player\` - Xem thông số chi tiết
-• \`/register\` - Đăng ký cầu thủ mới
 
 💡 Dùng sai cú pháp = ngu!`,
       { parse_mode: 'Markdown' }

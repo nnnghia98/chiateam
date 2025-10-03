@@ -2,14 +2,10 @@ const {
   startCommand,
   addMeCommand,
   addCommand,
-  listCommand,
+  benchCommand,
   chiateamCommand,
   teamCommand,
-  removeCommand,
-  resetCommand,
-  addToTeam1Command,
-  addToTeam2Command,
-  resetTeamCommand,
+  clearBenchCommand,
   unknownCommand,
   tiensanCommand,
   chiaTienCommand,
@@ -18,16 +14,16 @@ const {
   updateLeaderboardCommand,
   editStatsCommand,
   playerCommand,
-  registerCommand,
+  // registerCommand,
   sanCommand,
-  resetTeam1Command,
-  resetTeam2Command,
+  addToTeamCommand,
+  clearTeamCommand,
 } = require('./commands');
 
 const maintenanceMessage = require('./commands/maintainance');
 
 // Maintenance mode check
-const isMaintenanceMode = true; // Set to true to enable maintenance mode
+const isMaintenanceMode = false; // Set to true to enable maintenance mode
 const maintenanceUntil = '2026-10-02 12:00'; // Set maintenance end time
 
 if (isMaintenanceMode) {
@@ -47,21 +43,18 @@ if (isMaintenanceMode) {
 }
 
 const members = new Map();
-
 const teamA = new Map();
 const teamB = new Map();
-
 let tiensan = null;
 
 startCommand();
 unknownCommand();
-addMeCommand(members);
-chiateamCommand(members, teamA, teamB);
-resetTeamCommand(members, teamA, teamB);
-listCommand(members);
-removeCommand(members);
-resetCommand(members);
-addCommand(members);
+
+addMeCommand({ members });
+chiateamCommand({ members, teamA, teamB });
+benchCommand({ members });
+clearBenchCommand({ members });
+addCommand({ members });
 teamCommand(teamA, teamB);
 tiensanCommand(
   () => tiensan,
@@ -71,15 +64,13 @@ tiensanCommand(
 );
 chiaTienCommand(() => tiensan, teamA, teamB);
 taoVoteCommand();
-addToTeam1Command(members, teamA);
-addToTeam2Command(members, teamB);
 sanCommand();
 leaderboardCommand();
 updateLeaderboardCommand();
 editStatsCommand();
 playerCommand();
 // registerCommand();
-resetTeam1Command(teamA, members);
-resetTeam2Command(teamB, members);
+addToTeamCommand({ members, teamA, teamB });
+clearTeamCommand({ teamA, teamB, members });
 
 console.log('🤖 Bot is running...');
