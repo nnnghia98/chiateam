@@ -5,7 +5,6 @@ const {
   benchCommand,
   chiateamCommand,
   teamCommand,
-  removeCommand,
   clearBenchCommand,
   unknownCommand,
   tiensanCommand,
@@ -54,7 +53,6 @@ unknownCommand();
 addMeCommand({ members });
 chiateamCommand({ members, teamA, teamB });
 benchCommand({ members });
-removeCommand({ members });
 clearBenchCommand({ members });
 addCommand({ members });
 teamCommand(teamA, teamB);
