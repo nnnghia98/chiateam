@@ -3,7 +3,7 @@ const { sendMessage } = require('../../utils/chat');
 
 const bot = require('../../bot');
 
-const splitCommand = (members, teamA, teamB) => {
+const splitCommand = ({ members, teamA, teamB }) => {
   bot.onText(/^\/chiateam$/, msg => {
     if (members.size < 2 && teamA.size === 0 && teamB.size === 0) {
       sendMessage(msg, 'DEFAULT', '❗ Không đủ người để chia');

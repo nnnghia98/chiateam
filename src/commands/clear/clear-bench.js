@@ -4,15 +4,15 @@ const { sendMessage } = require('../../utils/chat');
 
 const bot = require('../../bot');
 
-const resetCommand = members => {
-  bot.onText(/^\/clearlist$/, msg => {
+const clearBenchCommand = ({ members }) => {
+  bot.onText(/^\/clearbench$/, msg => {
     if (!isAdmin(msg.from.id)) {
       sendMessage(msg, 'DEFAULT', VALIDATION.onlyAdmin);
       return;
     }
 
     if (members.size === 0) {
-      sendMessage(msg, 'DEFAULT', RESET.emptyList);
+      sendMessage(msg, 'DEFAULT', RESET.emptyBench);
       return;
     }
 
@@ -21,4 +21,4 @@ const resetCommand = members => {
   });
 };
 
-module.exports = resetCommand;
+module.exports = clearBenchCommand;

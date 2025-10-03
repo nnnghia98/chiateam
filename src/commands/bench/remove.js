@@ -1,14 +1,15 @@
-const { ADD_TO_TEAM } = require('../../utils/messages');
+const { isAdmin } = require('../../utils/validate');
+const { REMOVE, VALIDATION } = require('../../utils/messages');
 const { sendMessage } = require('../../utils/chat');
 
 const bot = require('../../bot');
 
-const addToTeam2Command = (members, teamB) => {
-  bot.onText(/^\/addtoteam2$/, msg => {
+const removeCommand = ({ members }) => {
+  bot.onText(/^\/remove$/, msg => {
     const allNames = Array.from(members.values());
 
     if (allNames.length === 0) {
-      sendMessage(msg, 'DEFAULT', ADD_TO_TEAM.emptyList);
+      sendMessage(msg, 'DEFAULT', REMOVE.emptyList);
       return;
     }
 
@@ -16,31 +17,30 @@ const addToTeam2Command = (members, teamB) => {
       .map((name, index) => `${index + 1}. ${name}`)
       .join('\n');
 
-    const message = ADD_TO_TEAM.instruction
-      .replace('{numberedList}', numberedList)
-      .replace(/{team}/g, '2');
-
+    const message = REMOVE.instruction.replace('{numberedList}', numberedList);
     sendMessage(msg, 'DEFAULT', message, {
       parse_mode: 'Markdown',
     });
   });
 
-  bot.onText(/^\/addtoteam2 (.+)$/, (msg, match) => {
+  bot.onText(/^\/remove (.+)$/, (msg, match) => {
+    if (!isAdmin(msg.from.id)) {
+      sendMessage(msg, 'DEFAULT', VALIDATION.onlyAdmin);
+      return;
+    }
+
     const selection = match[1].trim();
     const allNames = Array.from(members.values());
-
     if (allNames.length === 0) {
-      sendMessage(msg, 'DEFAULT', ADD_TO_TEAM.emptyList);
+      sendMessage(msg, 'DEFAULT', REMOVE.emptyList);
       return;
     }
 
     let selectedIndices = [];
-
     if (selection.toLowerCase() === 'all') {
       selectedIndices = allNames.map((_, index) => index);
     } else {
       const parts = selection.split(',').map(part => part.trim());
-
       for (const part of parts) {
         if (part.includes('-')) {
           const [start, end] = part.split('-').map(num => parseInt(num.trim()));
@@ -68,48 +68,36 @@ const addToTeam2Command = (members, teamB) => {
         }
       }
     }
-
     if (selectedIndices.length === 0) {
-      sendMessage(
-        msg,
-        'DEFAULT',
-        ADD_TO_TEAM.invalidSelection.replace(/{team}/g, '2'),
-        { parse_mode: 'Markdown' }
-      );
+      sendMessage(msg, 'DEFAULT', REMOVE.invalidSelection, {
+        parse_mode: 'Markdown',
+      });
       return;
     }
-
-    selectedIndices.sort((a, b) => a - b);
-
-    const selectedNames = selectedIndices.map(index => allNames[index]);
-
-    // Remove selected members from main list
-    selectedNames.forEach(name => {
+    selectedIndices.sort((a, b) => b - a);
+    const removedNames = [];
+    for (const index of selectedIndices) {
+      const name = allNames[index];
       for (const [userId, memberName] of members) {
         const nameOnly = memberName.split(' (')[0].trim();
         if (nameOnly === name.split(' (')[0].trim()) {
           members.delete(userId);
+          removedNames.push(name);
           break;
         }
       }
-    });
-
-    // Add to Team B
-    selectedNames.forEach((name, idx) => {
-      const fakeId = Date.now() + Math.random() + idx;
-      teamB.set(fakeId, name);
-    });
-
-    const message = ADD_TO_TEAM.success
-      .replace('{count}', selectedNames.length)
-      .replace('{team}', 'Team B')
-      .replace('{selectedNames}', selectedNames.join('\n'))
-      .replace('{teamMembers}', Array.from(teamB.values()).join('\n'));
-
+    }
+    if (removedNames.length === 0) {
+      sendMessage(msg, 'DEFAULT', REMOVE.noRemovedMembers);
+      return;
+    }
+    const message = REMOVE.success
+      .replace('{count}', removedNames.length)
+      .replace('{removedNames}', removedNames.join('\n'));
     sendMessage(msg, 'DEFAULT', message, {
       parse_mode: 'Markdown',
     });
   });
 };
 
-module.exports = addToTeam2Command;
+module.exports = removeCommand;

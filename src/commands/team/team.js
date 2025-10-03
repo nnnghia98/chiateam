@@ -2,7 +2,7 @@ const { sendMessage } = require('../../utils/chat');
 
 const bot = require('../../bot');
 
-const teamsCommand = (teamA, teamB) => {
+const teamsCommand = ({ teamA, teamB }) => {
   bot.onText(/^\/team$/, msg => {
     if (teamA.size === 0 && teamB.size === 0) {
       sendMessage(

@@ -5,7 +5,7 @@ const { sendMessage } = require('../../utils/chat');
 
 const bot = require('../../bot');
 
-const addMeCommand = members => {
+const addMeCommand = ({ members }) => {
   bot.onText(PATTERNS.add_me, msg => {
     const userId = msg.from.id;
     const name =

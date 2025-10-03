@@ -9,17 +9,16 @@ const startCommand = () => {
       `👋 *DANH SÁCH LỆNH HƯỚNG DẪN*
 
 📝 *Quản lý danh sách:*
-• \`/addme\` - Tự add vào list
-• \`/add\` - Add hộ vào list
-• \`/remove\` - Xóa khỏi list
-• \`/list\` - Xem list
-• \`/clearlist\` - Xóa toàn bộ list
+• \`/addme\` - Tự add vào bench
+• \`/add\` - Add hộ vào bench
+• \`/remove\` - Xóa khỏi bench
+• \`/bench\` - Xem bench
+• \`/clearbench\` - Xóa toàn bộ bench
 
 ⚽ *Quản lý team:*
 • \`/chiateam\` - Chia team
 • \`/team\` - Xem team
-• \`/addtoteam1\` - Thêm vào Team A
-• \`/addtoteam2\` - Thêm vào Team B
+• \`/addtoteam\` - Thêm vào Home/Away
 • \`/resetteam\` - Hủy team
 • \`/resetteam1\` - Xóa member từ Team A
 • \`/resetteam2\` - Xóa member từ Team B

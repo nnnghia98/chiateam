@@ -5,7 +5,7 @@ const { PATTERNS } = require('../../utils/constants');
 const bot = require('../../bot');
 const { sendMessage } = require('../../utils/chat');
 
-const addListCommand = members => {
+const addCommand = ({ members }) => {
   bot.onText(PATTERNS.add, msg => {
     sendMessage(msg, 'DEFAULT', ADD.instruction, {
       parse_mode: 'Markdown',
@@ -29,6 +29,7 @@ const addListCommand = members => {
     const allNames = Array.from(members.values());
     let addedCount = 0;
     const invalidNames = [];
+
     namesToAdd.forEach(name => {
       if (!isValidName(name)) {
         invalidNames.push(name);
@@ -64,4 +65,4 @@ const addListCommand = members => {
   });
 };
 
-module.exports = addListCommand;
+module.exports = addCommand;
