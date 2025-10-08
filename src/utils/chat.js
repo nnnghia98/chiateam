@@ -10,11 +10,11 @@ const THREAD_TYPES = {
 
 const CHAT_ID = process.env.CHAT_ID;
 
-const sendMessage = ({ msg, type, message, options = {} }) => {
+const sendMessage = async ({ msg, type, message, options = {} }) => {
   const chatId = CHAT_ID ?? msg.chat.id;
   const threadId = THREAD_TYPES[type];
 
-  return bot.sendMessage(chatId, message, {
+  return await bot.sendMessage(chatId, message, {
     ...options,
     message_thread_id: threadId,
   });
