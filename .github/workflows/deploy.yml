@@ -60,6 +60,9 @@ jobs:
             APP_DIR="${APP_DIR}"
             cd "\$APP_DIR"
 
+            # Xóa toàn bộ thư mục src hiện có để tránh giữ lại file cũ
+            rm -rf src
+
             # Giải nén code
             tar -xzf build.tgz
             rm -f build.tgz
