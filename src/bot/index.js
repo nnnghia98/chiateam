@@ -16,6 +16,29 @@ if (!token) {
   process.exit(1);
 }
 
-const bot = new TelegramBot(token, { polling: true });
+let bot;
+
+try {
+  bot = new TelegramBot(token, { polling: true });
+
+  // Handle polling errors
+  bot.on('polling_error', error => {
+    console.error('❌ Telegram Bot polling error:', error.message);
+    console.error('Error details:', error);
+  });
+
+  // Handle webhook errors
+  bot.on('webhook_error', error => {
+    console.error('❌ Telegram Bot webhook error:', error.message);
+    console.error('Error details:', error);
+  });
+
+  console.log('✅ Telegram Bot initialized successfully');
+} catch (error) {
+  console.error('❌ Failed to initialize Telegram Bot:', error.message);
+  console.error('Error details:', error);
+  // Don't exit the process, just export null so the app can continue
+  bot = null;
+}
 
 module.exports = bot;
