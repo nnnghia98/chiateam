@@ -12,6 +12,8 @@ const dbPath = path.join(DB_DIR, DATABASE_NAME);
 
 const db = new sqlite3.Database(dbPath);
 
+console.log('db config===', { DATABASE_NAME, DB_DIR, SCHEMA_PATH, dbPath });
+
 module.exports = {
   dbPath,
   SCHEMA_PATH,
