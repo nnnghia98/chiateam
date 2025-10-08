@@ -23,7 +23,7 @@ async function initDatabase() {
 
 // Check existing tables and create missing ones
 function checkAndCreateTables(resolve, reject) {
-  const tables = ['leaderboard', 'player'];
+  const tables = ['leaderboard', 'players'];
   let tablesChecked = 0;
   let tablesCreated = 0;
 
@@ -86,9 +86,9 @@ function createTable(tableName, resolve, reject) {
       `;
       break;
 
-    case 'player':
+    case 'players':
       createTableSQL = `
-        CREATE TABLE player (
+        CREATE TABLE players (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           tele_id INTEGER NOT NULL UNIQUE,
           number INTEGER NOT NULL,
