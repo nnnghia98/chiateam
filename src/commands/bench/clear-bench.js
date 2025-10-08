@@ -9,7 +9,11 @@ const clearBenchCommand = ({ members }) => {
     const allNames = Array.from(members.values());
 
     if (allNames.length === 0) {
-      sendMessage(msg, 'DEFAULT', CLEAR_BENCH.emptyBench);
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: CLEAR_BENCH.emptyBench,
+      });
       return;
     }
 
@@ -21,19 +25,32 @@ const clearBenchCommand = ({ members }) => {
       '{numberedList}',
       numberedList
     );
-    sendMessage(msg, 'DEFAULT', message, {
-      parse_mode: 'Markdown',
+    sendMessage({
+      msg,
+      type: 'DEFAULT',
+      message: message,
+      options: {
+        parse_mode: 'Markdown',
+      },
     });
   });
 
   bot.onText(/^\/clearbench (.+)$/, (msg, match) => {
     if (!isAdmin(msg.from.id)) {
-      sendMessage(msg, 'DEFAULT', VALIDATION.onlyAdmin);
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: VALIDATION.onlyAdmin,
+      });
       return;
     }
 
     if (members.size === 0) {
-      sendMessage(msg, 'DEFAULT', CLEAR_BENCH.emptyBench);
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: CLEAR_BENCH.emptyBench,
+      });
       return;
     }
 
@@ -43,7 +60,11 @@ const clearBenchCommand = ({ members }) => {
     // Handle clear all
     if (selection.toLowerCase() === 'all') {
       members.clear();
-      sendMessage(msg, 'DEFAULT', CLEAR_BENCH.clearAllSuccess);
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: CLEAR_BENCH.clearAllSuccess,
+      });
       return;
     }
 
@@ -84,7 +105,12 @@ const clearBenchCommand = ({ members }) => {
         '/remove',
         '/clearbench'
       );
-      sendMessage(msg, 'DEFAULT', invalidMsg, { parse_mode: 'Markdown' });
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: invalidMsg,
+        options: { parse_mode: 'Markdown' },
+      });
       return;
     }
 
@@ -105,14 +131,23 @@ const clearBenchCommand = ({ members }) => {
 
     if (removedNames.length === 0) {
       const noRemoved = CLEAR_BENCH.noRemovedMembers;
-      sendMessage(msg, 'DEFAULT', noRemoved);
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: noRemoved,
+      });
       return;
     }
 
     const successMsg = CLEAR_BENCH.success
       .replace('{count}', removedNames.length)
       .replace('{removedNames}', removedNames.join('\n'));
-    sendMessage(msg, 'DEFAULT', successMsg, { parse_mode: 'Markdown' });
+    sendMessage({
+      msg,
+      type: 'DEFAULT',
+      message: successMsg,
+      options: { parse_mode: 'Markdown' },
+    });
   });
 };
 

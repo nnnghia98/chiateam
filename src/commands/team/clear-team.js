@@ -11,12 +11,20 @@ const bot = require('../../bot');
 const clearTeamCommand = ({ teamA, teamB, members }) => {
   bot.onText(/^\/clearteam$/, msg => {
     if (!isAdmin(msg.from.id)) {
-      sendMessage(msg, 'DEFAULT', VALIDATION.onlyAdmin);
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: VALIDATION.onlyAdmin,
+      });
       return;
     }
 
     if (teamA.size === 0 && teamB.size === 0) {
-      sendMessage(msg, 'DEFAULT', CLEAR_TEAM.emptyTeam);
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: CLEAR_TEAM.emptyTeam,
+      });
       return;
     }
 
@@ -32,12 +40,20 @@ const clearTeamCommand = ({ teamA, teamB, members }) => {
     teamA.clear();
     teamB.clear();
 
-    sendMessage(msg, 'DEFAULT', CLEAR_TEAM.success);
+    sendMessage({
+      msg,
+      type: 'DEFAULT',
+      message: CLEAR_TEAM.success,
+    });
   });
 
   bot.onText(/^\/clearteam (HOME|AWAY)$/, (msg, match) => {
     if (!isAdmin(msg.from.id)) {
-      sendMessage(msg, 'DEFAULT', VALIDATION.onlyAdmin);
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: VALIDATION.onlyAdmin,
+      });
       return;
     }
 
@@ -47,12 +63,12 @@ const clearTeamCommand = ({ teamA, teamB, members }) => {
     const teamANames = Array.from(team.values());
 
     if (teamANames.length === 0) {
-      sendMessage(
+      sendMessage({
         msg,
-        'DEFAULT',
-        CLEAR_TEAM_INDIVIDUAL.emptyTeam.replace('{team}', teamName),
-        { parse_mode: 'Markdown' }
-      );
+        type: 'DEFAULT',
+        message: CLEAR_TEAM_INDIVIDUAL.emptyTeam.replace('{team}', teamName),
+        options: { parse_mode: 'Markdown' },
+      });
       return;
     }
 
@@ -64,8 +80,13 @@ const clearTeamCommand = ({ teamA, teamB, members }) => {
       .replace('{team}', teamName)
       .replace('{teamNum}', '1')
       .replace('{numberedList}', numberedList);
-    sendMessage(msg, 'DEFAULT', message, {
-      parse_mode: 'Markdown',
+    sendMessage({
+      msg,
+      type: 'DEFAULT',
+      message: message,
+      options: {
+        parse_mode: 'Markdown',
+      },
     });
   });
 
@@ -77,11 +98,11 @@ const clearTeamCommand = ({ teamA, teamB, members }) => {
     const teamANames = Array.from(team.values());
 
     if (teamANames.length === 0) {
-      sendMessage(
+      sendMessage({
         msg,
-        'DEFAULT',
-        CLEAR_TEAM_INDIVIDUAL.emptyTeam.replace('{team}', teamName)
-      );
+        type: 'DEFAULT',
+        message: CLEAR_TEAM_INDIVIDUAL.emptyTeam.replace('{team}', teamName),
+      });
       return;
     }
 
@@ -136,12 +157,15 @@ const clearTeamCommand = ({ teamA, teamB, members }) => {
     }
 
     if (selectedIndices.length === 0) {
-      sendMessage(
+      sendMessage({
         msg,
-        'DEFAULT',
-        CLEAR_TEAM_INDIVIDUAL.invalidSelection.replace(/{teamNum}/g, '1'),
-        { parse_mode: 'Markdown' }
-      );
+        type: 'DEFAULT',
+        message: CLEAR_TEAM_INDIVIDUAL.invalidSelection.replace(
+          /{teamNum}/g,
+          '1'
+        ),
+        options: { parse_mode: 'Markdown' },
+      });
       return;
     }
 
@@ -162,7 +186,11 @@ const clearTeamCommand = ({ teamA, teamB, members }) => {
     }
 
     if (resetNames.length === 0) {
-      sendMessage(msg, 'DEFAULT', CLEAR_TEAM_INDIVIDUAL.noResetMembers);
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: CLEAR_TEAM_INDIVIDUAL.noResetMembers,
+      });
       return;
     }
 
@@ -177,8 +205,13 @@ const clearTeamCommand = ({ teamA, teamB, members }) => {
       .replace('{count}', resetNames.length)
       .replace('{team}', teamName)
       .replace('{resetNames}', resetNames.join('\n'));
-    sendMessage(msg, 'DEFAULT', message, {
-      parse_mode: 'Markdown',
+    sendMessage({
+      msg,
+      type: 'DEFAULT',
+      message: message,
+      options: {
+        parse_mode: 'Markdown',
+      },
     });
   });
 };

@@ -7,8 +7,13 @@ const { sendMessage } = require('../../utils/chat');
 
 const addCommand = ({ members }) => {
   bot.onText(PATTERNS.add, msg => {
-    sendMessage(msg, 'DEFAULT', ADD.instruction, {
-      parse_mode: 'Markdown',
+    sendMessage({
+      msg,
+      type: 'DEFAULT',
+      message: ADD.instruction,
+      options: {
+        parse_mode: 'Markdown',
+      },
     });
   });
 
@@ -20,8 +25,13 @@ const addCommand = ({ members }) => {
       .filter(n => n);
 
     if (namesToAdd.length === 0) {
-      sendMessage(msg, 'DEFAULT', ADD.warning, {
-        parse_mode: 'Markdown',
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: ADD.warning,
+        options: {
+          parse_mode: 'Markdown',
+        },
       });
       return;
     }
@@ -44,23 +54,27 @@ const addCommand = ({ members }) => {
     });
 
     if (invalidNames.length > 0) {
-      sendMessage(
+      sendMessage({
         msg,
-        'DEFAULT',
-        `${ADD.invalidNames} ${invalidNames.join(', ')}`
-      );
+        type: 'DEFAULT',
+        message: `${ADD.invalidNames} ${invalidNames.join(', ')}`,
+      });
 
       return;
     }
 
     if (addedCount === 0) {
-      sendMessage(msg, 'DEFAULT', ADD.noNewMembers);
-    } else {
-      sendMessage(
+      sendMessage({
         msg,
-        'DEFAULT',
-        ADD.success.replace('${addedCount}', addedCount)
-      );
+        type: 'DEFAULT',
+        message: ADD.noNewMembers,
+      });
+    } else {
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: ADD.success.replace('${addedCount}', addedCount),
+      });
     }
   });
 };

@@ -9,11 +9,11 @@ const leaderboardCommand = () => {
       const leaderboard = await getLeaderboard();
 
       if (leaderboard.length === 0) {
-        sendMessage(
+        sendMessage({
           msg,
-          'STATISTICS',
-          '📊 Bảng xếp hạng trống. Chưa có dữ liệu thống kê nào.'
-        );
+          type: 'STATISTICS',
+          message: '📊 Bảng xếp hạng trống. Chưa có dữ liệu thống kê nào.',
+        });
         return;
       }
 
@@ -46,16 +46,22 @@ const leaderboardCommand = () => {
       message +=
         '💡 Sử dụng `/update-leaderboard ASSIST player_number value` để cập nhật kiến tạo';
 
-      sendMessage(msg, 'STATISTICS', message, {
-        parse_mode: 'Markdown',
+      sendMessage({
+        msg,
+        type: 'STATISTICS',
+        message: message,
+        options: {
+          parse_mode: 'Markdown',
+        },
       });
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
-      sendMessage(
+      sendMessage({
         msg,
-        'STATISTICS',
-        '❌ Có lỗi xảy ra khi tải bảng xếp hạng. Vui lòng thử lại sau.'
-      );
+        type: 'STATISTICS',
+        message:
+          '❌ Có lỗi xảy ra khi tải bảng xếp hạng. Vui lòng thử lại sau.',
+      });
     }
   });
 };

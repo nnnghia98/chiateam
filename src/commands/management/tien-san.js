@@ -8,28 +8,36 @@ module.exports = (getTiensan, setTiensan) => {
   bot.onText(/^\/tiensan (.+)$/, (msg, match) => {
     const input = match[1].replace(/[^\d]/g, '');
     if (!input || isNaN(Number(input))) {
-      sendMessage(msg, 'DEFAULT', TIEN_SAN.instruction);
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: TIEN_SAN.instruction,
+      });
       return;
     }
     const value = Number(input);
     setTiensan(value);
-    sendMessage(
+    sendMessage({
       msg,
-      'ANNOUNCEMENT',
-      TIEN_SAN.success.replace('{value}', formatMoney(value))
-    );
+      type: 'ANNOUNCEMENT',
+      message: TIEN_SAN.success.replace('{value}', formatMoney(value)),
+    });
   });
 
   bot.onText(/^\/tiensan$/, msg => {
     const tiensan = getTiensan();
     if (!tiensan) {
-      sendMessage(msg, 'DEFAULT', TIEN_SAN.noTiensan);
-    } else {
-      sendMessage(
+      sendMessage({
         msg,
-        'ANNOUNCEMENT',
-        TIEN_SAN.success.replace('{value}', formatMoney(tiensan))
-      );
+        type: 'DEFAULT',
+        message: TIEN_SAN.noTiensan,
+      });
+    } else {
+      sendMessage({
+        msg,
+        type: 'ANNOUNCEMENT',
+        message: TIEN_SAN.success.replace('{value}', formatMoney(tiensan)),
+      });
     }
   });
 };

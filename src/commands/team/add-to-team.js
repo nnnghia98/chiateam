@@ -10,7 +10,11 @@ const addToTeamCommand = ({ members, teamA, teamB }) => {
     const allNames = Array.from(members.values());
 
     if (allNames.length === 0) {
-      sendMessage(msg, 'DEFAULT', ADD_TO_TEAM.emptyList);
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: ADD_TO_TEAM.emptyList,
+      });
       return;
     }
 
@@ -22,8 +26,13 @@ const addToTeamCommand = ({ members, teamA, teamB }) => {
       .replace('{numberedList}', numberedList)
       .replace(/{team}/g, teamName);
 
-    sendMessage(msg, 'MAIN', message, {
-      parse_mode: 'Markdown',
+    sendMessage({
+      msg,
+      type: 'MAIN',
+      message: message,
+      options: {
+        parse_mode: 'Markdown',
+      },
     });
   });
 
@@ -35,7 +44,11 @@ const addToTeamCommand = ({ members, teamA, teamB }) => {
     const allNames = Array.from(members.values());
 
     if (allNames.length === 0) {
-      sendMessage(msg, 'DEFAULT', ADD_TO_TEAM.emptyList);
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: ADD_TO_TEAM.emptyList,
+      });
       return;
     }
 
@@ -90,12 +103,12 @@ const addToTeamCommand = ({ members, teamA, teamB }) => {
     }
 
     if (selectedIndices.length === 0) {
-      sendMessage(
+      sendMessage({
         msg,
-        'DEFAULT',
-        ADD_TO_TEAM.invalidSelection.replace(/{team}/g, teamName),
-        { parse_mode: 'Markdown' }
-      );
+        type: 'DEFAULT',
+        message: ADD_TO_TEAM.invalidSelection.replace(/{team}/g, teamName),
+        options: { parse_mode: 'Markdown' },
+      });
       return;
     }
 
@@ -125,8 +138,13 @@ const addToTeamCommand = ({ members, teamA, teamB }) => {
       .replace('{selectedNames}', selectedNames.join('\n'))
       .replace('{teamMembers}', Array.from(team.values()).join('\n'));
 
-    sendMessage(msg, 'DEFAULT', message, {
-      parse_mode: 'Markdown',
+    sendMessage({
+      msg,
+      type: 'DEFAULT',
+      message: message,
+      options: {
+        parse_mode: 'Markdown',
+      },
     });
   });
 };

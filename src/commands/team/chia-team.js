@@ -6,13 +6,21 @@ const bot = require('../../bot');
 const splitCommand = ({ members, teamA, teamB }) => {
   bot.onText(/^\/chiateam$/, msg => {
     if (members.size < 2 && teamA.size === 0 && teamB.size === 0) {
-      sendMessage(msg, 'DEFAULT', '❗ Không đủ người để chia');
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: '❗ Không đủ người để chia',
+      });
       return;
     }
 
     if (teamA.size > 0 || teamB.size > 0) {
       if (members.size === 0) {
-        sendMessage(msg, 'DEFAULT', '❗ Không có member mới để thêm vào team');
+        sendMessage({
+          msg,
+          type: 'DEFAULT',
+          message: '❗ Không có member mới để thêm vào team',
+        });
         return;
       }
 
@@ -34,8 +42,13 @@ const splitCommand = ({ members, teamA, teamB }) => {
         teamA.values()
       ).join('\n')}\n\n👤 *Team B:*\n${Array.from(teamB.values()).join('\n')}`;
 
-      sendMessage(msg, 'DEFAULT', message, {
-        parse_mode: 'Markdown',
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: message,
+        options: {
+          parse_mode: 'Markdown',
+        },
       });
       return;
     }
@@ -61,8 +74,13 @@ const splitCommand = ({ members, teamA, teamB }) => {
       teamA.values()
     ).join('\n')}\n\n👤 *AWAY:*\n${Array.from(teamB.values()).join('\n')}`;
 
-    sendMessage(msg, 'ANNOUNCEMENT', message, {
-      parse_mode: 'Markdown',
+    sendMessage({
+      msg,
+      type: 'ANNOUNCEMENT',
+      message: message,
+      options: {
+        parse_mode: 'Markdown',
+      },
     });
   });
 };

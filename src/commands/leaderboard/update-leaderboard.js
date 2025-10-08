@@ -18,8 +18,13 @@ const updateLeaderboardCommand = () => {
       const parts = args.split(' ');
 
       if (parts.length < 2) {
-        sendMessage(msg, 'DEFAULT', UPDATE_LEADERBOARD.invalidSyntax, {
-          parse_mode: 'Markdown',
+        sendMessage({
+          msg,
+          type: 'DEFAULT',
+          message: UPDATE_LEADERBOARD.invalidSyntax,
+          options: {
+            parse_mode: 'Markdown',
+          },
         });
         return;
       }
@@ -34,7 +39,12 @@ const updateLeaderboardCommand = () => {
             '{result}',
             result
           );
-          sendMessage(msg, 'DEFAULT', message, { parse_mode: 'Markdown' });
+          sendMessage({
+            msg,
+            type: 'DEFAULT',
+            message: message,
+            options: { parse_mode: 'Markdown' },
+          });
           return;
         }
 
@@ -42,15 +52,25 @@ const updateLeaderboardCommand = () => {
         const value = parseInt(parts[2]);
 
         if (isNaN(playerNumber) || playerNumber <= 0) {
-          sendMessage(msg, 'DEFAULT', UPDATE_LEADERBOARD.invalidPlayerNumber, {
-            parse_mode: 'Markdown',
+          sendMessage({
+            msg,
+            type: 'DEFAULT',
+            message: UPDATE_LEADERBOARD.invalidPlayerNumber,
+            options: {
+              parse_mode: 'Markdown',
+            },
           });
           return;
         }
 
         if (isNaN(value)) {
-          sendMessage(msg, 'DEFAULT', UPDATE_LEADERBOARD.invalidValue, {
-            parse_mode: 'Markdown',
+          sendMessage({
+            msg,
+            type: 'DEFAULT',
+            message: UPDATE_LEADERBOARD.invalidValue,
+            options: {
+              parse_mode: 'Markdown',
+            },
           });
           return;
         }
@@ -75,8 +95,13 @@ const updateLeaderboardCommand = () => {
               .replace('{valueText}', valueText);
           }
 
-          sendMessage(msg, 'STATISTICS', message, {
-            parse_mode: 'Markdown',
+          sendMessage({
+            msg,
+            type: 'STATISTICS',
+            message: message,
+            options: {
+              parse_mode: 'Markdown',
+            },
           });
         } catch (error) {
           console.error(`Error updating ${result.toLowerCase()}:`, error);
@@ -84,15 +109,24 @@ const updateLeaderboardCommand = () => {
             result === 'GOAL'
               ? UPDATE_LEADERBOARD.goalUpdateError
               : UPDATE_LEADERBOARD.assistUpdateError;
-          sendMessage(msg, 'DEFAULT', errorMessage);
+          sendMessage({
+            msg,
+            type: 'DEFAULT',
+            message: errorMessage,
+          });
         }
         return;
       }
 
       // Validate result - chỉ chấp nhận WIN, LOSE hoặc DRAW
       if (result !== 'WIN' && result !== 'LOSE' && result !== 'DRAW') {
-        sendMessage(msg, 'DEFAULT', UPDATE_LEADERBOARD.invalidResult, {
-          parse_mode: 'Markdown',
+        sendMessage({
+          msg,
+          type: 'DEFAULT',
+          message: UPDATE_LEADERBOARD.invalidResult,
+          options: {
+            parse_mode: 'Markdown',
+          },
         });
         return;
       }
@@ -117,8 +151,13 @@ const updateLeaderboardCommand = () => {
       }
 
       if (playerIds.length === 0) {
-        sendMessage(msg, 'DEFAULT', UPDATE_LEADERBOARD.noValidPlayerIds, {
-          parse_mode: 'Markdown',
+        sendMessage({
+          msg,
+          type: 'DEFAULT',
+          message: UPDATE_LEADERBOARD.noValidPlayerIds,
+          options: {
+            parse_mode: 'Markdown',
+          },
         });
         return;
       }
@@ -130,8 +169,13 @@ const updateLeaderboardCommand = () => {
           '{invalidIds}',
           invalidIds.join(', ')
         );
-        sendMessage(msg, 'DEFAULT', message, {
-          parse_mode: 'Markdown',
+        sendMessage({
+          msg,
+          type: 'DEFAULT',
+          message: message,
+          options: {
+            parse_mode: 'Markdown',
+          },
         });
         return;
       }
@@ -166,19 +210,33 @@ const updateLeaderboardCommand = () => {
 
       message += '\n💡 Sử dụng `/leaderboard` để xem bảng xếp hạng mới';
 
-      sendMessage(msg, 'STATISTICS', message, {
-        parse_mode: 'Markdown',
+      sendMessage({
+        msg,
+        type: 'STATISTICS',
+        message: message,
+        options: {
+          parse_mode: 'Markdown',
+        },
       });
     } catch (error) {
       console.error('Error updating leaderboard:', error);
-      sendMessage(msg, 'DEFAULT', UPDATE_LEADERBOARD.updateError);
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: UPDATE_LEADERBOARD.updateError,
+      });
     }
   });
 
   // Handle command without parameters
   bot.onText(/^\/update-leaderboard$/, msg => {
-    sendMessage(msg, 'DEFAULT', UPDATE_LEADERBOARD.updateUsage, {
-      parse_mode: 'Markdown',
+    sendMessage({
+      msg,
+      type: 'DEFAULT',
+      message: UPDATE_LEADERBOARD.updateUsage,
+      options: {
+        parse_mode: 'Markdown',
+      },
     });
   });
 };

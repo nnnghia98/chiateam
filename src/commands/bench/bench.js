@@ -6,16 +6,20 @@ const bot = require('../../bot');
 const benchCommand = ({ members }) => {
   bot.onText(/^\/bench$/, msg => {
     if (members.size === 0) {
-      sendMessage(msg, 'DEFAULT', BENCH.emptyBench);
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: BENCH.emptyBench,
+      });
       return;
     }
     const names = Array.from(members.values());
 
-    sendMessage(
+    sendMessage({
       msg,
-      'DEFAULT',
-      BENCH.success.replace('{names}', names.join('\n'))
-    );
+      type: 'DEFAULT',
+      message: BENCH.success.replace('{names}', names.join('\n')),
+    });
   });
 };
 

@@ -3,10 +3,10 @@ const bot = require('../../bot');
 
 const startCommand = () => {
   bot.onText(/^\/start$/, msg => {
-    sendMessage(
+    sendMessage({
       msg,
-      'MAIN',
-      `👋 *DANH SÁCH LỆNH HƯỚNG DẪN*
+      type: 'MAIN',
+      message: `👋 *DANH SÁCH LỆNH HƯỚNG DẪN*
 
 📝 *Quản lý danh sách:*
 • \`/addme\` - Tự add vào bench
@@ -34,8 +34,8 @@ const startCommand = () => {
 • \`/player\` - Xem thông số chi tiết
 
 💡 Dùng sai cú pháp = ngu!`,
-      { parse_mode: 'Markdown' }
-    );
+      options: { parse_mode: 'Markdown' },
+    });
   });
 };
 

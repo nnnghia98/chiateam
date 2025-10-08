@@ -5,11 +5,11 @@ const bot = require('../../bot');
 const teamsCommand = ({ teamA, teamB }) => {
   bot.onText(/^\/team$/, msg => {
     if (teamA.size === 0 && teamB.size === 0) {
-      sendMessage(
+      sendMessage({
         msg,
-        'DEFAULT',
-        '⚠️ Chưa có team nào được chia. Dùng /chiateam trước'
-      );
+        type: 'DEFAULT',
+        message: '⚠️ Chưa có team nào được chia. Dùng /chiateam trước',
+      });
       return;
     }
 
@@ -17,8 +17,13 @@ const teamsCommand = ({ teamA, teamB }) => {
       teamA.values()
     ).join('\n')}\n\n👤 *AWAY:*\n${Array.from(teamB.values()).join('\n')}`;
 
-    sendMessage(msg, 'DEFAULT', message, {
-      parse_mode: 'Markdown',
+    sendMessage({
+      msg,
+      type: 'DEFAULT',
+      message,
+      options: {
+        parse_mode: 'Markdown',
+      },
     });
   });
 };

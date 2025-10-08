@@ -107,12 +107,10 @@ const TAO_VOTE = {
 
 const REGISTER = {
   instruction: `📋 *Cách sử dụng /register:*
-• \`/register [NUMBER] [NAME]\` - Đăng ký với số áo và tên
-• \`/register [NUMBER] [NAME] [TELE_ID] [USERNAME]\` - Đăng ký với đầy đủ thông tin
+• /register [NUMBER] [NAME] - Đăng ký với số áo và tên
+• /register [NUMBER] [NAME] [TELE_ID] [USERNAME] - Đăng ký với đầy đủ thông tin
 
-Ví dụ: \`/register 10 Nghia\` hoặc \`/register 10 Nghia 123456789 nghia98\`
-
-💡 *Lưu ý:* Nếu không cung cấp TELE_ID và USERNAME, bot sẽ tự động lấy từ chat của bạn.`,
+Ví dụ: /register 10 Nghia hoặc /register 10 Nghia 123456789 nghia98`,
   warning:
     '⚠️ Cần ít nhất 2 tham số: NUMBER và NAME.\n\nVí dụ: `/register 10 Nghia`',
   invalidNumber:
