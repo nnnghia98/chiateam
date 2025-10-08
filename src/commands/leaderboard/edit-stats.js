@@ -155,25 +155,32 @@ const editStatsCommand = () => {
 
       message += '💡 Sử dụng `/leaderboard` để xem bảng xếp hạng mới';
 
-      sendMessage(msg, 'STATISTICS', message, {
-        parse_mode: 'Markdown',
+      sendMessage({
+        msg,
+        type: 'STATISTICS',
+        message: message,
+        options: {
+          parse_mode: 'Markdown',
+        },
       });
     } catch (error) {
       console.error('Error editing stats:', error);
-      sendMessage(
+      sendMessage({
         msg,
-        'DEFAULT',
-        '❌ Có lỗi xảy ra khi chỉnh sửa thống kê. Vui lòng thử lại sau.'
-      );
+        type: 'DEFAULT',
+        message:
+          '❌ Có lỗi xảy ra khi chỉnh sửa thống kê. Vui lòng thử lại sau.',
+      });
     }
   });
 
   // Handle command without parameters
   bot.onText(/^\/edit-stats$/, msg => {
-    sendMessage(
+    sendMessage({
       msg,
-      'DEFAULT',
-      '📝 **Cách sử dụng lệnh edit-stats:**\n\n' +
+      type: 'DEFAULT',
+      message:
+        '📝 **Cách sử dụng lệnh edit-stats:**\n\n' +
         '📝 **Cú pháp:**\n' +
         '`/edit-stats player_id total_match total_win total_lose total_draw`\n\n' +
         '**Ví dụ:**\n' +
@@ -183,8 +190,8 @@ const editStatsCommand = () => {
         '• Tổng số trận = Số trận thắng + Số trận thua + Số trận hòa\n' +
         '• Tất cả số liệu phải là số nguyên không âm\n' +
         '• Winrate sẽ được tính tự động',
-      { parse_mode: 'Markdown' }
-    );
+      options: { parse_mode: 'Markdown' },
+    });
   });
 };
 

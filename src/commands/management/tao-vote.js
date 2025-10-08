@@ -25,8 +25,13 @@ const voteCommand = () => {
   });
 
   bot.onText(/^\/taovote$/, msg => {
-    sendMessage(msg, 'DEFAULT', TAO_VOTE.instruction, {
-      parse_mode: 'Markdown',
+    sendMessage({
+      msg,
+      type: 'DEFAULT',
+      message: TAO_VOTE.instruction,
+      options: {
+        parse_mode: 'Markdown',
+      },
     });
   });
 
@@ -34,12 +39,20 @@ const voteCommand = () => {
     const question = match[1].trim();
 
     if (!question) {
-      sendMessage(msg, 'DEFAULT', TAO_VOTE.shortInstruction);
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: TAO_VOTE.shortInstruction,
+      });
       return;
     }
 
     if (activeVote) {
-      sendMessage(msg, 'DEFAULT', TAO_VOTE.voteExists);
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: TAO_VOTE.voteExists,
+      });
       return;
     }
 
@@ -69,24 +82,40 @@ const voteCommand = () => {
       })
       .catch(error => {
         console.error('Error creating vote:', error);
-        sendMessage(msg, 'DEFAULT', TAO_VOTE.error);
+        sendMessage({
+          msg,
+          type: 'DEFAULT',
+          message: TAO_VOTE.error,
+        });
       });
   });
 
   bot.onText(/^\/clearvote$/, msg => {
     if (!activeVote) {
-      sendMessage(msg, 'DEFAULT', TAO_VOTE.noVote);
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: TAO_VOTE.noVote,
+      });
       return;
     }
 
     activeVote = null;
 
-    sendMessage(msg, 'DEFAULT', '🗑️ Đã xoá vote.');
+    sendMessage({
+      msg,
+      type: 'DEFAULT',
+      message: '🗑️ Đã xoá vote.',
+    });
   });
 
   bot.onText(/^\/demvote$/, msg => {
     if (!activeVote) {
-      sendMessage(msg, 'DEFAULT', TAO_VOTE.noVote);
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: TAO_VOTE.noVote,
+      });
       return;
     }
 
@@ -109,8 +138,13 @@ const voteCommand = () => {
 
     resultText += `*Số người vote:* ${totalVoters || 0}`;
 
-    sendMessage(msg, 'MAIN', resultText, {
-      parse_mode: 'Markdown',
+    sendMessage({
+      msg,
+      type: 'MAIN',
+      message: resultText,
+      options: {
+        parse_mode: 'Markdown',
+      },
     });
   });
 };

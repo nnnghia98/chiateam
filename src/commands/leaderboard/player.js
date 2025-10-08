@@ -3,25 +3,45 @@ const { sendMessage } = require('../../utils/chat');
 
 const bot = require('../../bot');
 
-const playerStatsCommand = () => {
-  // Handle command with player ID parameter
+const playerCommand = () => {
+  bot.onText(/^\/player$/, msg => {
+    sendMessage({
+      msg,
+      type: 'DEFAULT',
+      message:
+        '📝 **Cách sử dụng lệnh player:**\n\n' +
+        '�� **Cú pháp:**\n' +
+        '`/player [player_no]`\n\n' +
+        '**Ví dụ:**\n' +
+        '`/player 1001`\n' +
+        '`/player 12345`\n\n' +
+        '💡 **Lưu ý:**\n' +
+        '• Số áo phải là số nguyên dương\n' +
+        '• Player phải có dữ liệu thống kê để xem được\n' +
+        '• Sử dụng `/update-leaderboard` để thêm dữ liệu\n' +
+        '• Sử dụng `/update-leaderboard GOAL/ASSIST` để cập nhật bàn thắng/kiến tạo',
+      options: { parse_mode: 'Markdown' },
+    });
+  });
+
   bot.onText(/^\/player (.+)$/, async (msg, match) => {
     try {
       const playerId = parseInt(match[1].trim());
 
       // Validate player ID
       if (isNaN(playerId) || playerId <= 0) {
-        sendMessage(
+        sendMessage({
           msg,
-          'DEFAULT',
-          '❌ **Số áo không hợp lệ!**\n\n' +
+          type: 'DEFAULT',
+          message:
+            '❌ **Số áo không hợp lệ!**\n\n' +
             '�� **Cách sử dụng:**\n' +
             '`/player [player_no]`\n\n' +
             '**Ví dụ:**\n' +
             '`/player 1001`\n' +
             '`/player 12345`',
-          { parse_mode: 'Markdown' }
-        );
+          options: { parse_mode: 'Markdown' },
+        });
         return;
       }
 
@@ -29,14 +49,15 @@ const playerStatsCommand = () => {
       const playerStats = await getPlayerStats(playerId);
 
       if (!playerStats) {
-        sendMessage(
+        sendMessage({
           msg,
-          'DEFAULT',
-          `❌ **Không tìm thấy thông số của player số áo: ${playerId}**\n\n` +
+          type: 'DEFAULT',
+          message:
+            '❌ **Không tìm thấy thông số của player số áo: ${playerId}**\n\n' +
             '�� Player này chưa có dữ liệu thống kê nào.\n' +
             'Sử dụng `/update-leaderboard` để thêm dữ liệu cho player này.',
-          { parse_mode: 'Markdown' }
-        );
+          options: { parse_mode: 'Markdown' },
+        });
         return;
       }
 
@@ -104,38 +125,24 @@ const playerStatsCommand = () => {
       message +=
         '• `/update-leaderboard ASSIST player_number value` - Cập nhật kiến tạo';
 
-      sendMessage(msg, 'STATISTICS', message, {
-        parse_mode: 'Markdown',
+      sendMessage({
+        msg,
+        type: 'STATISTICS',
+        message,
+        options: {
+          parse_mode: 'Markdown',
+        },
       });
     } catch (error) {
       console.error('Error fetching player stats:', error);
-      sendMessage(
+      sendMessage({
         msg,
-        'DEFAULT',
-        '❌ Có lỗi xảy ra khi tải thông số player. Vui lòng thử lại sau.'
-      );
+        type: 'DEFAULT',
+        message:
+          '❌ Có lỗi xảy ra khi tải thông số player. Vui lòng thử lại sau.',
+      });
     }
-  });
-
-  // Handle command without parameters
-  bot.onText(/^\/player$/, msg => {
-    sendMessage(
-      msg,
-      'DEFAULT',
-      '📝 **Cách sử dụng lệnh player:**\n\n' +
-        '�� **Cú pháp:**\n' +
-        '`/player [player_no]`\n\n' +
-        '**Ví dụ:**\n' +
-        '`/player 1001`\n' +
-        '`/player 12345`\n\n' +
-        '💡 **Lưu ý:**\n' +
-        '• Số áo phải là số nguyên dương\n' +
-        '• Player phải có dữ liệu thống kê để xem được\n' +
-        '• Sử dụng `/update-leaderboard` để thêm dữ liệu\n' +
-        '• Sử dụng `/update-leaderboard GOAL/ASSIST` để cập nhật bàn thắng/kiến tạo',
-      { parse_mode: 'Markdown' }
-    );
   });
 };
 
-module.exports = playerStatsCommand;
+module.exports = playerCommand;

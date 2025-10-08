@@ -14,7 +14,7 @@ const {
   updateLeaderboardCommand,
   editStatsCommand,
   playerCommand,
-  // registerCommand,
+  registerCommand,
   sanCommand,
   addToTeamCommand,
   clearTeamCommand,
@@ -32,8 +32,13 @@ if (isMaintenanceMode) {
   bot.on('message', msg => {
     if (msg.text && msg.text.startsWith('/')) {
       const { sendMessage } = require('./utils/chat');
-      sendMessage(msg, 'DEFAULT', maintenanceMessage(maintenanceUntil), {
-        parse_mode: 'Markdown',
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: maintenanceMessage(maintenanceUntil),
+        options: {
+          parse_mode: 'Markdown',
+        },
       });
     }
   });
@@ -69,7 +74,7 @@ leaderboardCommand();
 updateLeaderboardCommand();
 editStatsCommand();
 playerCommand();
-// registerCommand();
+registerCommand();
 addToTeamCommand({ members, teamA, teamB });
 clearTeamCommand({ teamA, teamB, members });
 

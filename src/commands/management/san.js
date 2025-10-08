@@ -12,20 +12,32 @@ function sanCommand() {
     const input = match[1] && match[1].trim();
     if (input) {
       if (currentSan) {
-        sendMessage(
+        sendMessage({
           msg,
-          'DEFAULT',
-          SAN.currentSan.replace('{value}', currentSan)
-        );
+          type: 'DEFAULT',
+          message: SAN.currentSan.replace('{value}', currentSan),
+        });
       } else {
         sanStrings.set(CHAT_ID, input);
-        sendMessage(msg, 'DEFAULT', SAN.successSan.replace('{value}', input));
+        sendMessage({
+          msg,
+          type: 'DEFAULT',
+          message: SAN.successSan.replace('{value}', input),
+        });
       }
     } else {
       if (currentSan) {
-        sendMessage(msg, 'ANNOUNCEMENT', `Sân: ${currentSan}`);
+        sendMessage({
+          msg,
+          type: 'ANNOUNCEMENT',
+          message: `Sân: ${currentSan}`,
+        });
       } else {
-        sendMessage(msg, 'DEFAULT', SAN.noSan);
+        sendMessage({
+          msg,
+          type: 'DEFAULT',
+          message: SAN.noSan,
+        });
       }
     }
   });
@@ -33,9 +45,17 @@ function sanCommand() {
   bot.onText(/^\/clearsan$/, msg => {
     if (sanStrings.has(CHAT_ID)) {
       sanStrings.delete(CHAT_ID);
-      sendMessage(msg, 'DEFAULT', SAN.successDeleteSan);
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: SAN.successDeleteSan,
+      });
     } else {
-      sendMessage(msg, 'DEFAULT', SAN.noSan);
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: SAN.noSan,
+      });
     }
   });
 }

@@ -17,7 +17,11 @@ const unknownCommand = () => {
     }
 
     const userName = msg.from.first_name || msg.from.username || 'Unknown User';
-    sendMessage(msg, 'DEFAULT', `${userName}: ${UNKNOWN.warning}`);
+    sendMessage({
+      msg,
+      type: 'DEFAULT',
+      message: `${userName}: ${UNKNOWN.warning}`,
+    });
   });
 };
 

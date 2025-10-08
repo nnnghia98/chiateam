@@ -8,24 +8,32 @@ module.exports = (getTiensan, teamA, teamB) => {
   bot.onText(/^\/chiatien$/, msg => {
     const tiensan = getTiensan();
     if (!tiensan) {
-      sendMessage(msg, 'DEFAULT', CHIA_TIEN.instruction);
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: CHIA_TIEN.instruction,
+      });
       return;
     }
 
     const totalMembers = teamA.size + teamB.size;
     if (totalMembers === 0) {
-      sendMessage(msg, 'DEFAULT', CHIA_TIEN.noMembers);
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: CHIA_TIEN.noMembers,
+      });
       return;
     }
 
     const perMember = Math.ceil(tiensan / totalMembers);
-    sendMessage(
+    sendMessage({
       msg,
-      'ANNOUNCEMENT',
-      CHIA_TIEN.totalMembers
+      type: 'ANNOUNCEMENT',
+      message: CHIA_TIEN.totalMembers
         .replace('{tiensan}', formatMoney(tiensan))
         .replace('{totalMembers}', totalMembers)
-        .replace('{perMember}', formatMoney(perMember))
-    );
+        .replace('{perMember}', formatMoney(perMember)),
+    });
   });
 };

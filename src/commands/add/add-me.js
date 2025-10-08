@@ -13,22 +13,30 @@ const addMeCommand = ({ members }) => {
       (msg.from.username ? ` (@${msg.from.username})` : '');
 
     if (!isValidName(msg.from.first_name)) {
-      sendMessage(msg, 'DEFAULT', ADD_ME.warning);
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: ADD_ME.warning,
+      });
       return;
     }
 
     const allNames = Array.from(members.values());
     if (isDuplicateName(msg.from.first_name, allNames)) {
-      sendMessage(
+      sendMessage({
         msg,
-        'DEFAULT',
-        ADD_ME.duplicate.replace('${name}', msg.from.first_name)
-      );
+        type: 'DEFAULT',
+        message: ADD_ME.duplicate.replace('${name}', msg.from.first_name),
+      });
       return;
     }
 
     members.set(userId, name);
-    sendMessage(msg, 'MAIN', ADD_ME.success.replace('${name}', name));
+    sendMessage({
+      msg,
+      type: 'MAIN',
+      message: ADD_ME.success.replace('${name}', name),
+    });
   });
 };
 
