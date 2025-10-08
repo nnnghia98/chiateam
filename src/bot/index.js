@@ -19,7 +19,15 @@ if (!token) {
 let bot;
 
 try {
-  bot = new TelegramBot(token, { polling: true });
+  bot = new TelegramBot(token, {
+    polling: true,
+    request: {
+      agentOptions: {
+        keepAlive: true,
+        family: 4,
+      },
+    },
+  });
 
   // Handle polling errors
   bot.on('polling_error', error => {
