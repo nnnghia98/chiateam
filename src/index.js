@@ -60,14 +60,14 @@ chiateamCommand({ members, teamA, teamB });
 benchCommand({ members });
 clearBenchCommand({ members });
 addCommand({ members });
-teamCommand(teamA, teamB);
+teamCommand({ teamA, teamB });
 tiensanCommand(
   () => tiensan,
   val => {
     tiensan = val;
   }
 );
-chiaTienCommand(() => tiensan, teamA, teamB);
+chiaTienCommand(() => tiensan, { teamA, teamB });
 taoVoteCommand();
 sanCommand();
 leaderboardCommand();

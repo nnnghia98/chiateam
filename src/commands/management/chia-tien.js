@@ -4,7 +4,7 @@ const { CHIA_TIEN } = require('../../utils/messages');
 const bot = require('../../bot');
 const { sendMessage } = require('../../utils/chat');
 
-module.exports = (getTiensan, teamA, teamB) => {
+module.exports = (getTiensan, { teamA, teamB }) => {
   bot.onText(/^\/chiatien$/, msg => {
     const tiensan = getTiensan();
     if (!tiensan) {

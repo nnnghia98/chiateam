@@ -83,7 +83,7 @@ const clearTeamCommand = ({ teamA, teamB, members }) => {
     sendMessage({
       msg,
       type: 'DEFAULT',
-      message: message,
+      message,
       options: {
         parse_mode: 'Markdown',
       },
@@ -208,7 +208,7 @@ const clearTeamCommand = ({ teamA, teamB, members }) => {
     sendMessage({
       msg,
       type: 'DEFAULT',
-      message: message,
+      message,
       options: {
         parse_mode: 'Markdown',
       },
