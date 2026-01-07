@@ -17,6 +17,7 @@ const registerCommand = require('./player/register');
 const sanCommand = require('./management/san');
 const addToTeamCommand = require('./team/add-to-team');
 const clearTeamCommand = require('./team/clear-team');
+const meCommand = require('./player/me');
 
 module.exports = {
   startCommand,
@@ -38,4 +39,5 @@ module.exports = {
   sanCommand,
   addToTeamCommand,
   clearTeamCommand,
+  meCommand,
 };

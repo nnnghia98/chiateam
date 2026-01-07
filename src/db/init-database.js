@@ -90,7 +90,7 @@ function createTable(tableName, resolve, reject) {
       createTableSQL = `
         CREATE TABLE players (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          tele_id INTEGER NOT NULL UNIQUE,
+          user_id INTEGER NOT NULL UNIQUE,
           number INTEGER NOT NULL,
           name TEXT NOT NULL,
           username TEXT,

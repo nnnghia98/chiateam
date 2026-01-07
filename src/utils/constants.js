@@ -22,6 +22,7 @@ const COMMANDS = [
   '/edit-stats',
   '/register',
   '/addtoteam',
+  '/me',
 ];
 
 const PATTERNS = {

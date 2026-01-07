@@ -107,10 +107,11 @@ const TAO_VOTE = {
 
 const REGISTER = {
   instruction: `📋 *Cách sử dụng /register:*
-• /register [NUMBER] [NAME] - Đăng ký với số áo và tên
-• /register [NUMBER] [NAME] [TELE_ID] [USERNAME] - Đăng ký với đầy đủ thông tin
+• /register [NUMBER] - Đăng ký với số áo
 
-Ví dụ: /register 10 Nghia hoặc /register 10 Nghia 123456789 nghia98`,
+Tên và userId sẽ được lấy mặc định từ tài khoản Telegram của bạn.
+
+Ví dụ: /register 10`,
   warning:
     '⚠️ Cần ít nhất 2 tham số: NUMBER và NAME.\n\nVí dụ: `/register 10 Nghia`',
   invalidNumber:
@@ -118,7 +119,7 @@ Ví dụ: /register 10 Nghia hoặc /register 10 Nghia 123456789 nghia98`,
   invalidName:
     '⚠️ Tên không hợp lệ. Tên chỉ được chứa chữ cái, số và khoảng trắng.\n\nVí dụ: `/register 10 Nghia`',
   duplicateNumber: '⚠️ Số áo ${number} đã được sử dụng bởi ${name}.',
-  duplicateTeleId:
+  duplicateUserId:
     '⚠️ Người dùng với ID ${teleId} đã được đăng ký với tên ${name} và số áo ${number}.',
   success: `✅ *Đăng ký thành công!*
 

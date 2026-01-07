@@ -18,6 +18,7 @@ const {
   sanCommand,
   addToTeamCommand,
   clearTeamCommand,
+  meCommand,
 } = require('./commands');
 
 const maintenanceMessage = require('./commands/maintainance');
@@ -77,5 +78,6 @@ playerCommand();
 registerCommand();
 addToTeamCommand({ members, teamA, teamB });
 clearTeamCommand({ teamA, teamB, members });
+meCommand();
 
 console.log('🤖 Bot is running...');
