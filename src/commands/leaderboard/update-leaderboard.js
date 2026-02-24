@@ -5,12 +5,16 @@ const {
 } = require('../../db/leaderboard');
 const { sendMessage } = require('../../utils/chat');
 const { UPDATE_LEADERBOARD } = require('../../utils/messages');
+const { requireAdmin } = require('../../utils/permissions');
 
 const bot = require('../../bot');
 
 const updateLeaderboardCommand = () => {
   // Handle command with parameters
   bot.onText(/\/update-leaderboard (.+)/, async (msg, match) => {
+    if (!requireAdmin(msg)) {
+      return;
+    }
     try {
       const args = match[1].trim();
 
@@ -230,6 +234,9 @@ const updateLeaderboardCommand = () => {
 
   // Handle command without parameters
   bot.onText(/^\/update-leaderboard$/, msg => {
+    if (!requireAdmin(msg)) {
+      return;
+    }
     sendMessage({
       msg,
       type: 'DEFAULT',

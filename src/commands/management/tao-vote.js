@@ -1,5 +1,6 @@
 const { CHAT_ID, THREAD_TYPES, sendMessage } = require('../../utils/chat');
 const { TAO_VOTE } = require('../../utils/messages');
+const { requireAdmin } = require('../../utils/permissions');
 
 const bot = require('../../bot');
 
@@ -36,6 +37,9 @@ const voteCommand = () => {
   });
 
   bot.onText(/^\/taovote\s+(.+)$/, async (msg, match) => {
+    if (!requireAdmin(msg)) {
+      return;
+    }
     const question = match[1].trim();
 
     if (!question) {
@@ -91,6 +95,9 @@ const voteCommand = () => {
   });
 
   bot.onText(/^\/clearvote$/, msg => {
+    if (!requireAdmin(msg)) {
+      return;
+    }
     if (!activeVote) {
       sendMessage({
         msg,

@@ -1,6 +1,6 @@
 const { CLEAR_BENCH, VALIDATION } = require('../../utils/messages');
-const { isAdmin } = require('../../utils/validate');
 const { sendMessage } = require('../../utils/chat');
+const { requireAdmin } = require('../../utils/permissions');
 
 const bot = require('../../bot');
 
@@ -36,12 +36,7 @@ const clearBenchCommand = ({ members }) => {
   });
 
   bot.onText(/^\/clearbench (.+)$/, (msg, match) => {
-    if (!isAdmin(msg.from.id)) {
-      sendMessage({
-        msg,
-        type: 'DEFAULT',
-        message: VALIDATION.onlyAdmin,
-      });
+    if (!requireAdmin(msg)) {
       return;
     }
 

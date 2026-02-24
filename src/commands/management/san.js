@@ -1,5 +1,6 @@
 const { sendMessage, CHAT_ID } = require('../../utils/chat');
 const { SAN } = require('../../utils/messages');
+const { requireAdmin } = require('../../utils/permissions');
 
 const sanStrings = new Map();
 
@@ -43,6 +44,10 @@ function sanCommand() {
   });
 
   bot.onText(/^\/clearsan$/, msg => {
+    if (!requireAdmin(msg)) {
+      return;
+    }
+
     if (sanStrings.has(CHAT_ID)) {
       sanStrings.delete(CHAT_ID);
       sendMessage({

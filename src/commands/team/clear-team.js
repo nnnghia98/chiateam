@@ -3,19 +3,14 @@ const {
   CLEAR_TEAM_INDIVIDUAL,
   VALIDATION,
 } = require('../../utils/messages');
-const { isAdmin } = require('../../utils/validate');
 const { sendMessage } = require('../../utils/chat');
+const { requireAdmin } = require('../../utils/permissions');
 
 const bot = require('../../bot');
 
 const clearTeamCommand = ({ teamA, teamB, members }) => {
   bot.onText(/^\/clearteam$/, msg => {
-    if (!isAdmin(msg.from.id)) {
-      sendMessage({
-        msg,
-        type: 'DEFAULT',
-        message: VALIDATION.onlyAdmin,
-      });
+    if (!requireAdmin(msg)) {
       return;
     }
 
@@ -48,12 +43,7 @@ const clearTeamCommand = ({ teamA, teamB, members }) => {
   });
 
   bot.onText(/^\/clearteam (HOME|AWAY)$/, (msg, match) => {
-    if (!isAdmin(msg.from.id)) {
-      sendMessage({
-        msg,
-        type: 'DEFAULT',
-        message: VALIDATION.onlyAdmin,
-      });
+    if (!requireAdmin(msg)) {
       return;
     }
 

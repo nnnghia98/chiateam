@@ -48,6 +48,8 @@ if (isMaintenanceMode) {
   return;
 }
 
+// In-memory match state: these maps use synthetic IDs and store
+// ephemeral display names only (not Telegram user IDs or DB entities).
 const members = new Map();
 const teamA = new Map();
 const teamB = new Map();
