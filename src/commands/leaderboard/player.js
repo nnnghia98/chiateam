@@ -1,4 +1,4 @@
-const { getPlayerStats } = require('../../db/leaderboard');
+const { getPlayerStats } = require('../../services/leaderboard-service');
 const { sendMessage } = require('../../utils/chat');
 
 const bot = require('../../bot');

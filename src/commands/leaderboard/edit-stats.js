@@ -1,7 +1,7 @@
 const {
-  updatePlayerStatsDirect,
+  upsertTotals,
   getPlayerStats,
-} = require('../../db/leaderboard');
+} = require('../../services/leaderboard-service');
 const { sendMessage } = require('../../utils/chat');
 const { requireAdmin } = require('../../utils/permissions');
 
@@ -121,14 +121,7 @@ const editStatsCommand = () => {
         totalMatch > 0 ? Math.round((totalWin / totalMatch) * 1000) / 1000 : 0;
       const winratePercent = (winrate * 100).toFixed(1);
 
-      // Update player statistics
-      await updatePlayerStatsDirect(
-        playerId,
-        totalMatch,
-        totalWin,
-        totalLose,
-        totalDraw
-      );
+      await upsertTotals(playerId, totalMatch, totalWin, totalLose, totalDraw);
 
       // Create response message
       let message = '✏️ **CHỈNH SỬA THỐNG KÊ** ✏️\n\n';

@@ -1,4 +1,4 @@
-const { getLeaderboard } = require('../../db/leaderboard');
+const { getLeaderboardForDisplay } = require('../../services/leaderboard-service');
 const { sendMessage } = require('../../utils/chat');
 
 const bot = require('../../bot');
@@ -6,7 +6,7 @@ const bot = require('../../bot');
 const leaderboardCommand = () => {
   bot.onText(/^\/leaderboard$/, async msg => {
     try {
-      const leaderboard = await getLeaderboard();
+      const leaderboard = await getLeaderboardForDisplay();
 
       if (leaderboard.length === 0) {
         sendMessage({

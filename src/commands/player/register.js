@@ -1,6 +1,6 @@
 const { REGISTER } = require('../../utils/messages');
 const { sendMessage } = require('../../utils/chat');
-const { addPlayer, getPlayerByUserId } = require('../../db/players');
+const { registerPlayer } = require('../../services/player-service');
 
 const bot = require('../../bot');
 
@@ -17,67 +17,80 @@ const registerCommand = () => {
   });
 
   bot.onText(/^\/register (\d+)$/, async (msg, match) => {
-    const number = parseInt(match[1]);
+    const number = parseInt(match[1], 10);
 
-    if (!number || number <= 0) {
-      sendMessage({
-        msg,
-        type: 'DEFAULT',
-        message: REGISTER.invalidNumber,
-        options: {
-          parse_mode: 'Markdown',
-        },
-      });
-      return;
-    }
+    const result = await registerPlayer({
+      teleUser: msg.from,
+      number,
+    });
 
-    try {
-      // Check if player already exists
-      const existingPlayer = await getPlayerByUserId(msg.from.id);
-      console.log('existingPlayer', existingPlayer);
-      if (existingPlayer) {
-        sendMessage({
-          msg,
-          type: 'DEFAULT',
-          message: REGISTER.duplicateTeleId
-            .replace('${teleId}', msg.from.id)
-            .replace('${name}', existingPlayer.name)
-            .replace('${number}', existingPlayer.number),
-          options: {
-            parse_mode: 'Markdown',
-          },
-        });
-
-        return;
+    if (!result.ok) {
+      switch (result.code) {
+        case 'INVALID_NUMBER':
+          sendMessage({
+            msg,
+            type: 'DEFAULT',
+            message: REGISTER.invalidNumber,
+            options: {
+              parse_mode: 'Markdown',
+            },
+          });
+          return;
+        case 'ALREADY_REGISTERED': {
+          const player = result.data.player;
+          sendMessage({
+            msg,
+            type: 'DEFAULT',
+            message: REGISTER.duplicateUserId
+              .replace('${teleId}', player.user_id)
+              .replace('${name}', player.name)
+              .replace('${number}', player.number),
+            options: {
+              parse_mode: 'Markdown',
+            },
+          });
+          return;
+        }
+        case 'NUMBER_IN_USE': {
+          const player = result.data.player;
+          sendMessage({
+            msg,
+            type: 'DEFAULT',
+            message: REGISTER.duplicateNumber
+              .replace('${number}', player.number)
+              .replace('${name}', player.name),
+            options: {
+              parse_mode: 'Markdown',
+            },
+          });
+          return;
+        }
+        default:
+          // UNEXPECTED_ERROR or other unknown codes
+          console.error('Error registering player:', result.error);
+          sendMessage({
+            msg,
+            type: 'DEFAULT',
+            message: REGISTER.error,
+          });
+          return;
       }
-
-      await addPlayer({
-        userId: msg.from.id,
-        name: msg.from.first_name,
-        number,
-      });
-      const player = await getPlayerByUserId(msg.from.id);
-
-      sendMessage({
-        msg,
-        type: 'DEFAULT',
-        message: REGISTER.success
-          .replace('${name}', player.name)
-          .replace('${number}', player.number)
-          .replace('${teleId}', player.user_id)
-          .replace('${username}', player.username),
-        options: {
-          parse_mode: 'Markdown',
-        },
-      });
-    } catch (error) {
-      console.error('Error registering player:', error);
-      sendMessage({
-        msg,
-        type: 'DEFAULT',
-        message: REGISTER.error,
-      });
     }
+
+    const player = result.player;
+
+    sendMessage({
+      msg,
+      type: 'DEFAULT',
+      message: REGISTER.success
+        .replace('${name}', player.name)
+        .replace('${number}', player.number)
+        .replace('${teleId}', player.user_id)
+        .replace('${username}', player.username),
+      options: {
+        parse_mode: 'Markdown',
+      },
+    });
   });
 };
 
