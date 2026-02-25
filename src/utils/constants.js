@@ -5,9 +5,7 @@ const COMMANDS = [
   '/chiateam',
   '/bench',
   '/team',
-  '/remove',
   '/clearbench',
-  '/resetteam',
   '/tiensan',
   '/chiatien',
   '/taovote',
@@ -22,6 +20,7 @@ const COMMANDS = [
   '/edit-stats',
   '/register',
   '/addtoteam',
+  '/me',
 ];
 
 const PATTERNS = {

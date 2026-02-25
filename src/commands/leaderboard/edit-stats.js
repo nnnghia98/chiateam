@@ -3,12 +3,16 @@ const {
   getPlayerStats,
 } = require('../../db/leaderboard');
 const { sendMessage } = require('../../utils/chat');
+const { requireAdmin } = require('../../utils/permissions');
 
 const bot = require('../../bot');
 
 const editStatsCommand = () => {
   // Handle command with parameters
   bot.onText(/^\/edit-stats (.+)$/, async (msg, match) => {
+    if (!requireAdmin(msg)) {
+      return;
+    }
     try {
       const args = match[1].trim();
 
@@ -176,6 +180,9 @@ const editStatsCommand = () => {
 
   // Handle command without parameters
   bot.onText(/^\/edit-stats$/, msg => {
+    if (!requireAdmin(msg)) {
+      return;
+    }
     sendMessage({
       msg,
       type: 'DEFAULT',

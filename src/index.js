@@ -18,6 +18,7 @@ const {
   sanCommand,
   addToTeamCommand,
   clearTeamCommand,
+  meCommand,
 } = require('./commands');
 
 const maintenanceMessage = require('./commands/maintainance');
@@ -47,6 +48,8 @@ if (isMaintenanceMode) {
   return;
 }
 
+// In-memory match state: these maps use synthetic IDs and store
+// ephemeral display names only (not Telegram user IDs or DB entities).
 const members = new Map();
 const teamA = new Map();
 const teamB = new Map();
@@ -77,5 +80,6 @@ playerCommand();
 registerCommand();
 addToTeamCommand({ members, teamA, teamB });
 clearTeamCommand({ teamA, teamB, members });
+meCommand();
 
 console.log('🤖 Bot is running...');
