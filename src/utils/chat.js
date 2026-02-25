@@ -14,10 +14,19 @@ const sendMessage = async ({ msg, type, message, options = {} }) => {
   const chatId = CHAT_ID ?? msg.chat.id;
   const threadId = THREAD_TYPES[type];
 
-  return await bot.sendMessage(chatId, message, {
-    ...options,
-    message_thread_id: threadId,
-  });
+  const sendOptions =
+    threadId != null
+      ? {
+          ...options,
+          message_thread_id: threadId,
+        }
+      : options;
+
+  if (type && threadId == null) {
+    console.warn(`[chat.sendMessage] Unknown thread type: ${type}`);
+  }
+
+  return await bot.sendMessage(chatId, message, sendOptions);
 };
 
 module.exports = {

@@ -64,7 +64,10 @@ const CLEAR_TEAM_INDIVIDUAL = {
   success: '✅ Đã chuyển {count} member(s) từ {team} về bench:\n{resetNames}',
 };
 
-const UNKNOWN = { warning: 'chưa integrate, gọi cái lồn' };
+const UNKNOWN = {
+  warning:
+    '❓ Lệnh này hiện chưa được hỗ trợ.\n\nSử dụng `/start` để xem các lệnh khả dụng.',
+};
 
 const CHIA_TIEN = {
   instruction: '💸 Bạn chưa thêm tiền sân. Dùng /tiensan [số tiền] trước.',
