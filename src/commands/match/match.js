@@ -1,8 +1,16 @@
 const { sendMessage } = require('../../utils/chat');
 const { formatMoney } = require('../../utils/format');
 const { MATCH } = require('../../utils/messages');
-const { getMatchWithPlayers, createOrUpdateMatch } = require('../../api/matches');
-const { getAllPlayers } = require('../../api/players');
+const {
+  getMatchByDate,
+  getMatchWithPlayers,
+  createOrUpdateMatch,
+  updateMatchResult,
+  addMatchPlayerStatDelta,
+  setMatchMvp,
+  isPlayerInMatch,
+} = require('../../api/matches');
+const { getAllPlayers, getPlayerByNumber } = require('../../api/players');
 const sanCommand = require('../management/san');
 
 const bot = require('../../bot');
@@ -97,10 +105,21 @@ function formatMatchMessage(match, dateLabel) {
   if (match.home_score != null && match.away_score != null) {
     msg += `\n📊 Kết quả: ${match.home_score} - ${match.away_score}\n`;
   }
+  const fmt = p => {
+    let s = `• ${p.label}`;
+    if (p.goals != null || p.assists != null || p.isMvp) {
+      const parts = [];
+      if (p.goals) parts.push(`${p.goals}⚽`);
+      if (p.assists) parts.push(`${p.assists}🎯`);
+      if (p.isMvp) parts.unshift('⭐');
+      if (parts.length) s += ` (${parts.join(' ')})`;
+    }
+    return s;
+  };
   msg += '\n👤 *HOME:*\n';
-  msg += (match.homePlayers || []).map(p => `• ${p.label}`).join('\n') || '• (trống)';
+  msg += (match.homePlayers || []).map(fmt).join('\n') || '• (trống)';
   msg += '\n\n👤 *AWAY:*\n';
-  msg += (match.awayPlayers || []).map(p => `• ${p.label}`).join('\n') || '• (trống)';
+  msg += (match.awayPlayers || []).map(fmt).join('\n') || '• (trống)';
   return msg;
 }
 
@@ -122,6 +141,10 @@ function matchCommand({ getTiensan, teamA, teamB }) {
     const parts = rawArgs ? rawArgs.split(/\s+/) : [];
     const isSave = parts.some(p => p.toUpperCase() === 'SAVE');
     const datePart = parts.find(p => /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(p));
+    const scorePart = parts.find(p => /^\d+-\d+$/.test(p));
+    const goalIdx = parts.findIndex(p => p.toLowerCase() === 'goal');
+    const assistIdx = parts.findIndex(p => p.toLowerCase() === 'assist');
+    const mvpIdx = parts.findIndex(p => p.toLowerCase() === 'mvp');
 
     let matchDate;
     if (datePart) {
@@ -139,6 +162,97 @@ function matchCommand({ getTiensan, teamA, teamB }) {
     } else {
       const thursday = getThursdayOfWeek(new Date());
       matchDate = toISODate(thursday);
+    }
+
+    const runScoreUpdate = async () => {
+      const [home, away] = scorePart.split('-').map(Number);
+      if (isNaN(home) || isNaN(away) || home < 0 || away < 0) {
+        sendMessage({ msg, type: 'DEFAULT', message: MATCH.invalidScore });
+        return;
+      }
+      try {
+        const m = await getMatchByDate(matchDate);
+        if (!m) {
+          sendMessage({ msg, type: 'DEFAULT', message: MATCH.noMatch, options: { parse_mode: 'Markdown' } });
+          return;
+        }
+        await updateMatchResult(matchDate, home, away);
+        const updated = await getMatchWithPlayers(matchDate);
+        sendMessage({
+          msg,
+          type: 'DEFAULT',
+          message: `${MATCH.scoreUpdated}\n\n${formatMatchMessage(updated, formatDateDisplay(matchDate))}`,
+          options: { parse_mode: 'Markdown' },
+        });
+      } catch (err) {
+        console.error('Error updating score:', err);
+        sendMessage({ msg, type: 'DEFAULT', message: '❌ Có lỗi xảy ra. Vui lòng thử lại.' });
+      }
+    };
+
+    const runStatUpdate = async (action, playerNumStr, valueStr) => {
+      const playerNum = parseInt(playerNumStr, 10);
+      if (isNaN(playerNum) || playerNum < 1) {
+        sendMessage({ msg, type: 'DEFAULT', message: MATCH.invalidPlayerNumber });
+        return;
+      }
+      const player = await getPlayerByNumber(playerNum);
+      if (!player) {
+        sendMessage({ msg, type: 'DEFAULT', message: MATCH.invalidPlayerNumber });
+        return;
+      }
+      const m = await getMatchByDate(matchDate);
+      if (!m) {
+        sendMessage({ msg, type: 'DEFAULT', message: MATCH.noMatch, options: { parse_mode: 'Markdown' } });
+        return;
+      }
+      const inMatch = await isPlayerInMatch(m.id, player.id);
+      if (!inMatch) {
+        sendMessage({ msg, type: 'DEFAULT', message: MATCH.playerNotInMatch.replace('{number}', playerNum) });
+        return;
+      }
+      try {
+        if (action === 'goal') {
+          const value = parseInt(valueStr, 10);
+          if (isNaN(value) || value < 1) {
+            sendMessage({ msg, type: 'DEFAULT', message: MATCH.invalidPlayerNumber });
+            return;
+          }
+          await addMatchPlayerStatDelta(m.id, player.id, 'goals', value);
+          sendMessage({ msg, type: 'DEFAULT', message: MATCH.goalUpdated });
+        } else if (action === 'assist') {
+          const value = parseInt(valueStr, 10);
+          if (isNaN(value) || value < 1) {
+            sendMessage({ msg, type: 'DEFAULT', message: MATCH.invalidPlayerNumber });
+            return;
+          }
+          await addMatchPlayerStatDelta(m.id, player.id, 'assists', value);
+          sendMessage({ msg, type: 'DEFAULT', message: MATCH.assistUpdated });
+        } else if (action === 'mvp') {
+          await setMatchMvp(m.id, player.id);
+          sendMessage({ msg, type: 'DEFAULT', message: MATCH.mvpUpdated });
+        }
+      } catch (err) {
+        console.error('Error updating stat:', err);
+        sendMessage({ msg, type: 'DEFAULT', message: '❌ Có lỗi xảy ra. Vui lòng thử lại.' });
+      }
+    };
+
+    if (scorePart) {
+      await runScoreUpdate();
+      return;
+    }
+    if (goalIdx >= 0 && parts.length >= goalIdx + 3) {
+      await runStatUpdate('goal', parts[goalIdx + 1], parts[goalIdx + 2]);
+      return;
+    }
+    if (assistIdx >= 0 && parts.length >= assistIdx + 3) {
+      await runStatUpdate('assist', parts[assistIdx + 1], parts[assistIdx + 2]);
+      return;
+    }
+    if (mvpIdx >= 0 && parts.length >= mvpIdx + 2) {
+      await runStatUpdate('mvp', parts[mvpIdx + 1], null);
+      return;
     }
 
     if (isSave) {

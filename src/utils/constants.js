@@ -22,6 +22,7 @@ const COMMANDS = [
   '/addtoteam',
   '/me',
   '/match',
+  '/matches',
 ];
 
 const PATTERNS = {

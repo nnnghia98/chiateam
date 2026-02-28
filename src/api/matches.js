@@ -79,11 +79,28 @@ function getMatchWithPlayers(matchDate) {
           }
         });
 
-        resolve({
-          ...match,
-          homePlayers,
-          awayPlayers,
-        });
+        // Fetch match_player_stats
+        getMatchPlayerStats(match.id).then(statsMap => {
+          homePlayers.forEach(p => {
+            if (p.playerId && statsMap[p.playerId]) {
+              p.goals = statsMap[p.playerId].goals;
+              p.assists = statsMap[p.playerId].assists;
+              p.isMvp = statsMap[p.playerId].is_mvp;
+            }
+          });
+          awayPlayers.forEach(p => {
+            if (p.playerId && statsMap[p.playerId]) {
+              p.goals = statsMap[p.playerId].goals;
+              p.assists = statsMap[p.playerId].assists;
+              p.isMvp = statsMap[p.playerId].is_mvp;
+            }
+          });
+          resolve({
+            ...match,
+            homePlayers,
+            awayPlayers,
+          });
+        }).catch(reject);
       });
     }).catch(reject);
   });
@@ -173,6 +190,112 @@ function listMatches(limit = 10, offset = 0) {
 }
 
 /**
+ * Check if a player is in a match's lineup.
+ *
+ * @param {number} matchId
+ * @param {number} playerId
+ * @returns {Promise<boolean>}
+ */
+function isPlayerInMatch(matchId, playerId) {
+  return new Promise((resolve, reject) => {
+    const sql = 'SELECT 1 FROM match_players WHERE match_id = ? AND player_id = ? LIMIT 1';
+
+    db.get(sql, [matchId, playerId], (err, row) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      resolve(!!row);
+    });
+  });
+}
+
+/**
+ * Get match_player_stats for a match as map of playerId -> { goals, assists, is_mvp }.
+ *
+ * @param {number} matchId
+ * @returns {Promise<Object>}
+ */
+function getMatchPlayerStats(matchId) {
+  return new Promise((resolve, reject) => {
+    const sql = 'SELECT player_id, goals, assists, is_mvp FROM match_player_stats WHERE match_id = ?';
+
+    db.all(sql, [matchId], (err, rows) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      const map = {};
+      rows.forEach(r => {
+        map[r.player_id] = { goals: r.goals, assists: r.assists, is_mvp: r.is_mvp };
+      });
+      resolve(map);
+    });
+  });
+}
+
+/**
+ * Add goal/assist delta to a player's stats. Creates row if not exists.
+ *
+ * @param {number} matchId
+ * @param {number} playerId
+ * @param {string} stat - 'goals' or 'assists'
+ * @param {number} delta
+ * @returns {Promise<Object>} Stats map
+ */
+function addMatchPlayerStatDelta(matchId, playerId, stat, delta) {
+  return new Promise((resolve, reject) => {
+    const goalsVal = stat === 'goals' ? delta : 0;
+    const assistsVal = stat === 'assists' ? delta : 0;
+    const sql = `
+      INSERT INTO match_player_stats (match_id, player_id, goals, assists, is_mvp)
+      VALUES (?, ?, ?, ?, 0)
+      ON CONFLICT(match_id, player_id) DO UPDATE SET
+        goals = goals + excluded.goals,
+        assists = assists + excluded.assists
+    `;
+
+    db.run(sql, [matchId, playerId, goalsVal, assistsVal], function (err) {
+      if (err) {
+        reject(err);
+        return;
+      }
+      getMatchPlayerStats(matchId).then(resolve).catch(reject);
+    });
+  });
+}
+
+/**
+ * Set MVP for a match. Clears previous MVP and sets the given player.
+ *
+ * @param {number} matchId
+ * @param {number} playerId
+ * @returns {Promise<Object>} Stats map
+ */
+function setMatchMvp(matchId, playerId) {
+  return new Promise((resolve, reject) => {
+    db.run('UPDATE match_player_stats SET is_mvp = 0 WHERE match_id = ?', [matchId], err => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      const sql = `
+        INSERT INTO match_player_stats (match_id, player_id, goals, assists, is_mvp)
+        VALUES (?, ?, 0, 0, 1)
+        ON CONFLICT(match_id, player_id) DO UPDATE SET is_mvp = 1
+      `;
+      db.run(sql, [matchId, playerId], function (err2) {
+        if (err2) {
+          reject(err2);
+          return;
+        }
+        getMatchPlayerStats(matchId).then(resolve).catch(reject);
+      });
+    });
+  });
+}
+
+/**
  * Update match result (scores).
  *
  * @param {string} matchDate - YYYY-MM-DD
@@ -204,8 +327,12 @@ function updateMatchResult(matchDate, homeScore, awayScore) {
 
 module.exports = {
   getMatchByDate,
+  isPlayerInMatch,
   getMatchWithPlayers,
   createOrUpdateMatch,
   listMatches,
   updateMatchResult,
+  getMatchPlayerStats,
+  addMatchPlayerStatDelta,
+  setMatchMvp,
 };

@@ -24,6 +24,7 @@ const startCommand = () => {
 • \`/match\` - Xem trận tuần này
 • \`/match SAVE\` - Lưu trận từ dữ liệu hiện tại
 • \`/match dd/mm/yyyy\` - Xem trận theo ngày
+• \`/matches\` - Danh sách trận đấu gần đây
 
 💰 *Tiền sân:*
 • \`/tiensan\` - Thêm tiền sân

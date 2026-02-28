@@ -145,13 +145,28 @@ const MATCH = {
     '• `/match` - Xem trận đấu tuần này (thứ Năm)\n' +
     '• `/match SAVE` - Lưu trận đấu tuần này từ dữ liệu hiện tại (/san, /tiensan, /chiateam)\n' +
     '• `/match dd/mm/yyyy` - Xem trận đấu theo ngày\n' +
-    '• `/match dd/mm/yyyy SAVE` - Lưu trận đấu theo ngày\n\n' +
-    'Ví dụ: `/match 23/02/2026` hoặc `/match 23/02/2026 SAVE`',
+    '• `/match dd/mm/yyyy SAVE` - Lưu trận đấu theo ngày\n' +
+    '• `/match 3-1` hoặc `/match dd/mm/yyyy 3-1` - Cập nhật tỷ số (HOME-AWAY)\n' +
+    '• `/match goal 10 2` - Cầu thủ số 10 ghi 2 bàn\n' +
+    '• `/match assist 10 1` - Cầu thủ số 10 1 kiến tạo\n' +
+    '• `/match mvp 10` - Cầu thủ số 10 là MVP\n\n' +
+    'Ví dụ: `/match 23/02/2026` hoặc `/match 23/02/2026 3-1`',
   invalidDate: '⚠️ Ngày không hợp lệ. Dùng định dạng dd/mm/yyyy. Ví dụ: 23/02/2026',
+  invalidScore: '⚠️ Tỷ số không hợp lệ. Dùng định dạng HOME-AWAY, ví dụ: 3-1',
   noMatch: '📭 Chưa có trận đấu nào được lưu cho ngày này. Dùng `/match SAVE` hoặc `/match dd/mm/yyyy SAVE` để lưu.',
   noDataToSave:
     '⚠️ Không đủ dữ liệu để lưu. Cần có team (/chiateam) và ít nhất sân hoặc tiền sân (/san, /tiensan).',
   saved: '✅ Đã lưu trận đấu!',
+  scoreUpdated: '✅ Đã cập nhật tỷ số!',
+  goalUpdated: '✅ Đã cập nhật bàn thắng!',
+  assistUpdated: '✅ Đã cập nhật kiến tạo!',
+  mvpUpdated: '✅ Đã cập nhật MVP!',
+  playerNotInMatch: '⚠️ Cầu thủ số {number} không có trong trận đấu này.',
+  invalidPlayerNumber: '⚠️ Số áo không hợp lệ.',
+};
+
+const MATCHES = {
+  empty: '📭 Chưa có trận đấu nào được lưu.',
 };
 
 const UPDATE_LEADERBOARD = {
@@ -188,6 +203,7 @@ module.exports = {
   ADD,
   ADD_ME,
   MATCH,
+  MATCHES,
   ADD_TO_TEAM,
   BENCH,
   REMOVE,
