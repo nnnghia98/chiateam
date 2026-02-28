@@ -20,6 +20,11 @@ const startCommand = () => {
 • \`/addtoteam\` - Thêm vào Home/Away
 • \`/clearteam\` - Xóa member khỏi team
 
+📅 *Trận đấu:*
+• \`/match\` - Xem trận tuần này
+• \`/match SAVE\` - Lưu trận từ dữ liệu hiện tại
+• \`/match dd/mm/yyyy\` - Xem trận theo ngày
+
 💰 *Tiền sân:*
 • \`/tiensan\` - Thêm tiền sân
 • \`/chiatien\` - Chia tiền

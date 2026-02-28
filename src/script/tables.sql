@@ -21,3 +21,37 @@ CREATE TABLE IF NOT EXISTS players (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS matches (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    match_date DATE NOT NULL UNIQUE,
+    san TEXT,
+    tiensan INTEGER,
+    home_score INTEGER,
+    away_score INTEGER,
+    notes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS match_players (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    match_id INTEGER NOT NULL,
+    player_id INTEGER,
+    side TEXT NOT NULL,
+    display_name TEXT,
+    FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE,
+    FOREIGN KEY (player_id) REFERENCES players(id)
+);
+
+CREATE TABLE IF NOT EXISTS match_player_stats (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    match_id INTEGER NOT NULL,
+    player_id INTEGER NOT NULL,
+    goals INTEGER DEFAULT 0,
+    assists INTEGER DEFAULT 0,
+    is_mvp INTEGER DEFAULT 0,
+    FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE,
+    FOREIGN KEY (player_id) REFERENCES players(id),
+    UNIQUE(match_id, player_id)
+);
