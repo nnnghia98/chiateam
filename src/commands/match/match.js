@@ -1,11 +1,13 @@
 const { sendMessage } = require('../../utils/chat');
 const { formatMoney } = require('../../utils/format');
-const { MATCH } = require('../../utils/messages');
+const { MATCH, VALIDATION } = require('../../utils/messages');
+const { requireAdmin } = require('../../utils/permissions');
 const {
   getMatchByDate,
   getMatchWithPlayers,
   createOrUpdateMatch,
   updateMatchResult,
+  deleteMatchByDate,
   addMatchPlayerStatDelta,
   setMatchMvp,
   isPlayerInMatch,
@@ -140,6 +142,7 @@ function matchCommand({ getTiensan, teamA, teamB }) {
     const rawArgs = match[1]?.trim() || '';
     const parts = rawArgs ? rawArgs.split(/\s+/) : [];
     const isSave = parts.some(p => p.toUpperCase() === 'SAVE');
+    const isDelete = parts.some(p => p.toUpperCase() === 'DELETE');
     const datePart = parts.find(p => /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(p));
     const scorePart = parts.find(p => /^\d+-\d+$/.test(p));
     const goalIdx = parts.findIndex(p => p.toLowerCase() === 'goal');
@@ -162,6 +165,29 @@ function matchCommand({ getTiensan, teamA, teamB }) {
     } else {
       const thursday = getThursdayOfWeek(new Date());
       matchDate = toISODate(thursday);
+    }
+
+    if (isDelete) {
+      if (!requireAdmin(msg)) {
+        sendMessage({ msg, type: 'DEFAULT', message: VALIDATION.onlyAdmin });
+        return;
+      }
+      if (!datePart) {
+        sendMessage({ msg, type: 'DEFAULT', message: MATCH.deleteNeedDate });
+        return;
+      }
+      try {
+        const deleted = await deleteMatchByDate(matchDate);
+        sendMessage({
+          msg,
+          type: 'DEFAULT',
+          message: deleted ? MATCH.deleteSuccess : MATCH.deleteNoMatch,
+        });
+      } catch (err) {
+        console.error('Error deleting match:', err);
+        sendMessage({ msg, type: 'DEFAULT', message: '❌ Có lỗi xảy ra khi xóa trận đấu. Vui lòng thử lại.' });
+      }
+      return;
     }
 
     const runScoreUpdate = async () => {

@@ -325,6 +325,26 @@ function updateMatchResult(matchDate, homeScore, awayScore) {
   });
 }
 
+/**
+ * Delete a match by date. Cascades to match_players and match_player_stats.
+ *
+ * @param {string} matchDate - YYYY-MM-DD
+ * @returns {Promise<boolean>} True if a row was deleted
+ */
+function deleteMatchByDate(matchDate) {
+  return new Promise((resolve, reject) => {
+    const sql = 'DELETE FROM matches WHERE match_date = ?';
+
+    db.run(sql, [matchDate], function (err) {
+      if (err) {
+        reject(err);
+        return;
+      }
+      resolve(this.changes > 0);
+    });
+  });
+}
+
 module.exports = {
   getMatchByDate,
   isPlayerInMatch,
@@ -332,6 +352,7 @@ module.exports = {
   createOrUpdateMatch,
   listMatches,
   updateMatchResult,
+  deleteMatchByDate,
   getMatchPlayerStats,
   addMatchPlayerStatDelta,
   setMatchMvp,

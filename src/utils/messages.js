@@ -149,7 +149,8 @@ const MATCH = {
     '• `/match 3-1` hoặc `/match dd/mm/yyyy 3-1` - Cập nhật tỷ số (HOME-AWAY)\n' +
     '• `/match goal 10 2` - Cầu thủ số 10 ghi 2 bàn\n' +
     '• `/match assist 10 1` - Cầu thủ số 10 1 kiến tạo\n' +
-    '• `/match mvp 10` - Cầu thủ số 10 là MVP\n\n' +
+    '• `/match mvp 10` - Cầu thủ số 10 là MVP\n' +
+    '• `/match dd/mm/yyyy DELETE` - Xóa trận đấu (chỉ admin)\n\n' +
     'Ví dụ: `/match 23/02/2026` hoặc `/match 23/02/2026 3-1`',
   invalidDate: '⚠️ Ngày không hợp lệ. Dùng định dạng dd/mm/yyyy. Ví dụ: 23/02/2026',
   invalidScore: '⚠️ Tỷ số không hợp lệ. Dùng định dạng HOME-AWAY, ví dụ: 3-1',
@@ -163,6 +164,9 @@ const MATCH = {
   mvpUpdated: '✅ Đã cập nhật MVP!',
   playerNotInMatch: '⚠️ Cầu thủ số {number} không có trong trận đấu này.',
   invalidPlayerNumber: '⚠️ Số áo không hợp lệ.',
+  deleteSuccess: '✅ Đã xóa trận đấu.',
+  deleteNoMatch: '📭 Không có trận đấu nào cho ngày này để xóa.',
+  deleteNeedDate: '⚠️ Cần chỉ rõ ngày để xóa. Ví dụ: /match 23/02/2026 DELETE (chỉ admin).',
 };
 
 const MATCHES = {

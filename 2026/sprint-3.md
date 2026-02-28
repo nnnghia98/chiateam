@@ -20,6 +20,7 @@
   - `getMatchByDate`, `getMatchWithPlayers` – fetch match with HOME/AWAY lineups (Name – Shirt Number) and per-player stats.
   - `createOrUpdateMatch` – upsert match and players from current san, tiensan, teams.
   - `listMatches`, `updateMatchResult` – list matches and update scores.
+  - `deleteMatchByDate` – delete a match by date (cascades to match_players and match_player_stats).
   - `getMatchPlayerStats`, `addMatchPlayerStatDelta`, `setMatchMvp`, `isPlayerInMatch` – per-player stats (goals, assists, MVP).
 
 - **`/match` command** (`src/commands/match/match.js`):
@@ -31,6 +32,7 @@
   - `/match goal 10 2` – add 2 goals for player number 10.
   - `/match assist 10 1` – add 1 assist for player number 10.
   - `/match mvp 10` – set player number 10 as MVP.
+  - `/match dd/mm/yyyy DELETE` – delete the match for that date (admin only; date required).
   - Date format: dd/mm/yyyy. Thursday of week used when no date given.
   - Resolves team names to players when possible; otherwise stores display_name.
   - Match display shows goals, assists, MVP per player when available.
@@ -43,11 +45,12 @@
   - `san.js` – export `getSan()` for match command.
   - `init-database.js` – create matches, match_players, match_player_stats.
   - `index.js` – wire matchCommand with getTiensan, teamA, teamB.
-  - `start.js` – add `/match` to help list.
-  - `messages.js` – add MATCH messages.
+  - `start.js` – add `/match` and DELETE to help list.
+  - `messages.js` – add MATCH messages (including deleteSuccess, deleteNoMatch, deleteNeedDate); admin-only DELETE uses `VALIDATION.onlyAdmin`.
 
 ### Impact
 
 - Match data survives server restarts.
-- Match history can be queried and extended later (e.g. `/matches`, `/match_stats`).
-- Schema supports future match result details (goals, assists, MVP) via `match_player_stats`.
+- Match history is queryable via `/matches`; score and per-player stats (goals, assists, MVP) are stored and shown on match detail.
+- Wrong or test matches can be removed with `/match dd/mm/yyyy DELETE` (admin only).
+- `match_player_stats` is used for goals, assists, and MVP; display shows them per player when viewing a match.
