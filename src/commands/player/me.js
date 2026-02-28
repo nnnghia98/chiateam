@@ -13,7 +13,7 @@ const meCommand = () => {
 **Username:** @${username}`;
 
     // Query player data from database
-    const { getPlayerByUserId } = require('../../db/players');
+    const { getPlayerByUserId } = require('../../api/players');
 
     try {
       const player = await getPlayerByUserId(userId);

@@ -1,26 +1,34 @@
-const { db } = require('./config');
+const { db } = require('../db/config');
 
 /**
- * Add a new player to the player table
- * @param {number} userId - Telegram user ID
- * @param {string} name - Player name
- * @param {number} number - Player number
- * @param {string} username - Telegram username (optional)
- * @returns {Promise<Object>} - Created player object
+ * Low-level repository for the `players` table.
+ * This module is intentionally focused on CRUD operations only.
+ *
+ * Table schema reference (see src/script/tables.sql):
+ * CREATE TABLE players (
+ *   id INTEGER PRIMARY KEY AUTOINCREMENT,
+ *   user_id INTEGER NOT NULL UNIQUE,
+ *   number INTEGER NOT NULL UNIQUE,
+ *   name TEXT NOT NULL,
+ *   username TEXT,
+ *   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+ *   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+ * );
  */
-function addPlayer({ userId, name, number, username = null }) {
+
+/**
+ * Insert a new player row.
+ * Domain validation (required fields, uniqueness) should be done in services.
+ *
+ * @param {Object} params
+ * @param {number} params.userId
+ * @param {string} params.name
+ * @param {number} params.number
+ * @param {string|null} [params.username]
+ * @returns {Promise<Object>} Inserted player row
+ */
+function createPlayer({ userId, name, number, username = null }) {
   return new Promise((resolve, reject) => {
-    // Validate required fields
-    if (!name) {
-      reject(new Error('Tên là bắt buộc'));
-      return;
-    }
-
-    if (!number) {
-      reject(new Error('Số áo là bắt buộc'));
-      return;
-    }
-
     const sql = `
       INSERT INTO players (user_id, name, number, username)
       VALUES (?, ?, ?, ?)
@@ -32,16 +40,16 @@ function addPlayer({ userId, name, number, username = null }) {
         return;
       }
 
-      // Get the created player
       getPlayerByUserId(userId).then(resolve).catch(reject);
     });
   });
 }
 
 /**
- * Get player by Telegram ID
- * @param {number} userId - Telegram user ID
- * @returns {Promise<Object|null>} - Player object or null if not found
+ * Get player by Telegram user_id.
+ *
+ * @param {number} userId
+ * @returns {Promise<Object|null>}
  */
 function getPlayerByUserId(userId) {
   return new Promise((resolve, reject) => {
@@ -58,9 +66,10 @@ function getPlayerByUserId(userId) {
 }
 
 /**
- * Get player by number (số áo)
- * @param {number} number - Player number (số áo)
- * @returns {Promise<Object|null>} - Player object or null if not found
+ * Get player by shirt number.
+ *
+ * @param {number} number
+ * @returns {Promise<Object|null>}
  */
 function getPlayerByNumber(number) {
   return new Promise((resolve, reject) => {
@@ -77,8 +86,9 @@ function getPlayerByNumber(number) {
 }
 
 /**
- * Get all player
- * @returns {Promise<Array>} - Array of all player
+ * Get all players ordered by name.
+ *
+ * @returns {Promise<Array>}
  */
 function getAllPlayers() {
   return new Promise((resolve, reject) => {
@@ -95,14 +105,16 @@ function getAllPlayers() {
 }
 
 /**
- * Update player information
- * @param {number} userId - Telegram user ID
- * @param {Object} updates - Object with fields to update
- * @returns {Promise<Object>} - Updated player object
+ * Update player information by user_id.
+ * Only allows updating a subset of columns.
+ *
+ * @param {number} userId
+ * @param {Object} updates
+ * @returns {Promise<Object>} Updated player row
  */
 function updatePlayer(userId, updates) {
   return new Promise((resolve, reject) => {
-    const allowedFields = ['name', 'number', 'username', 'goal', 'assist'];
+    const allowedFields = ['name', 'number', 'username'];
     const updateFields = [];
     const values = [];
 
@@ -119,7 +131,6 @@ function updatePlayer(userId, updates) {
       return;
     }
 
-    // Add updated_at timestamp
     updateFields.push('updated_at = CURRENT_TIMESTAMP');
     values.push(userId);
 
@@ -136,39 +147,6 @@ function updatePlayer(userId, updates) {
         return;
       }
 
-      // Get the updated player
-      getPlayerByUserId(userId).then(resolve).catch(reject);
-    });
-  });
-}
-
-/**
- * Update player goals and assists
- * @param {number} userId - Telegram user ID
- * @param {number} goals - Goals to add (can be negative)
- * @param {number} assists - Assists to add (can be negative)
- * @returns {Promise<Object>} - Updated player object
- */
-function updatePlayerStats(userId, goals = 0, assists = 0) {
-  return new Promise((resolve, reject) => {
-    const sql = `
-      UPDATE players 
-      SET goal = goal + ?, assist = assist + ?, updated_at = CURRENT_TIMESTAMP
-      WHERE user_id = ?
-    `;
-
-    db.run(sql, [goals, assists, userId], function (err) {
-      if (err) {
-        reject(err);
-        return;
-      }
-
-      if (this.changes === 0) {
-        reject(new Error('Player not found'));
-        return;
-      }
-
-      // Get the updated player
       getPlayerByUserId(userId).then(resolve).catch(reject);
     });
   });
@@ -195,9 +173,10 @@ function deletePlayer(userId) {
 }
 
 /**
- * Get players by number
- * @param {number} number - Player number
- * @returns {Promise<Array>} - Array of player with that number
+ * Get all players that share the same shirt number.
+ *
+ * @param {number} number
+ * @returns {Promise<Array>}
  */
 function getPlayersByNumber(number) {
   return new Promise((resolve, reject) => {
@@ -214,9 +193,10 @@ function getPlayersByNumber(number) {
 }
 
 /**
- * Search player by name (partial match)
- * @param {string} searchTerm - Search term
- * @returns {Promise<Array>} - Array of matching player
+ * Search players by partial match on name or username.
+ *
+ * @param {string} searchTerm
+ * @returns {Promise<Array>}
  */
 function searchPlayers(searchTerm) {
   return new Promise((resolve, reject) => {
@@ -235,12 +215,11 @@ function searchPlayers(searchTerm) {
 }
 
 module.exports = {
-  addPlayer,
+  createPlayer,
   getPlayerByUserId,
   getPlayerByNumber,
   getAllPlayers,
   updatePlayer,
-  updatePlayerStats,
   deletePlayer,
   getPlayersByNumber,
   searchPlayers,

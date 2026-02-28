@@ -65,4 +65,9 @@ function sanCommand() {
   });
 }
 
+function getSan() {
+  return sanStrings.get(CHAT_ID) || null;
+}
+
 module.exports = sanCommand;
+module.exports.getSan = getSan;

@@ -1,8 +1,8 @@
 const {
-  updatePlayerStats,
-  updatePlayerGoal,
-  updatePlayerAssist,
-} = require('../../db/leaderboard');
+  applyMatchResult,
+  updateGoalStat,
+  updateAssistStat,
+} = require('../../services/leaderboard-service');
 const { sendMessage } = require('../../utils/chat');
 const { UPDATE_LEADERBOARD } = require('../../utils/messages');
 const { requireAdmin } = require('../../utils/permissions');
@@ -52,63 +52,46 @@ const updateLeaderboardCommand = () => {
           return;
         }
 
-        const playerNumber = parseInt(parts[1]);
-        const value = parseInt(parts[2]);
+        const playerNumberRaw = parts[1];
+        const valueRaw = parts[2];
 
-        if (isNaN(playerNumber) || playerNumber <= 0) {
-          sendMessage({
-            msg,
-            type: 'DEFAULT',
-            message: UPDATE_LEADERBOARD.invalidPlayerNumber,
-            options: {
-              parse_mode: 'Markdown',
-            },
-          });
-          return;
-        }
+        const goalAssistResult =
+          result === 'GOAL'
+            ? await updateGoalStat({
+                playerNumber: playerNumberRaw,
+                delta: valueRaw,
+              })
+            : await updateAssistStat({
+                playerNumber: playerNumberRaw,
+                delta: valueRaw,
+              });
 
-        if (isNaN(value)) {
-          sendMessage({
-            msg,
-            type: 'DEFAULT',
-            message: UPDATE_LEADERBOARD.invalidValue,
-            options: {
-              parse_mode: 'Markdown',
-            },
-          });
-          return;
-        }
-
-        try {
-          if (result === 'GOAL') {
-            await updatePlayerGoal(playerNumber, value);
-          } else {
-            await updatePlayerAssist(playerNumber, value);
+        if (!goalAssistResult.ok) {
+          if (goalAssistResult.code === 'INVALID_PLAYER_NUMBER') {
+            sendMessage({
+              msg,
+              type: 'DEFAULT',
+              message: UPDATE_LEADERBOARD.invalidPlayerNumber,
+              options: {
+                parse_mode: 'Markdown',
+              },
+            });
+            return;
           }
 
-          const valueText = value >= 0 ? `+${value}` : value.toString();
-          let message;
-
-          if (result === 'GOAL') {
-            message = UPDATE_LEADERBOARD.goalUpdateSuccess
-              .replace('{playerNumber}', playerNumber)
-              .replace('{valueText}', valueText);
-          } else {
-            message = UPDATE_LEADERBOARD.assistUpdateSuccess
-              .replace('{playerNumber}', playerNumber)
-              .replace('{valueText}', valueText);
+          if (goalAssistResult.code === 'INVALID_VALUE') {
+            sendMessage({
+              msg,
+              type: 'DEFAULT',
+              message: UPDATE_LEADERBOARD.invalidValue,
+              options: {
+                parse_mode: 'Markdown',
+              },
+            });
+            return;
           }
 
-          sendMessage({
-            msg,
-            type: 'STATISTICS',
-            message: message,
-            options: {
-              parse_mode: 'Markdown',
-            },
-          });
-        } catch (error) {
-          console.error(`Error updating ${result.toLowerCase()}:`, error);
+          console.error(`Error updating ${result.toLowerCase()}:`, goalAssistResult.error);
           const errorMessage =
             result === 'GOAL'
               ? UPDATE_LEADERBOARD.goalUpdateError
@@ -118,7 +101,32 @@ const updateLeaderboardCommand = () => {
             type: 'DEFAULT',
             message: errorMessage,
           });
+          return;
         }
+
+        const playerNumber = goalAssistResult.playerNumber;
+        const value = goalAssistResult.value;
+        const valueText = value >= 0 ? `+${value}` : value.toString();
+        let message;
+
+        if (result === 'GOAL') {
+          message = UPDATE_LEADERBOARD.goalUpdateSuccess
+            .replace('{playerNumber}', playerNumber)
+            .replace('{valueText}', valueText);
+        } else {
+          message = UPDATE_LEADERBOARD.assistUpdateSuccess
+            .replace('{playerNumber}', playerNumber)
+            .replace('{valueText}', valueText);
+        }
+
+        sendMessage({
+          msg,
+          type: 'STATISTICS',
+          message: message,
+          options: {
+            parse_mode: 'Markdown',
+          },
+        });
         return;
       }
 
@@ -184,8 +192,32 @@ const updateLeaderboardCommand = () => {
         return;
       }
 
-      // Update player statistics
-      await updatePlayerStats(playerIds, result);
+      const resultObj = await applyMatchResult({
+        result,
+        playerNumbers: playerIds,
+      });
+
+      if (!resultObj.ok) {
+        if (resultObj.code === 'NO_VALID_PLAYER_IDS') {
+          sendMessage({
+            msg,
+            type: 'DEFAULT',
+            message: UPDATE_LEADERBOARD.noValidPlayerIds,
+            options: {
+              parse_mode: 'Markdown',
+            },
+          });
+          return;
+        }
+
+        console.error('Error updating leaderboard:', resultObj.error);
+        sendMessage({
+          msg,
+          type: 'DEFAULT',
+          message: UPDATE_LEADERBOARD.updateError,
+        });
+        return;
+      }
 
       // Create response message
       const resultEmoji =

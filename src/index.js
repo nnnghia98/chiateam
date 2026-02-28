@@ -19,6 +19,8 @@ const {
   addToTeamCommand,
   clearTeamCommand,
   meCommand,
+  matchCommand,
+  matchesCommand,
 } = require('./commands');
 
 const maintenanceMessage = require('./commands/maintainance');
@@ -81,5 +83,7 @@ registerCommand();
 addToTeamCommand({ members, teamA, teamB });
 clearTeamCommand({ teamA, teamB, members });
 meCommand();
+matchCommand({ getTiensan: () => tiensan, teamA, teamB });
+matchesCommand();
 
 console.log('🤖 Bot is running...');
