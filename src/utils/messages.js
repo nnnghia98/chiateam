@@ -109,12 +109,14 @@ const TAO_VOTE = {
 };
 
 const REGISTER = {
+  needPrivateChat:
+    '⚠️ Lệnh này cần được gửi từ tài khoản cá nhân (có thông tin người gửi).',
   instruction: `📋 *Cách sử dụng /register:*
-• /register [NUMBER] - Đăng ký với số áo
+• \`/register [NUMBER]\` - Đăng ký với số áo (tên & userId lấy từ Telegram)
+• \`/register NAME NUMBER\` - (Chỉ admin) Đăng ký slot cho người khác
+• \`/register NUMBER DELETE\` - (Chỉ admin) Xóa cầu thủ theo số áo
 
-Tên và userId sẽ được lấy mặc định từ tài khoản Telegram của bạn.
-
-Ví dụ: /register 10`,
+Ví dụ: \`/register 10\` hoặc \`/register Nghia 10\` (admin)`,
   warning:
     '⚠️ Cần ít nhất 2 tham số: NUMBER và NAME.\n\nVí dụ: `/register 10 Nghia`',
   invalidNumber:
@@ -136,6 +138,10 @@ Ví dụ: /register 10`,
 • \`/leaderboard\` - Xem bảng xếp hạng
 • \`/player\` - Xem thông số chi tiết
 • \`/update-leaderboard\` - Cập nhật thống kê`,
+  registeredForAnotherSuccess:
+    '✅ Đã đăng ký slot cầu thủ: **${name}** – số áo **${number}**. Cầu thủ có thể dùng `/register ${number}` để nhận slot.',
+  deleteSuccess: '✅ Đã xóa cầu thủ số áo **${number}**.',
+  deleteNotFound: '⚠️ Không tìm thấy cầu thủ với số áo **${number}**.',
   error: '❌ Có lỗi xảy ra khi đăng ký. Vui lòng thử lại sau.',
 };
 
@@ -171,6 +177,13 @@ const MATCH = {
 
 const MATCHES = {
   empty: '📭 Chưa có trận đấu nào được lưu.',
+};
+
+const PLAYERS = {
+  header: '👥 **DANH SÁCH CẦU THỦ** 👥',
+  empty:
+    '📭 Chưa có cầu thủ nào đăng ký. Dùng `/register [số áo]` để đăng ký.',
+  error: '❌ Có lỗi khi tải danh sách cầu thủ. Vui lòng thử lại sau.',
 };
 
 const UPDATE_LEADERBOARD = {
@@ -220,5 +233,6 @@ module.exports = {
   SAN,
   TAO_VOTE,
   REGISTER,
+  PLAYERS,
   UPDATE_LEADERBOARD,
 };

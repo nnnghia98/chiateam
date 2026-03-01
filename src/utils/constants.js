@@ -15,6 +15,7 @@ const COMMANDS = [
   '/clearsan',
   '/clearteam',
   '/leaderboard',
+  '/players',
   '/update-leaderboard',
   '/player',
   '/edit-stats',

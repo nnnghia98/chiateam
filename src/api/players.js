@@ -17,6 +17,112 @@ const { db } = require('../db/config');
  */
 
 /**
+ * Get the next placeholder user_id (negative integer) for admin-created players.
+ * Used so a real user can later "claim" the slot with /register NUMBER.
+ * @returns {Promise<number>}
+ */
+function getNextPlaceholderUserId() {
+  return new Promise((resolve, reject) => {
+    const sql = 'SELECT MIN(user_id) AS min_id FROM players WHERE user_id < 0';
+    db.get(sql, [], (err, row) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      const next = row?.min_id != null ? row.min_id - 1 : -1;
+      resolve(next);
+    });
+  });
+}
+
+/**
+ * Create a player slot with a placeholder user_id (admin register for another).
+ * The slot can be claimed later when someone runs /register NUMBER.
+ *
+ * @param {string} name
+ * @param {number} number
+ * @returns {Promise<Object>} Inserted player row
+ */
+async function createPlayerWithPlaceholder(name, number) {
+  const placeholderId = await getNextPlaceholderUserId();
+  return createPlayer({
+    userId: placeholderId,
+    name,
+    number,
+    username: null,
+  });
+}
+
+/**
+ * Update player by shirt number (e.g. when claiming an admin-created slot).
+ *
+ * @param {number} number
+ * @param {Object} updates - { userId, name, username }
+ * @returns {Promise<Object>} Updated player row
+ */
+function updatePlayerByNumber(number, updates) {
+  return new Promise((resolve, reject) => {
+    const allowed = ['userId', 'name', 'username'];
+    const setClauses = [];
+    const values = [];
+    if (updates.userId != null) {
+      setClauses.push('user_id = ?');
+      values.push(updates.userId);
+    }
+    if (updates.name != null) {
+      setClauses.push('name = ?');
+      values.push(updates.name);
+    }
+    if (updates.username != null) {
+      setClauses.push('username = ?');
+      values.push(updates.username);
+    }
+    if (setClauses.length === 0) {
+      reject(new Error('No valid fields to update'));
+      return;
+    }
+    setClauses.push('updated_at = CURRENT_TIMESTAMP');
+    values.push(number);
+    const sql = `UPDATE players SET ${setClauses.join(', ')} WHERE number = ?`;
+    db.run(sql, values, function (err) {
+      if (err) {
+        reject(err);
+        return;
+      }
+      if (this.changes === 0) {
+        reject(new Error('Player not found'));
+        return;
+      }
+      getPlayerByNumber(number).then(resolve).catch(reject);
+    });
+  });
+}
+
+/**
+ * Delete player by shirt number. Also removes their leaderboard row if any.
+ *
+ * @param {number} number
+ * @returns {Promise<boolean>} True if a player was deleted
+ */
+function deletePlayerByNumber(number) {
+  return new Promise((resolve, reject) => {
+    db.run('DELETE FROM leaderboard WHERE player_number = ?', [number], (err) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      db.run('DELETE FROM players WHERE number = ?', [number], function (err2) {
+        if (err2) {
+          reject(err2);
+          return;
+        }
+        resolve(this.changes > 0);
+      });
+    });
+  });
+}
+
+/**
  * Insert a new player row.
  * Domain validation (required fields, uniqueness) should be done in services.
  *
@@ -80,7 +186,7 @@ function getPlayerByNumber(number) {
         reject(err);
         return;
       }
-      resolve(row);
+      resolve(row ?? null);
     });
   });
 }
@@ -216,11 +322,14 @@ function searchPlayers(searchTerm) {
 
 module.exports = {
   createPlayer,
+  createPlayerWithPlaceholder,
   getPlayerByUserId,
   getPlayerByNumber,
   getAllPlayers,
   updatePlayer,
+  updatePlayerByNumber,
   deletePlayer,
+  deletePlayerByNumber,
   getPlayersByNumber,
   searchPlayers,
 };
