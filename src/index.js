@@ -15,6 +15,7 @@ const {
   editStatsCommand,
   playerCommand,
   registerCommand,
+  playersCommand,
   sanCommand,
   addToTeamCommand,
   clearTeamCommand,
@@ -80,6 +81,7 @@ updateLeaderboardCommand();
 editStatsCommand();
 playerCommand();
 registerCommand();
+playersCommand();
 addToTeamCommand({ members, teamA, teamB });
 clearTeamCommand({ teamA, teamB, members });
 meCommand();

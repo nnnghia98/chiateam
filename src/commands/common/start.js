@@ -37,6 +37,7 @@ const startCommand = () => {
 
 🏆 *Thống kê:*
 • \`/leaderboard\` - Xem bảng xếp hạng
+• \`/players\` - Danh sách cầu thủ & thống kê
 • \`/update-leaderboard\` - Cập nhật thống kê
 • \`/player\` - Xem thông số chi tiết
 
