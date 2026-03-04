@@ -1,4 +1,5 @@
 const { isValidName, isDuplicateName } = require('../../utils/validate');
+const { toEntry, getDisplayName } = require('../../utils/team-member');
 const { ADD } = require('../../utils/messages');
 const { PATTERNS } = require('../../utils/constants');
 
@@ -36,7 +37,7 @@ const addCommand = ({ members }) => {
       return;
     }
 
-    const allNames = Array.from(members.values());
+    const allNames = Array.from(members.values()).map(getDisplayName);
     let addedCount = 0;
     const invalidNames = [];
 
@@ -47,7 +48,7 @@ const addCommand = ({ members }) => {
       }
       if (!isDuplicateName(name, allNames)) {
         const fakeId = Date.now() + Math.random();
-        members.set(fakeId, name);
+        members.set(fakeId, toEntry(name));
         allNames.push(name);
         addedCount++;
       }

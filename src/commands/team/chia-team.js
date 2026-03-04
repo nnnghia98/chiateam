@@ -1,4 +1,5 @@
 const shuffleArray = require('../../utils/shuffle');
+const { getDisplayName } = require('../../utils/team-member');
 const { sendMessage } = require('../../utils/chat');
 
 const bot = require('../../bot');
@@ -24,15 +25,15 @@ const splitCommand = ({ members, teamA, teamB }) => {
         return;
       }
 
-      const newNames = Array.from(members.values());
-      shuffleArray(newNames);
+      const newEntries = Array.from(members.values());
+      shuffleArray(newEntries);
 
-      newNames.forEach((name, index) => {
+      newEntries.forEach((entry, index) => {
         const fakeId = Date.now() + Math.random() + index;
         if (teamA.size <= teamB.size) {
-          teamA.set(fakeId, name);
+          teamA.set(fakeId, entry);
         } else {
-          teamB.set(fakeId, name);
+          teamB.set(fakeId, entry);
         }
       });
 
@@ -40,7 +41,11 @@ const splitCommand = ({ members, teamA, teamB }) => {
 
       const message = `🎲 *Thêm member mới vào team* 🎲\n\n👤 *Team A:*\n${Array.from(
         teamA.values()
-      ).join('\n')}\n\n👤 *Team B:*\n${Array.from(teamB.values()).join('\n')}`;
+      )
+        .map(getDisplayName)
+        .join('\n')}\n\n👤 *Team B:*\n${Array.from(teamB.values())
+        .map(getDisplayName)
+        .join('\n')}`;
 
       sendMessage({
         msg,
@@ -53,26 +58,28 @@ const splitCommand = ({ members, teamA, teamB }) => {
       return;
     }
 
-    const names = Array.from(members.values());
-    shuffleArray(names);
+    const entries = Array.from(members.values());
+    shuffleArray(entries);
 
-    const half = Math.ceil(names.length / 2);
+    const half = Math.ceil(entries.length / 2);
     teamA.clear();
     teamB.clear();
-    names.slice(0, half).forEach((name, idx) => {
+    entries.slice(0, half).forEach((entry, idx) => {
       const fakeId = Date.now() + Math.random() + idx;
-      teamA.set(fakeId, name);
+      teamA.set(fakeId, entry);
     });
-    names.slice(half).forEach((name, idx) => {
+    entries.slice(half).forEach((entry, idx) => {
       const fakeId = Date.now() + Math.random() + half + idx;
-      teamB.set(fakeId, name);
+      teamB.set(fakeId, entry);
     });
 
     members.clear();
 
-    const message = `🎲 *Chia team* 🎲\n\n👤 *HOME:*\n${Array.from(
-      teamA.values()
-    ).join('\n')}\n\n👤 *AWAY:*\n${Array.from(teamB.values()).join('\n')}`;
+    const message = `🎲 *Chia team* 🎲\n\n👤 *HOME:*\n${Array.from(teamA.values())
+      .map(getDisplayName)
+      .join('\n')}\n\n👤 *AWAY:*\n${Array.from(teamB.values())
+      .map(getDisplayName)
+      .join('\n')}`;
 
     sendMessage({
       msg,

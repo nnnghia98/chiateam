@@ -1,3 +1,4 @@
+const { getDisplayName } = require('../../utils/team-member');
 const { CLEAR_BENCH, VALIDATION } = require('../../utils/messages');
 const { sendMessage } = require('../../utils/chat');
 const { requireAdmin } = require('../../utils/permissions');
@@ -6,7 +7,8 @@ const bot = require('../../bot');
 
 const clearBenchCommand = ({ members }) => {
   bot.onText(/^\/clearbench$/, msg => {
-    const allNames = Array.from(members.values());
+    const allEntries = Array.from(members.entries());
+    const allNames = allEntries.map(([, v]) => getDisplayName(v));
 
     if (allNames.length === 0) {
       sendMessage({
@@ -50,7 +52,8 @@ const clearBenchCommand = ({ members }) => {
     }
 
     const selection = match[1].trim();
-    const allNames = Array.from(members.values());
+    const allEntries = Array.from(members.entries());
+    const allNames = allEntries.map(([, v]) => getDisplayName(v));
 
     // Handle clear all
     if (selection.toLowerCase() === 'all') {
@@ -111,18 +114,9 @@ const clearBenchCommand = ({ members }) => {
 
     // Remove selected members from bench
     selectedIndices.sort((a, b) => b - a);
-    const removedNames = [];
-    for (const index of selectedIndices) {
-      const name = allNames[index];
-      for (const [userId, memberName] of members) {
-        const nameOnly = memberName.split(' (')[0].trim();
-        if (nameOnly === name.split(' (')[0].trim()) {
-          members.delete(userId);
-          removedNames.push(name);
-          break;
-        }
-      }
-    }
+    const selectedEntries = selectedIndices.map(i => allEntries[i]);
+    selectedEntries.forEach(([key]) => members.delete(key));
+    const removedNames = selectedEntries.map(([, v]) => getDisplayName(v));
 
     if (removedNames.length === 0) {
       const noRemoved = CLEAR_BENCH.noRemovedMembers;

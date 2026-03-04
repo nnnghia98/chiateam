@@ -12,7 +12,12 @@ const {
   setMatchMvp,
   isPlayerInMatch,
 } = require('../../api/matches');
-const { getAllPlayers, getPlayerByNumber } = require('../../api/players');
+const {
+  getAllPlayers,
+  getPlayerByNumber,
+  getPlayerByUserId,
+} = require('../../api/players');
+const { getDisplayName, getUserId } = require('../../utils/team-member');
 const sanCommand = require('../management/san');
 
 const bot = require('../../bot');
@@ -57,39 +62,45 @@ function parseDate(str) {
 }
 
 /**
- * Resolve display name to player. Returns { playerId, displayName }.
- * @param {string} displayName
- * @param {Array} allPlayers
- * @returns {{ playerId: number|null, displayName: string }}
+ * Resolve a team entry to a registered player. Uses user_id (Telegram ID) when
+ * available (most stable); otherwise falls back to exact name match.
+ * Entries from /addme carry userId; from /add they do not.
+ *
+ * @param {string|{ name: string, userId?: number }} entry - value from team Map
+ * @param {Array} allPlayers - from getAllPlayers() (registered only)
+ * @returns {Promise<{ playerId: number|null, displayName: string }>}
  */
-function resolvePlayer(displayName, allPlayers) {
+async function resolvePlayer(entry, allPlayers) {
+  const displayName = getDisplayName(entry);
+  const userId = getUserId(entry);
+
+  if (userId != null) {
+    const player = await getPlayerByUserId(userId);
+    if (player) return { playerId: player.id, displayName };
+  }
+
   const baseName = displayName.split(' (')[0].trim();
   const exact = allPlayers.find(
     p => p.name.toLowerCase() === baseName.toLowerCase()
   );
   if (exact) return { playerId: exact.id, displayName };
-  const partial = allPlayers.find(
-    p =>
-      p.name.toLowerCase().includes(baseName.toLowerCase()) ||
-      baseName.toLowerCase().includes(p.name.toLowerCase())
-  );
-  if (partial) return { playerId: partial.id, displayName };
   return { playerId: null, displayName };
 }
 
 /**
- * Build home/away player entries from team Maps.
+ * Build home/away player entries from team Maps (supports entry shape { name, userId? }).
+ *
  * @param {Map} teamA
  * @param {Map} teamB
  * @param {Array} allPlayers
- * @returns {{ homePlayers: Array, awayPlayers: Array }}
+ * @returns {Promise<{{ homePlayers: Array, awayPlayers: Array }}>}
  */
-function buildPlayerEntries(teamA, teamB, allPlayers) {
-  const homePlayers = Array.from(teamA.values()).map(name =>
-    resolvePlayer(name, allPlayers)
+async function buildPlayerEntries(teamA, teamB, allPlayers) {
+  const homePlayers = await Promise.all(
+    Array.from(teamA.values()).map(entry => resolvePlayer(entry, allPlayers))
   );
-  const awayPlayers = Array.from(teamB.values()).map(name =>
-    resolvePlayer(name, allPlayers)
+  const awayPlayers = await Promise.all(
+    Array.from(teamB.values()).map(entry => resolvePlayer(entry, allPlayers))
   );
   return { homePlayers, awayPlayers };
 }
@@ -297,7 +308,7 @@ function matchCommand({ getTiensan, teamA, teamB }) {
 
       try {
         const allPlayers = await getAllPlayers();
-        const { homePlayers, awayPlayers } = buildPlayerEntries(
+        const { homePlayers, awayPlayers } = await buildPlayerEntries(
           teamA,
           teamB,
           allPlayers

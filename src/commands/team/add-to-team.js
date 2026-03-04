@@ -1,3 +1,4 @@
+const { getDisplayName } = require('../../utils/team-member');
 const { ADD_TO_TEAM } = require('../../utils/messages');
 const { sendMessage } = require('../../utils/chat');
 
@@ -7,7 +8,8 @@ const addToTeamCommand = ({ members, teamA, teamB }) => {
   bot.onText(/^\/addtoteam (HOME|AWAY)$/, (msg, match) => {
     const teamType = match[1];
     const teamName = teamType === 'HOME' ? 'Home' : 'Away';
-    const allNames = Array.from(members.values());
+    const allEntries = Array.from(members.entries());
+    const allNames = allEntries.map(([, v]) => getDisplayName(v));
 
     if (allNames.length === 0) {
       sendMessage({
@@ -41,7 +43,8 @@ const addToTeamCommand = ({ members, teamA, teamB }) => {
     const selection = match[2].trim();
     const team = teamType === 'HOME' ? teamA : teamB;
     const teamName = teamType === 'HOME' ? 'Home' : 'Away';
-    const allNames = Array.from(members.values());
+    const allEntries = Array.from(members.entries());
+    const allNames = allEntries.map(([, v]) => getDisplayName(v));
 
     if (allNames.length === 0) {
       sendMessage({
@@ -113,30 +116,23 @@ const addToTeamCommand = ({ members, teamA, teamB }) => {
     }
 
     selectedIndices = [...new Set(selectedIndices)].sort((a, b) => a - b);
-    const selectedNames = selectedIndices.map(index => allNames[index]);
+    const selectedEntries = selectedIndices.map(i => allEntries[i]);
 
-    // Remove selected members from main list
-    selectedNames.forEach(name => {
-      for (const [userId, memberName] of members) {
-        const nameOnly = memberName.split(' (')[0].trim();
-        if (nameOnly === name.split(' (')[0].trim()) {
-          members.delete(userId);
-          break;
-        }
-      }
-    });
-
-    // Add to selected team
-    selectedNames.forEach((name, idx) => {
+    // Remove selected members from main list and add to team (carry name + userId)
+    selectedEntries.forEach(([key]) => members.delete(key));
+    selectedEntries.forEach(([, entry], idx) => {
       const fakeId = Date.now() + Math.random() + idx;
-      team.set(fakeId, name);
+      team.set(fakeId, entry);
     });
+
+    const selectedNames = selectedEntries.map(([, v]) => getDisplayName(v));
+    const teamMemberDisplays = Array.from(team.values()).map(getDisplayName);
 
     const message = ADD_TO_TEAM.success
       .replace('{count}', selectedNames.length)
       .replaceAll('{team}', teamName)
       .replace('{selectedNames}', selectedNames.join('\n'))
-      .replace('{teamMembers}', Array.from(team.values()).join('\n'));
+      .replace('{teamMembers}', teamMemberDisplays.join('\n'));
 
     sendMessage({
       msg,

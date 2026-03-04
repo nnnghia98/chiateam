@@ -1,4 +1,5 @@
 const { isValidName, isDuplicateName } = require('../../utils/validate');
+const { toEntry, getDisplayName } = require('../../utils/team-member');
 const { ADD_ME } = require('../../utils/messages');
 const { PATTERNS } = require('../../utils/constants');
 const { sendMessage } = require('../../utils/chat');
@@ -21,7 +22,7 @@ const addMeCommand = ({ members }) => {
       return;
     }
 
-    const allNames = Array.from(members.values());
+    const allNames = Array.from(members.values()).map(getDisplayName);
     if (isDuplicateName(msg.from.first_name, allNames)) {
       sendMessage({
         msg,
@@ -31,7 +32,7 @@ const addMeCommand = ({ members }) => {
       return;
     }
 
-    members.set(userId, name);
+    members.set(userId, toEntry(name, userId));
     sendMessage({
       msg,
       type: 'MAIN',

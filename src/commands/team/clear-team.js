@@ -3,6 +3,7 @@ const {
   CLEAR_TEAM_INDIVIDUAL,
   VALIDATION,
 } = require('../../utils/messages');
+const { getDisplayName } = require('../../utils/team-member');
 const { sendMessage } = require('../../utils/chat');
 const { requireAdmin } = require('../../utils/permissions');
 
@@ -23,13 +24,10 @@ const clearTeamCommand = ({ teamA, teamB, members }) => {
       return;
     }
 
-    const allTeamMembers = [...teamA.values(), ...teamB.values()];
-    let restoredCount = 0;
-
-    allTeamMembers.forEach((name, index) => {
+    const allTeamEntries = [...teamA.values(), ...teamB.values()];
+    allTeamEntries.forEach((entry, index) => {
       const fakeId = Date.now() + Math.random() + index;
-      members.set(fakeId, name);
-      restoredCount++;
+      members.set(fakeId, entry);
     });
 
     teamA.clear();
@@ -50,7 +48,8 @@ const clearTeamCommand = ({ teamA, teamB, members }) => {
     const teamType = match[1];
     const team = teamType === 'HOME' ? teamA : teamB;
     const teamName = teamType === 'HOME' ? 'Home' : 'Away';
-    const teamANames = Array.from(team.values());
+    const teamEntries = Array.from(team.entries());
+    const teamANames = teamEntries.map(([, v]) => getDisplayName(v));
 
     if (teamANames.length === 0) {
       sendMessage({
@@ -85,7 +84,8 @@ const clearTeamCommand = ({ teamA, teamB, members }) => {
     const selection = match[2].trim();
     const team = teamType === 'HOME' ? teamA : teamB;
     const teamName = teamType === 'HOME' ? 'Home' : 'Away';
-    const teamANames = Array.from(team.values());
+    const teamEntries = Array.from(team.entries());
+    const teamANames = teamEntries.map(([, v]) => getDisplayName(v));
 
     if (teamANames.length === 0) {
       sendMessage({
@@ -160,20 +160,10 @@ const clearTeamCommand = ({ teamA, teamB, members }) => {
     }
 
     selectedIndices = [...new Set(selectedIndices)].sort((a, b) => b - a);
-    const resetNames = [];
+    const selectedEntries = selectedIndices.map(i => teamEntries[i]);
 
-    for (const index of selectedIndices) {
-      const name = teamANames[index];
-
-      for (const [userId, memberName] of team) {
-        const nameOnly = memberName.split(' (')[0].trim();
-        if (nameOnly === name.split(' (')[0].trim()) {
-          team.delete(userId);
-          resetNames.push(name);
-          break;
-        }
-      }
-    }
+    selectedEntries.forEach(([key]) => team.delete(key));
+    const resetNames = selectedEntries.map(([, v]) => getDisplayName(v));
 
     if (resetNames.length === 0) {
       sendMessage({
@@ -184,11 +174,9 @@ const clearTeamCommand = ({ teamA, teamB, members }) => {
       return;
     }
 
-    let addedCount = 0;
-    resetNames.forEach(name => {
-      const fakeId = Date.now() + Math.random() + addedCount;
-      members.set(fakeId, name);
-      addedCount++;
+    selectedEntries.forEach((entry, idx) => {
+      const fakeId = Date.now() + Math.random() + idx;
+      members.set(fakeId, entry);
     });
 
     const message = CLEAR_TEAM_INDIVIDUAL.success
