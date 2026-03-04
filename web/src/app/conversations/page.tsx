@@ -48,7 +48,6 @@ export default async function ConversationsPage() {
               <thead className="bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:bg-zinc-950/60">
                 <tr>
                   <th className="px-4 py-2">User</th>
-                  <th className="px-4 py-2">Last message</th>
                   <th className="px-4 py-2">Command</th>
                   <th className="px-4 py-2">Status</th>
                   <th className="px-4 py-2 text-right">Time</th>
@@ -61,9 +60,6 @@ export default async function ConversationsPage() {
                     className="border-t border-zinc-100 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800/60"
                   >
                     <td className="px-4 py-2">{row.user}</td>
-                    <td className="px-4 py-2 text-zinc-500">
-                      {row.lastMessage}
-                    </td>
                     <td className="px-4 py-2 text-xs font-medium text-emerald-600">
                       {row.command}
                     </td>

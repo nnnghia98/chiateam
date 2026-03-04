@@ -34,13 +34,6 @@ export function AppShell({
     <div className="min-h-screen bg-zinc-50 font-sans text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
       <div className="flex h-screen">
         <aside className="flex w-64 flex-col border-r border-zinc-200 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/80">
-          <div className="mb-6">
-            <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-              Chiateam
-            </div>
-            <div className="text-lg font-semibold">Bot Console</div>
-          </div>
-
           <nav className="flex flex-1 flex-col gap-1 text-sm">
             {NAV.map((item) => {
               const active = isActive(pathname, item.href);
@@ -60,6 +53,15 @@ export function AppShell({
             })}
           </nav>
 
+          <div className="mt-4">
+            <div className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+              CHIA TEAM
+            </div>
+            <div className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+              Bot Console
+            </div>
+          </div>
+
           <div className="mt-6 border-t border-zinc-200 pt-4 text-xs text-zinc-500 dark:border-zinc-800">
             Designed to be edited with the Cursor Browser visual editor.
           </div>
@@ -68,7 +70,9 @@ export function AppShell({
         <main className="flex-1 overflow-y-auto bg-zinc-50 p-6 dark:bg-zinc-950">
           <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+              <h1 className="text-5xl font-semibold tracking-tight text-red-600">
+                {title}
+              </h1>
               {subtitle ? (
                 <p className="text-sm text-zinc-500">{subtitle}</p>
               ) : null}
