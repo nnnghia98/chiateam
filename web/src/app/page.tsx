@@ -34,7 +34,7 @@ export default async function Home() {
             Refresh
           </button>
           <button className="inline-flex items-center justify-center rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700">
-            New Test Conversation
+            Ping bot
           </button>
         </>
       }
@@ -85,7 +85,7 @@ export default async function Home() {
           <section className="mt-6 grid gap-4 lg:grid-cols-3">
             <div className="space-y-3 lg:col-span-2">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold">Recent conversations</h2>
+                <h2 className="text-sm font-semibold">Recent examples</h2>
                 <button className="text-xs font-medium text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200">
                   View all
                 </button>

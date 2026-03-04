@@ -23,15 +23,6 @@ export type StatusResponse = {
   };
 };
 
-export type ConversationItem = {
-  id: string;
-  user: string;
-  command: string | null;
-  lastMessage: string;
-  status: string;
-  time: string;
-};
-
 export type Settings = {
   maintenanceMode: boolean;
   debugLogging: boolean;
@@ -40,12 +31,41 @@ export type Settings = {
   allowedChatIds: string[];
 };
 
+export type Player = {
+  id: number;
+  user_id: number;
+  number: number;
+  name: string;
+  username: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PlayerStats = {
+  total_match: number;
+  total_win: number;
+  total_lose: number;
+  total_draw: number;
+  goal: number;
+  assist: number;
+  winrate: number;
+};
+
+export type PlayerSummary = {
+  player: Player;
+  stats: PlayerStats;
+};
+
 export async function fetchStatus(): Promise<StatusResponse> {
   return getJson<StatusResponse>("/api/status");
 }
 
-export async function fetchConversations(): Promise<{ items: ConversationItem[] }> {
-  return getJson<{ items: ConversationItem[] }>("/api/conversations");
+export async function fetchPlayers(): Promise<Player[]> {
+  return getJson<Player[]>("/api/players");
+}
+
+export async function fetchPlayerSummaries(): Promise<PlayerSummary[]> {
+  return getJson<PlayerSummary[]>("/api/player-summaries");
 }
 
 export async function fetchSettings(): Promise<Settings> {

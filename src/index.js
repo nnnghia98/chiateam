@@ -66,18 +66,6 @@ uiApi
     console.error('❌ Failed to start UI API:', err);
   });
 
-if (bot) {
-  bot.on('message', msg => {
-    if (!msg || typeof msg.text !== 'string') return;
-    uiApi.logConversationEvent({
-      user: msg.from?.username ? `@${msg.from.username}` : String(msg.from?.id || 'unknown'),
-      lastMessage: msg.text,
-      command: msg.text.startsWith('/') ? msg.text.split(/\s+/)[0] : null,
-      status: 'ok',
-    });
-  });
-}
-
 // In-memory match state: these maps use synthetic IDs and store
 // ephemeral display names only (not Telegram user IDs or DB entities).
 const members = new Map();

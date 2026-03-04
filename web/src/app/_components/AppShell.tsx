@@ -8,7 +8,7 @@ type NavItem = { href: string; label: string };
 
 const NAV: NavItem[] = [
   { href: "/", label: "Dashboard" },
-  { href: "/conversations", label: "Conversations" },
+  { href: "/players", label: "Players" },
   { href: "/settings", label: "Settings" },
 ];
 
