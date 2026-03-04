@@ -1,3 +1,4 @@
+const { getDisplayName } = require('../../utils/team-member');
 const { BENCH } = require('../../utils/messages');
 const { sendMessage } = require('../../utils/chat');
 
@@ -13,7 +14,7 @@ const benchCommand = ({ members }) => {
       });
       return;
     }
-    const names = Array.from(members.values());
+    const names = Array.from(members.values()).map(getDisplayName);
 
     sendMessage({
       msg,

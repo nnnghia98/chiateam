@@ -1,3 +1,4 @@
+const { getDisplayName } = require('../../utils/team-member');
 const { sendMessage } = require('../../utils/chat');
 
 const bot = require('../../bot');
@@ -13,9 +14,11 @@ const teamsCommand = ({ teamA, teamB }) => {
       return;
     }
 
-    const message = `🎲 *Team hiện tại* 🎲\n\n👤 *HOME:*\n${Array.from(
-      teamA.values()
-    ).join('\n')}\n\n👤 *AWAY:*\n${Array.from(teamB.values()).join('\n')}`;
+    const message = `🎲 *Team hiện tại* 🎲\n\n👤 *HOME:*\n${Array.from(teamA.values())
+      .map(getDisplayName)
+      .join('\n')}\n\n👤 *AWAY:*\n${Array.from(teamB.values())
+      .map(getDisplayName)
+      .join('\n')}`;
 
     sendMessage({
       msg,
