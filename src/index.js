@@ -25,14 +25,14 @@ const {
 } = require('./commands');
 
 const maintenanceMessage = require('./commands/maintainance');
+const { createUiApiServer } = require('./api/server');
+const bot = require('./bot');
 
 // Maintenance mode check
 const isMaintenanceMode = false; // Set to true to enable maintenance mode
 const maintenanceUntil = '2026-10-02 12:00'; // Set maintenance end time
 
 if (isMaintenanceMode) {
-  const bot = require('./bot');
-
   bot.on('message', msg => {
     if (msg.text && msg.text.startsWith('/')) {
       const { sendMessage } = require('./utils/chat');
@@ -50,6 +50,21 @@ if (isMaintenanceMode) {
   console.log('🔧 Bot is in maintenance mode...');
   return;
 }
+
+const uiApi = createUiApiServer({
+  getStatus: () => ({
+    botInitialized: Boolean(bot),
+  }),
+});
+
+uiApi
+  .start()
+  .then(({ port }) => {
+    console.log(`🧭 UI API running at http://localhost:${port}`);
+  })
+  .catch(err => {
+    console.error('❌ Failed to start UI API:', err);
+  });
 
 // In-memory match state: these maps use synthetic IDs and store
 // ephemeral display names only (not Telegram user IDs or DB entities).
