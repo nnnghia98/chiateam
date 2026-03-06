@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  web:
+    image: chiateam-bot-web:latest
+    container_name: chiateam-bot-web
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_UI_API_BASE_URL=http://15.152.155.89
+    restart: unless-stopped
+    networks:
+      - chiateam-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  chiateam-network:
+    driver: bridge
