@@ -56,13 +56,14 @@ function corsHeaders(req) {
   const allowList = new Set([
     'http://localhost:3000',
     'http://127.0.0.1:3000',
+    'http://15.152.155.89',
   ]);
 
   if (origin && allowList.has(origin)) {
     return {
       'Access-Control-Allow-Origin': origin,
       'Vary': 'Origin',
-      'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+      'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     };
   }
