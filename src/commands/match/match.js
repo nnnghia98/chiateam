@@ -92,21 +92,25 @@ async function resolvePlayer(entry, allPlayers) {
 }
 
 /**
- * Build home/away player entries from team Maps (supports entry shape { name, userId? }).
+ * Build home/away/extra player entries from team Maps (supports entry shape { name, userId? }).
  *
  * @param {Map} teamA
  * @param {Map} teamB
+ * @param {Map} team3C
  * @param {Array} allPlayers
- * @returns {Promise<{{ homePlayers: Array, awayPlayers: Array }}>}
+ * @returns {Promise<{ homePlayers: Array, awayPlayers: Array, extraPlayers: Array }>}
  */
-async function buildPlayerEntries(teamA, teamB, allPlayers) {
+async function buildPlayerEntries(teamA, teamB, team3C, allPlayers) {
   const homePlayers = await Promise.all(
     Array.from(teamA.values()).map(entry => resolvePlayer(entry, allPlayers))
   );
   const awayPlayers = await Promise.all(
     Array.from(teamB.values()).map(entry => resolvePlayer(entry, allPlayers))
   );
-  return { homePlayers, awayPlayers };
+  const extraPlayers = await Promise.all(
+    Array.from(team3C.values()).map(entry => resolvePlayer(entry, allPlayers))
+  );
+  return { homePlayers, awayPlayers, extraPlayers };
 }
 
 /**
@@ -137,6 +141,10 @@ function formatMatchMessage(match, dateLabel) {
   msg += (match.homePlayers || []).map(fmt).join('\n') || '• (trống)';
   msg += '\n\n👤 *AWAY:*\n';
   msg += (match.awayPlayers || []).map(fmt).join('\n') || '• (trống)';
+  if (match.extraPlayers && match.extraPlayers.length > 0) {
+    msg += '\n\n👤 *EXTRA:*\n';
+    msg += match.extraPlayers.map(fmt).join('\n');
+  }
   return msg;
 }
 
@@ -150,7 +158,7 @@ function formatDateDisplay(isoDate) {
   return `${d}/${m}/${y}`;
 }
 
-function matchCommand({ getTiensan, teamA, teamB }) {
+function matchCommand({ getTiensan, teamA, teamB, team3C }) {
   const getSan = sanCommand.getSan;
 
   bot.onText(/^\/match(?:\s+(.+))?$/, async (msg, match) => {
@@ -303,7 +311,7 @@ function matchCommand({ getTiensan, teamA, teamB }) {
     if (isSave) {
       const san = getSan();
       const tiensan = getTiensan();
-      const hasTeams = teamA.size > 0 || teamB.size > 0;
+      const hasTeams = teamA.size > 0 || teamB.size > 0 || team3C.size > 0;
 
       if (!hasTeams && !san && !tiensan) {
         sendMessage({
@@ -316,9 +324,10 @@ function matchCommand({ getTiensan, teamA, teamB }) {
 
       try {
         const allPlayers = await getAllPlayers();
-        const { homePlayers, awayPlayers } = await buildPlayerEntries(
+        const { homePlayers, awayPlayers, extraPlayers } = await buildPlayerEntries(
           teamA,
           teamB,
+          team3C,
           allPlayers
         );
 
@@ -328,6 +337,7 @@ function matchCommand({ getTiensan, teamA, teamB }) {
           tiensan: tiensan || null,
           homePlayers,
           awayPlayers,
+          extraPlayers,
         });
 
         const saved = await getMatchWithPlayers(matchDate);

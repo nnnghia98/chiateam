@@ -9,13 +9,14 @@ const { requireAdmin } = require('../../utils/permissions');
 
 const bot = require('../../bot');
 
-const clearTeamCommand = ({ teamA, teamB, members }) => {
+const clearTeamCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
+  // Clear ALL team maps. Players stay in bench (bench is the persistent roster).
   bot.onText(/^\/clearteam$/, msg => {
     if (!requireAdmin(msg)) {
       return;
     }
 
-    if (teamA.size === 0 && teamB.size === 0) {
+    if (teamA.size === 0 && teamB.size === 0 && team3A.size === 0 && team3B.size === 0 && team3C.size === 0) {
       sendMessage({
         msg,
         type: 'DEFAULT',
@@ -24,14 +25,11 @@ const clearTeamCommand = ({ teamA, teamB, members }) => {
       return;
     }
 
-    const allTeamEntries = [...teamA.values(), ...teamB.values()];
-    allTeamEntries.forEach((entry, index) => {
-      const fakeId = Date.now() + Math.random() + index;
-      members.set(fakeId, entry);
-    });
-
     teamA.clear();
     teamB.clear();
+    team3A.clear();
+    team3B.clear();
+    team3C.clear();
 
     sendMessage({
       msg,
@@ -40,18 +38,19 @@ const clearTeamCommand = ({ teamA, teamB, members }) => {
     });
   });
 
-  bot.onText(/^\/clearteam (HOME|AWAY)$/, (msg, match) => {
+  // Show team roster for selective clear (HOME / AWAY / EXTRA)
+  bot.onText(/^\/clearteam (HOME|AWAY|EXTRA)$/, (msg, match) => {
     if (!requireAdmin(msg)) {
       return;
     }
 
     const teamType = match[1];
-    const team = teamType === 'HOME' ? teamA : teamB;
-    const teamName = teamType === 'HOME' ? 'Home' : 'Away';
+    const team = teamType === 'HOME' ? teamA : teamType === 'AWAY' ? teamB : team3C;
+    const teamName = teamType === 'HOME' ? 'Home' : teamType === 'AWAY' ? 'Away' : 'Extra';
     const teamEntries = Array.from(team.entries());
-    const teamANames = teamEntries.map(([, v]) => getDisplayName(v));
+    const teamNames = teamEntries.map(([, v]) => getDisplayName(v));
 
-    if (teamANames.length === 0) {
+    if (teamNames.length === 0) {
       sendMessage({
         msg,
         type: 'DEFAULT',
@@ -61,33 +60,37 @@ const clearTeamCommand = ({ teamA, teamB, members }) => {
       return;
     }
 
-    const numberedList = teamANames
+    const numberedList = teamNames
       .map((name, index) => `${index + 1}. ${name}`)
       .join('\n');
 
     const message = CLEAR_TEAM_INDIVIDUAL.instruction
       .replace('{team}', teamName)
-      .replace('{teamNum}', '1')
+      .replace(/{teamType}/g, ` ${teamType}`)
       .replace('{numberedList}', numberedList);
+
     sendMessage({
       msg,
       type: 'DEFAULT',
       message,
-      options: {
-        parse_mode: 'Markdown',
-      },
+      options: { parse_mode: 'Markdown' },
     });
   });
 
-  bot.onText(/^\/clearteam (HOME|AWAY) (.+)$/, (msg, match) => {
+  // Clear specific members from a team (HOME / AWAY / EXTRA)
+  bot.onText(/^\/clearteam (HOME|AWAY|EXTRA) (.+)$/, (msg, match) => {
+    if (!requireAdmin(msg)) {
+      return;
+    }
+
     const teamType = match[1];
     const selection = match[2].trim();
-    const team = teamType === 'HOME' ? teamA : teamB;
-    const teamName = teamType === 'HOME' ? 'Home' : 'Away';
+    const team = teamType === 'HOME' ? teamA : teamType === 'AWAY' ? teamB : team3C;
+    const teamName = teamType === 'HOME' ? 'Home' : teamType === 'AWAY' ? 'Away' : 'Extra';
     const teamEntries = Array.from(team.entries());
-    const teamANames = teamEntries.map(([, v]) => getDisplayName(v));
+    const teamNames = teamEntries.map(([, v]) => getDisplayName(v));
 
-    if (teamANames.length === 0) {
+    if (teamNames.length === 0) {
       sendMessage({
         msg,
         type: 'DEFAULT',
@@ -99,14 +102,14 @@ const clearTeamCommand = ({ teamA, teamB, members }) => {
     let selectedIndices = [];
 
     if (selection.toLowerCase() === 'all') {
-      selectedIndices = teamANames.map((_, index) => index);
+      selectedIndices = teamNames.map((_, index) => index);
     } else {
       const parts = selection.split(',').map(part => part.trim());
 
       for (const part of parts) {
         if (part.startsWith('"') && part.endsWith('"')) {
           const nameToFind = part.slice(1, -1).trim();
-          const nameIndex = teamANames.findIndex(name =>
+          const nameIndex = teamNames.findIndex(name =>
             name.toLowerCase().includes(nameToFind.toLowerCase())
           );
           if (nameIndex !== -1) {
@@ -118,7 +121,7 @@ const clearTeamCommand = ({ teamA, teamB, members }) => {
             !isNaN(start) &&
             !isNaN(end) &&
             start > 0 &&
-            end <= teamANames.length &&
+            end <= teamNames.length &&
             start <= end
           ) {
             for (let i = start - 1; i < end; i++) {
@@ -129,13 +132,13 @@ const clearTeamCommand = ({ teamA, teamB, members }) => {
           }
         } else {
           const num = parseInt(part);
-          if (!isNaN(num) && num > 0 && num <= teamANames.length) {
+          if (!isNaN(num) && num > 0 && num <= teamNames.length) {
             const index = num - 1;
             if (!selectedIndices.includes(index)) {
               selectedIndices.push(index);
             }
           } else {
-            const nameIndex = teamANames.findIndex(name =>
+            const nameIndex = teamNames.findIndex(name =>
               name.toLowerCase().includes(part.toLowerCase())
             );
             if (nameIndex !== -1) {
@@ -151,8 +154,8 @@ const clearTeamCommand = ({ teamA, teamB, members }) => {
         msg,
         type: 'DEFAULT',
         message: CLEAR_TEAM_INDIVIDUAL.invalidSelection.replace(
-          /{teamNum}/g,
-          '1'
+          /{teamType}/g,
+          ` ${teamType}`
         ),
         options: { parse_mode: 'Markdown' },
       });
@@ -161,8 +164,6 @@ const clearTeamCommand = ({ teamA, teamB, members }) => {
 
     selectedIndices = [...new Set(selectedIndices)].sort((a, b) => b - a);
     const selectedEntries = selectedIndices.map(i => teamEntries[i]);
-
-    selectedEntries.forEach(([key]) => team.delete(key));
     const resetNames = selectedEntries.map(([, v]) => getDisplayName(v));
 
     if (resetNames.length === 0) {
@@ -174,22 +175,19 @@ const clearTeamCommand = ({ teamA, teamB, members }) => {
       return;
     }
 
-    selectedEntries.forEach((entry, idx) => {
-      const fakeId = Date.now() + Math.random() + idx;
-      members.set(fakeId, entry);
-    });
+    // Remove from team only (player remains in bench)
+    selectedEntries.forEach(([key]) => team.delete(key));
 
     const message = CLEAR_TEAM_INDIVIDUAL.success
       .replace('{count}', resetNames.length)
       .replace('{team}', teamName)
       .replace('{resetNames}', resetNames.join('\n'));
+
     sendMessage({
       msg,
       type: 'DEFAULT',
       message,
-      options: {
-        parse_mode: 'Markdown',
-      },
+      options: { parse_mode: 'Markdown' },
     });
   });
 };

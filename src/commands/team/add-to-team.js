@@ -4,10 +4,10 @@ const { sendMessage } = require('../../utils/chat');
 
 const bot = require('../../bot');
 
-const addToTeamCommand = ({ members, teamA, teamB }) => {
-  bot.onText(/^\/addtoteam (HOME|AWAY)$/, (msg, match) => {
+const addToTeamCommand = ({ members, teamA, teamB, team3C }) => {
+  bot.onText(/^\/addtoteam (HOME|AWAY|EXTRA)$/, (msg, match) => {
     const teamType = match[1];
-    const teamName = teamType === 'HOME' ? 'Home' : 'Away';
+    const teamName = teamType === 'HOME' ? 'Home' : teamType === 'AWAY' ? 'Away' : 'Extra';
     const allEntries = Array.from(members.entries());
     const allNames = allEntries.map(([, v]) => getDisplayName(v));
 
@@ -38,11 +38,11 @@ const addToTeamCommand = ({ members, teamA, teamB }) => {
     });
   });
 
-  bot.onText(/^\/addtoteam (HOME|AWAY) (.+)$/, (msg, match) => {
+  bot.onText(/^\/addtoteam (HOME|AWAY|EXTRA) (.+)$/, (msg, match) => {
     const teamType = match[1];
     const selection = match[2].trim();
-    const team = teamType === 'HOME' ? teamA : teamB;
-    const teamName = teamType === 'HOME' ? 'Home' : 'Away';
+    const team = teamType === 'HOME' ? teamA : teamType === 'AWAY' ? teamB : team3C;
+    const teamName = teamType === 'HOME' ? 'Home' : teamType === 'AWAY' ? 'Away' : 'Extra';
     const allEntries = Array.from(members.entries());
     const allNames = allEntries.map(([, v]) => getDisplayName(v));
 
@@ -118,8 +118,7 @@ const addToTeamCommand = ({ members, teamA, teamB }) => {
     selectedIndices = [...new Set(selectedIndices)].sort((a, b) => a - b);
     const selectedEntries = selectedIndices.map(i => allEntries[i]);
 
-    // Remove selected members from main list and add to team (carry name + userId)
-    selectedEntries.forEach(([key]) => members.delete(key));
+    // Add to team (player stays in bench — bench is the persistent roster)
     selectedEntries.forEach(([, entry], idx) => {
       const fakeId = Date.now() + Math.random() + idx;
       team.set(fakeId, entry);

@@ -8,6 +8,10 @@ const {
 const {
   getMultiplePlayerStats,
 } = require('../services/leaderboard-service');
+const {
+  listMatches,
+  getMatchWithPlayers,
+} = require('./matches');
 
 const DEFAULT_PORT = Number(process.env.UI_API_PORT || process.env.PORT || 8787);
 
@@ -242,6 +246,43 @@ function createUiApiServer({ getStatus }) {
       } catch (e) {
         console.error('Error deleting player via UI API:', e);
         return sendJson(res, 500, { error: 'Failed to delete player' }, headers);
+      }
+    }
+
+    // Matches API
+    if (path === '/api/matches' && req.method === 'GET') {
+      try {
+        const limit = Math.min(parseInt(url.searchParams.get('limit') || '20', 10), 100);
+        const offset = Math.max(parseInt(url.searchParams.get('offset') || '0', 10), 0);
+        
+        const matches = await listMatches(limit, offset);
+        
+        // Fetch players for each match
+        const matchesWithPlayers = await Promise.all(
+          matches.map(async (match) => {
+            const fullMatch = await getMatchWithPlayers(match.match_date);
+            return fullMatch || match;
+          })
+        );
+        
+        return sendJson(res, 200, matchesWithPlayers, headers);
+      } catch (e) {
+        console.error('Error fetching matches via UI API:', e);
+        return sendJson(res, 500, { error: 'Failed to fetch matches' }, headers);
+      }
+    }
+
+    if (path.startsWith('/api/matches/') && req.method === 'GET') {
+      const matchDate = path.slice('/api/matches/'.length);
+      try {
+        const match = await getMatchWithPlayers(matchDate);
+        if (!match) {
+          return sendJson(res, 404, { error: 'Match not found' }, headers);
+        }
+        return sendJson(res, 200, match, headers);
+      } catch (e) {
+        console.error('Error fetching match via UI API:', e);
+        return sendJson(res, 500, { error: 'Failed to fetch match' }, headers);
       }
     }
 

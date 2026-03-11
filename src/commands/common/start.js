@@ -15,9 +15,11 @@ const startCommand = () => {
 • \`/clearbench\` - Xóa member khỏi bench
 
 ⚽ *Quản lý team:*
-• \`/chiateam\` - Chia team
-• \`/team\` - Xem team
-• \`/addtoteam\` - Thêm vào Home/Away
+• \`/chiateam\` - Chia 2 team (HOME / AWAY)
+• \`/chiateam 3\` - Chia 3 team (HOME / AWAY / EXTRA) (admin)
+• \`/team\` - Xem 2 team
+• \`/team 3\` - Xem 3 team
+• \`/addtoteam\` - Thêm vào HOME / AWAY / EXTRA
 • \`/clearteam\` - Xóa member khỏi team
 
 📅 *Trận đấu:*

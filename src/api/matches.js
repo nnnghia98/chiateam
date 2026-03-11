@@ -60,6 +60,7 @@ function getMatchWithPlayers(matchDate) {
 
         const homePlayers = [];
         const awayPlayers = [];
+        const extraPlayers = [];
 
         rows.forEach(row => {
           const item = {
@@ -74,21 +75,16 @@ function getMatchWithPlayers(matchDate) {
 
           if (row.side === 'HOME') {
             homePlayers.push(item);
-          } else {
+          } else if (row.side === 'AWAY') {
             awayPlayers.push(item);
+          } else if (row.side === 'EXTRA') {
+            extraPlayers.push(item);
           }
         });
 
         // Fetch match_player_stats
         getMatchPlayerStats(match.id).then(statsMap => {
-          homePlayers.forEach(p => {
-            if (p.playerId && statsMap[p.playerId]) {
-              p.goals = statsMap[p.playerId].goals;
-              p.assists = statsMap[p.playerId].assists;
-              p.isMvp = statsMap[p.playerId].is_mvp;
-            }
-          });
-          awayPlayers.forEach(p => {
+          [...homePlayers, ...awayPlayers, ...extraPlayers].forEach(p => {
             if (p.playerId && statsMap[p.playerId]) {
               p.goals = statsMap[p.playerId].goals;
               p.assists = statsMap[p.playerId].assists;
@@ -99,6 +95,7 @@ function getMatchWithPlayers(matchDate) {
             ...match,
             homePlayers,
             awayPlayers,
+            extraPlayers,
           });
         }).catch(reject);
       });
@@ -115,9 +112,10 @@ function getMatchWithPlayers(matchDate) {
  * @param {number|null} params.tiensan
  * @param {Array<{playerId: number|null, displayName: string}>} params.homePlayers
  * @param {Array<{playerId: number|null, displayName: string}>} params.awayPlayers
+ * @param {Array<{playerId: number|null, displayName: string}>} [params.extraPlayers]
  * @returns {Promise<Object>} The match row
  */
-function createOrUpdateMatch({ matchDate, san, tiensan, homePlayers, awayPlayers }) {
+function createOrUpdateMatch({ matchDate, san, tiensan, homePlayers, awayPlayers, extraPlayers = [] }) {
   return new Promise((resolve, reject) => {
     getMatchByDate(matchDate).then(existing => {
       const sql = existing
@@ -156,6 +154,7 @@ function createOrUpdateMatch({ matchDate, san, tiensan, homePlayers, awayPlayers
           const inserts = [
             ...homePlayers.map(p => insertPlayer(p.playerId, 'HOME', p.displayName)),
             ...awayPlayers.map(p => insertPlayer(p.playerId, 'AWAY', p.displayName)),
+            ...extraPlayers.map(p => insertPlayer(p.playerId, 'EXTRA', p.displayName)),
           ];
 
           Promise.all(inserts)
