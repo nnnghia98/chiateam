@@ -56,6 +56,31 @@ export type PlayerSummary = {
   stats: PlayerStats;
 };
 
+export type MatchPlayer = {
+  playerId: number | null;
+  displayName: string | null;
+  name: string | null;
+  number: number | null;
+  label: string;
+  goals?: number;
+  assists?: number;
+  isMvp?: boolean;
+};
+
+export type Match = {
+  id: number;
+  match_date: string;
+  san: string | null;
+  tiensan: number | null;
+  home_score: number | null;
+  away_score: number | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  homePlayers: MatchPlayer[];
+  awayPlayers: MatchPlayer[];
+};
+
 export async function fetchStatus(): Promise<StatusResponse> {
   return getJson<StatusResponse>("/api/status");
 }
@@ -84,5 +109,17 @@ export async function updateSettings(
     throw new Error(`Request failed: ${res.status} ${res.statusText}`);
   }
   return (await res.json()) as Settings;
+}
+
+export async function fetchMatches(limit = 20, offset = 0): Promise<Match[]> {
+  return getJson<Match[]>(`/api/matches?limit=${limit}&offset=${offset}`);
+}
+
+export async function fetchMatchByDate(date: string): Promise<Match | null> {
+  try {
+    return await getJson<Match>(`/api/matches/${date}`);
+  } catch (error) {
+    return null;
+  }
 }
 
