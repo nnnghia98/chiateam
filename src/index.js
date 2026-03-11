@@ -69,19 +69,24 @@ uiApi
 // In-memory match state: these maps use synthetic IDs and store
 // ephemeral display names only (not Telegram user IDs or DB entities).
 const members = new Map();
+// 2-team split state (from /chiateam)
 const teamA = new Map();
 const teamB = new Map();
+// 3-team split state (from /chiateam 3) — independent of 2-team
+const team3A = new Map();
+const team3B = new Map();
+const team3C = new Map();
 let tiensan = null;
 
 startCommand();
 unknownCommand();
 
 addMeCommand({ members });
-chiateamCommand({ members, teamA, teamB });
+chiateamCommand({ members, teamA, teamB, team3A, team3B, team3C });
 benchCommand({ members });
 clearBenchCommand({ members });
 addCommand({ members });
-teamCommand({ teamA, teamB });
+teamCommand({ teamA, teamB, team3A, team3B, team3C });
 tiensanCommand(
   () => tiensan,
   val => {
@@ -97,10 +102,10 @@ editStatsCommand();
 playerCommand();
 registerCommand();
 playersCommand();
-addToTeamCommand({ members, teamA, teamB });
-clearTeamCommand({ teamA, teamB, members });
+addToTeamCommand({ members, teamA, teamB, team3C });
+clearTeamCommand({ teamA, teamB, team3A, team3B, team3C });
 meCommand();
-matchCommand({ getTiensan: () => tiensan, teamA, teamB });
+matchCommand({ getTiensan: () => tiensan, teamA, teamB, team3C });
 matchesCommand();
 
 console.log('🤖 Bot is running...');

@@ -24,7 +24,7 @@ const ADD_ME = {
 const ADD_TO_TEAM = {
   emptyBench: '⚠️ Bench trống. Thêm member trước.',
   instruction:
-    '📋 *Bench hiện tại:*\n\n{numberedList}\n\n💡 *Cách sử dụng:*\n• `/addtoteam{team} 1,3,5` - Chọn member số 1, 3, 5\n• `/addtoteam{team} 1-3` - Chọn member từ 1 đến 3\n• `/addtoteam{team} all` - Chọn tất cả',
+    '📋 *Bench hiện tại:*\n\n{numberedList}\n\n💡 *Cách sử dụng:*\n• `/addtoteam{team} 1,3,5` - Chọn member số 1, 3, 5\n• `/addtoteam{team} 1-3` - Chọn member từ 1 đến 3\n• `/addtoteam{team} all` - Chọn tất cả\n\n_Team: HOME | AWAY | EXTRA_',
   invalidSelection:
     '⚠️ Không có lựa chọn hợp lệ. Ví dụ:\n`/addtoteam{team} 1,3,5` hoặc `/addtoteam{team} 1-3` hoặc `/addtoteam{team} all`',
   success:
@@ -51,17 +51,17 @@ const CLEAR_BENCH = {
 
 const CLEAR_TEAM = {
   emptyTeam: '⚠️ Chưa chia team.',
-  success: '✅ Đã xóa toàn bộ team và chuyển member về bench.',
+  success: '✅ Đã xóa toàn bộ team.',
 };
 
 const CLEAR_TEAM_INDIVIDUAL = {
-  emptyTeam: '⚠️ Chưa chia team.',
+  emptyTeam: '⚠️ {team} trống.',
   instruction:
-    '👤 *{team} hiện tại:*\n\n{numberedList}\n\n💡 *Cách sử dụng:*\n• `/clearteam{teamNum} 1,3,5` - Reset member số 1, 3, 5 về bench\n• `/clearteam{teamNum} 1-3` - Reset member từ 1 đến 3 về bench\n• `/clearteam{teamNum} all` - Reset tất cả member về bench\n• `/clearteam{teamNum} "John"` - Reset member theo tên',
+    '👤 *{team} hiện tại:*\n\n{numberedList}\n\n💡 *Cách sử dụng:*\n• `/clearteam{teamType} 1,3,5` - Xóa member số 1, 3, 5 khỏi team\n• `/clearteam{teamType} 1-3` - Xóa member từ 1 đến 3 khỏi team\n• `/clearteam{teamType} all` - Xóa tất cả member khỏi team\n• `/clearteam{teamType} "John"` - Xóa member theo tên',
   invalidSelection:
-    '⚠️ Không có lựa chọn hợp lệ. Ví dụ:\n`/clearteam{teamNum} 1,3,5` hoặc `/clearteam{teamNum} 1-3` hoặc `/clearteam{teamNum} all` hoặc `/clearteam{teamNum} "John"`',
-  noResetMembers: '⚠️ Không có member nào được reset.',
-  success: '✅ Đã chuyển {count} member(s) từ {team} về bench:\n{resetNames}',
+    '⚠️ Không có lựa chọn hợp lệ. Ví dụ:\n`/clearteam{teamType} 1,3,5` hoặc `/clearteam{teamType} 1-3` hoặc `/clearteam{teamType} all` hoặc `/clearteam{teamType} "John"`',
+  noResetMembers: '⚠️ Không có member nào được xóa.',
+  success: '✅ Đã xóa {count} member(s) khỏi {team}:\n{resetNames}',
 };
 
 const UNKNOWN = {
