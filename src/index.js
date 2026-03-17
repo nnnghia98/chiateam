@@ -27,6 +27,7 @@ const {
 const maintenanceMessage = require('./commands/maintainance');
 const { createUiApiServer } = require('./api/server');
 const bot = require('./bot');
+const { logCommandUsage } = require('./utils/command-logger');
 
 // Maintenance mode check
 const isMaintenanceMode = false; // Set to true to enable maintenance mode
@@ -56,6 +57,13 @@ const uiApi = createUiApiServer({
     botInitialized: Boolean(bot),
   }),
 });
+
+// Global command usage logging (for all `/...` commands)
+if (bot) {
+  bot.on('message', msg => {
+    logCommandUsage(msg);
+  });
+}
 
 uiApi
   .start()
