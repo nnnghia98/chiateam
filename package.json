@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "NODE_ENV=development nodemon src/index.js",
     "start": "NODE_ENV=production nodemon src/index.js",
+    "start:production": "NODE_ENV=production node src/index.js",
     "init-db": "node src/db/init-database.js",
     "drop-db": "node src/db/drop-database.js",
     "web:dev": "cd web && yarn dev"
