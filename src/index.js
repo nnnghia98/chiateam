@@ -29,6 +29,28 @@ const { createUiApiServer } = require('./api/server');
 const bot = require('./bot');
 const { logCommandUsage } = require('./utils/command-logger');
 
+function installProcessCrashLogging() {
+  process.on('uncaughtException', err => {
+    console.error('💥 uncaughtException:', err);
+  });
+
+  process.on('unhandledRejection', reason => {
+    console.error('💥 unhandledRejection:', reason);
+  });
+
+  process.on('SIGTERM', () => {
+    console.error('🛑 Received SIGTERM, shutting down...');
+    process.exit(0);
+  });
+
+  process.on('SIGINT', () => {
+    console.error('🛑 Received SIGINT, shutting down...');
+    process.exit(0);
+  });
+}
+
+installProcessCrashLogging();
+
 // Maintenance mode check
 const isMaintenanceMode = false; // Set to true to enable maintenance mode
 const maintenanceUntil = '2026-10-02 12:00'; // Set maintenance end time
