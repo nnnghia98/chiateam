@@ -16,12 +16,12 @@ jobs:
       - name: ⚙️ Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18.19.0
+          node-version: 22
           cache: 'yarn'
 
       - name: 📦 Install dependencies
         run: |
-          yarn install
+          yarn install --frozen-lockfile
 
       - name: 📦 Pack project for deployment
         run: |
@@ -60,18 +60,30 @@ jobs:
             APP_DIR="${APP_DIR}"
             cd "\$APP_DIR"
 
-            # Xóa toàn bộ thư mục src hiện có để tránh giữ lại file cũ
-            rm -rf src
-
-            # Giải nén code
-            tar -xzf build.tgz
+            # Giải nén code vào thư mục tạm để deploy an toàn
+            rm -rf .__deploy_tmp
+            mkdir -p .__deploy_tmp
+            tar -xzf build.tgz -C .__deploy_tmp
             rm -f build.tgz
+
+            # Đồng bộ code, giữ lại .env và database sqlite (src/*.db)
+            if command -v rsync >/dev/null 2>&1; then
+              rsync -a --delete \
+                --exclude '.env' \
+                --exclude 'src/*.db' \
+                .__deploy_tmp/ ./
+            else
+              # Fallback nếu không có rsync (ít tối ưu hơn)
+              cp -R .__deploy_tmp/* ./
+            fi
+
+            rm -rf .__deploy_tmp
 
             # Cài dependencies
             if command -v yarn >/dev/null 2>&1; then
-              yarn install
+              yarn install --frozen-lockfile
             else
-              npm install
+              npm ci || npm install
             fi
 
             # Restart app bằng PM2
