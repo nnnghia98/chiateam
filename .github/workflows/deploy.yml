@@ -61,9 +61,10 @@ jobs:
             cd "\$APP_DIR"
 
             # Giải nén code vào thư mục tạm để deploy an toàn
-            rm -rf .__deploy_tmp
-            mkdir -p .__deploy_tmp
-            tar -xzf build.tgz -C .__deploy_tmp
+            DEPLOY_TMP="/tmp/chiateam_deploy_tmp_\$\$"
+            rm -rf "\$DEPLOY_TMP"
+            mkdir -p "\$DEPLOY_TMP"
+            tar -xzf build.tgz -C "\$DEPLOY_TMP"
             rm -f build.tgz
 
             # Đồng bộ code, giữ lại .env và database sqlite (src/*.db)
@@ -71,13 +72,13 @@ jobs:
               rsync -a --delete \
                 --exclude '.env' \
                 --exclude 'src/*.db' \
-                .__deploy_tmp/ ./
+                "\$DEPLOY_TMP"/ ./
             else
               # Fallback nếu không có rsync (ít tối ưu hơn)
-              cp -R .__deploy_tmp/* ./
+              cp -R "\$DEPLOY_TMP"/* ./
             fi
 
-            rm -rf .__deploy_tmp
+            rm -rf "\$DEPLOY_TMP"
 
             # Cài dependencies
             if command -v yarn >/dev/null 2>&1; then
