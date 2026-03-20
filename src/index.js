@@ -28,6 +28,7 @@ const maintenanceMessage = require('./commands/maintainance');
 const { createUiApiServer } = require('./api/server');
 const bot = require('./bot');
 const { logCommandUsage } = require('./utils/command-logger');
+const { startWeeklyVoteScheduler } = require('./scheduler/weekly-vote');
 
 function installProcessCrashLogging() {
   process.on('uncaughtException', err => {
@@ -137,5 +138,8 @@ clearTeamCommand({ teamA, teamB, team3A, team3B, team3C });
 meCommand();
 matchCommand({ getTiensan: () => tiensan, teamA, teamB, team3C });
 matchesCommand();
+
+// Start weekly vote scheduler (Friday poll + Monday remind)
+startWeeklyVoteScheduler(bot);
 
 console.log('🤖 Bot is running...');
