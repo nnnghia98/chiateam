@@ -24,6 +24,11 @@ const COMMANDS = [
   '/me',
   '/match',
   '/matches',
+  '/autopoll',
+  '/setschedule',
+  '/setautopoll',
+  '/setautoremind',
+  '/testcron',
 ];
 
 const PATTERNS = {
