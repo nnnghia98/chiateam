@@ -30,8 +30,10 @@ const startCommand = () => {
 • \`/matches\` - Danh sách trận đấu gần đây
 
 💰 *Tiền sân:*
-• \`/tiensan\` - Thêm tiền sân
-• \`/chiatien\` - Chia tiền
+• \`/tiensan\` - Xem/đặt tiền sân (mặc định 580K)
+• \`/tiennuoc\` - Xem/đặt tiền nước (mặc định 60K)
+• \`/teamthua HOME|AWAY\` - Chọn team thua
+• \`/chiatien\` - Chia tiền (team thua trả thêm tiền nước)
 
 🗳 *Vote:*
 • \`/taovote\` - Tạo vote

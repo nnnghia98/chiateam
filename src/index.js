@@ -22,6 +22,8 @@ const {
   meCommand,
   matchCommand,
   matchesCommand,
+  tienNuocCommand,
+  teamThuaCommand,
 } = require('./commands');
 
 const maintenanceMessage = require('./commands/maintainance');
@@ -107,7 +109,9 @@ const teamB = new Map();
 const team3A = new Map();
 const team3B = new Map();
 const team3C = new Map();
-let tiensan = null;
+let tiensan = 580000;
+let tiennuoc = 60000;
+let teamThua = null;
 
 startCommand();
 unknownCommand();
@@ -124,7 +128,22 @@ tiensanCommand(
     tiensan = val;
   }
 );
-chiaTienCommand(() => tiensan, { teamA, teamB });
+tienNuocCommand(
+  () => tiennuoc,
+  val => {
+    tiennuoc = val;
+  }
+);
+teamThuaCommand(
+  () => tiensan,
+  () => tiennuoc,
+  () => teamThua,
+  val => {
+    teamThua = val;
+  },
+  { teamA, teamB }
+);
+chiaTienCommand(() => tiensan, () => tiennuoc, () => teamThua, { teamA, teamB });
 taoVoteCommand();
 sanCommand();
 leaderboardCommand();
