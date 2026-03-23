@@ -1,55 +1,35 @@
 const { formatMoney } = require('../../utils/format');
 const { getDisplayName } = require('../../utils/team-member');
-const { CHIA_TIEN } = require('../../utils/messages');
+const { sendMessage } = require('../../utils/chat');
+const { TEAM_THUA } = require('../../utils/messages');
 
 const bot = require('../../bot');
-const { sendMessage } = require('../../utils/chat');
 
-module.exports = (getTiensan, getTiennuoc, getTeamThua, { teamA, teamB }) => {
-  bot.onText(/^\/chiatien$/, msg => {
+module.exports = (getTiensan, getTiennuoc, getTeamThua, setTeamThua, { teamA, teamB }) => {
+  bot.onText(/^\/teamthua (HOME|AWAY)$/i, (msg, match) => {
+    const team = match[1].toUpperCase();
+    setTeamThua(team);
+
     const tiensan = getTiensan();
-    if (!tiensan) {
-      sendMessage({
-        msg,
-        type: 'DEFAULT',
-        message: CHIA_TIEN.instruction,
-      });
-      return;
-    }
-
-    const totalMembers = teamA.size + teamB.size;
-    if (totalMembers === 0) {
-      sendMessage({
-        msg,
-        type: 'DEFAULT',
-        message: CHIA_TIEN.noMembers,
-      });
-      return;
-    }
-
     const tiennuoc = getTiennuoc();
-    const teamThua = getTeamThua();
-    const perMember = Math.ceil(tiensan / totalMembers);
+    const totalMembers = teamA.size + teamB.size;
 
-    // No losing team selected → simple split
-    if (!teamThua) {
+    if (!tiensan || totalMembers === 0) {
       sendMessage({
         msg,
         type: 'ANNOUNCEMENT',
-        message: CHIA_TIEN.totalMembers
-          .replace('{tiensan}', formatMoney(tiensan))
-          .replace('{totalMembers}', totalMembers)
-          .replace('{perMember}', formatMoney(perMember)),
+        message: TEAM_THUA.success.replace('{team}', team),
+        options: { parse_mode: 'Markdown' },
       });
       return;
     }
 
-    // Determine winner/loser teams
-    const loserTeam = teamThua === 'HOME' ? teamA : teamB;
-    const winnerTeam = teamThua === 'HOME' ? teamB : teamA;
-    const loserName = teamThua === 'HOME' ? 'HOME' : 'AWAY';
-    const winnerName = teamThua === 'HOME' ? 'AWAY' : 'HOME';
+    const loserTeam = team === 'HOME' ? teamA : teamB;
+    const winnerTeam = team === 'HOME' ? teamB : teamA;
+    const loserName = team === 'HOME' ? 'HOME' : 'AWAY';
+    const winnerName = team === 'HOME' ? 'AWAY' : 'HOME';
 
+    const perMember = Math.ceil(tiensan / totalMembers);
     const loserCount = loserTeam.size;
     const waterPerLoser = loserCount > 0 ? Math.ceil(tiennuoc / loserCount) : 0;
     const loserTotal = perMember + waterPerLoser;
@@ -75,5 +55,24 @@ module.exports = (getTiensan, getTiennuoc, getTeamThua, { teamA, teamB }) => {
       message,
       options: { parse_mode: 'Markdown' },
     });
+  });
+
+  bot.onText(/^\/teamthua$/, msg => {
+    const teamThua = getTeamThua();
+    if (!teamThua) {
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: TEAM_THUA.noTeamThua,
+        options: { parse_mode: 'Markdown' },
+      });
+    } else {
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: TEAM_THUA.current.replace('{team}', teamThua),
+        options: { parse_mode: 'Markdown' },
+      });
+    }
   });
 };

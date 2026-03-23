@@ -29,6 +29,8 @@ const COMMANDS = [
   '/setautopoll',
   '/setautoremind',
   '/testcron',
+  '/tiennuoc',
+  '/teamthua',
 ];
 
 const PATTERNS = {

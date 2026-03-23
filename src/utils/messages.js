@@ -83,6 +83,19 @@ const TIEN_SAN = {
   success: '✅ Đã thêm tiền sân: {value} VND',
 };
 
+const TIEN_NUOC = {
+  instruction: '⚠️ Vui lòng nhập số tiền hợp lệ. Ví dụ: /tiennuoc 60000',
+  current: '🧊 Tiền nước hiện tại: {value} VND',
+  success: '✅ Đã cập nhật tiền nước: {value} VND',
+};
+
+const TEAM_THUA = {
+  noTeamThua: '⚠️ Chưa chọn team thua. Dùng `/teamthua HOME` hoặc `/teamthua AWAY`',
+  current: '📋 Team thua hiện tại: *{team}*',
+  success: '✅ Đã chọn team thua: *{team}*',
+  instruction: '📋 *Cách sử dụng /teamthua:*\n\n• `/teamthua HOME` — Chọn HOME là team thua\n• `/teamthua AWAY` — Chọn AWAY là team thua',
+};
+
 const SAN = {
   noSan: '⚠️ Chưa lưu sân nào. Dùng /san [tên sân] để lưu.',
   currentSan: 'Sân: {value}',
@@ -230,6 +243,8 @@ module.exports = {
   UNKNOWN,
   CHIA_TIEN,
   TIEN_SAN,
+  TIEN_NUOC,
+  TEAM_THUA,
   SAN,
   TAO_VOTE,
   REGISTER,
