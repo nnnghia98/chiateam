@@ -57,11 +57,14 @@ function sendText(res, statusCode, text, extraHeaders = {}) {
 
 function corsHeaders(req) {
   const origin = req.headers.origin;
-  const allowList = new Set([
+  const baseAllowed = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
-    'http://15.152.155.89',
-  ]);
+  ];
+  if (process.env.WEB_UI_URL) {
+    baseAllowed.push(process.env.WEB_UI_URL);
+  }
+  const allowList = new Set(baseAllowed);
 
   if (origin && allowList.has(origin)) {
     return {
