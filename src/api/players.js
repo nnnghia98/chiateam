@@ -2,322 +2,159 @@ const { db } = require('../db/config');
 
 /**
  * Low-level repository for the `players` table.
- * This module is intentionally focused on CRUD operations only.
+ * Migrated from SQLite (sqlite3 callbacks) to PostgreSQL (pg async/await).
  *
- * Table schema reference (see src/script/tables.sql):
+ * Table schema (Supabase):
  * CREATE TABLE players (
- *   id INTEGER PRIMARY KEY AUTOINCREMENT,
- *   user_id INTEGER NOT NULL UNIQUE,
- *   number INTEGER NOT NULL UNIQUE,
- *   name TEXT NOT NULL,
- *   username TEXT,
- *   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
- *   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+ *   id         SERIAL PRIMARY KEY,
+ *   user_id    BIGINT NOT NULL UNIQUE,
+ *   number     INTEGER NOT NULL,
+ *   name       TEXT NOT NULL,
+ *   username   TEXT,
+ *   created_at TIMESTAMPTZ DEFAULT NOW(),
+ *   updated_at TIMESTAMPTZ DEFAULT NOW()
  * );
  */
 
 /**
  * Get the next placeholder user_id (negative integer) for admin-created players.
- * Used so a real user can later "claim" the slot with /register NUMBER.
  * @returns {Promise<number>}
  */
-function getNextPlaceholderUserId() {
-  return new Promise((resolve, reject) => {
-    const sql = 'SELECT MIN(user_id) AS min_id FROM players WHERE user_id < 0';
-    db.get(sql, [], (err, row) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-      const next = row?.min_id != null ? row.min_id - 1 : -1;
-      resolve(next);
-    });
-  });
+async function getNextPlaceholderUserId() {
+  const { rows } = await db.query('SELECT MIN(user_id) AS min_id FROM players WHERE user_id < 0');
+  const next = rows[0]?.min_id != null ? rows[0].min_id - 1 : -1;
+  return next;
 }
 
 /**
  * Create a player slot with a placeholder user_id (admin register for another).
- * The slot can be claimed later when someone runs /register NUMBER.
- *
- * @param {string} name
- * @param {number} number
- * @returns {Promise<Object>} Inserted player row
  */
 async function createPlayerWithPlaceholder(name, number) {
   const placeholderId = await getNextPlaceholderUserId();
-  return createPlayer({
-    userId: placeholderId,
-    name,
-    number,
-    username: null,
-  });
+  return createPlayer({ userId: placeholderId, name, number, username: null });
 }
 
 /**
- * Update player by shirt number (e.g. when claiming an admin-created slot).
- *
- * @param {number} number
- * @param {Object} updates - { userId, name, username }
- * @returns {Promise<Object>} Updated player row
+ * Update player by shirt number.
  */
-function updatePlayerByNumber(number, updates) {
-  return new Promise((resolve, reject) => {
-    const allowed = ['userId', 'name', 'username'];
-    const setClauses = [];
-    const values = [];
-    if (updates.userId != null) {
-      setClauses.push('user_id = ?');
-      values.push(updates.userId);
-    }
-    if (updates.name != null) {
-      setClauses.push('name = ?');
-      values.push(updates.name);
-    }
-    if (updates.username != null) {
-      setClauses.push('username = ?');
-      values.push(updates.username);
-    }
-    if (setClauses.length === 0) {
-      reject(new Error('No valid fields to update'));
-      return;
-    }
-    setClauses.push('updated_at = CURRENT_TIMESTAMP');
-    values.push(number);
-    const sql = `UPDATE players SET ${setClauses.join(', ')} WHERE number = ?`;
-    db.run(sql, values, function (err) {
-      if (err) {
-        reject(err);
-        return;
-      }
-      if (this.changes === 0) {
-        reject(new Error('Player not found'));
-        return;
-      }
-      getPlayerByNumber(number).then(resolve).catch(reject);
-    });
-  });
+async function updatePlayerByNumber(number, updates) {
+  const setClauses = [];
+  const values = [];
+  let idx = 1;
+
+  if (updates.userId != null) { setClauses.push(`user_id = $${idx++}`); values.push(updates.userId); }
+  if (updates.name != null)   { setClauses.push(`name = $${idx++}`);    values.push(updates.name); }
+  if (updates.username != null) { setClauses.push(`username = $${idx++}`); values.push(updates.username); }
+
+  if (setClauses.length === 0) throw new Error('No valid fields to update');
+
+  setClauses.push('updated_at = NOW()');
+  values.push(number);
+
+  const sql = `UPDATE players SET ${setClauses.join(', ')} WHERE number = $${idx}`;
+  const result = await db.query(sql, values);
+  if (result.rowCount === 0) throw new Error('Player not found');
+  return getPlayerByNumber(number);
 }
 
 /**
- * Delete player by shirt number. Also removes their leaderboard row if any.
- *
- * @param {number} number
- * @returns {Promise<boolean>} True if a player was deleted
+ * Delete player by shirt number. Also removes their leaderboard row.
  */
-function deletePlayerByNumber(number) {
-  return new Promise((resolve, reject) => {
-    db.run('DELETE FROM leaderboard WHERE player_number = ?', [number], (err) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-      db.run('DELETE FROM players WHERE number = ?', [number], function (err2) {
-        if (err2) {
-          reject(err2);
-          return;
-        }
-        resolve(this.changes > 0);
-      });
-    });
-  });
+async function deletePlayerByNumber(number) {
+  await db.query('DELETE FROM leaderboard WHERE player_number = $1', [number]);
+  const result = await db.query('DELETE FROM players WHERE number = $1', [number]);
+  return result.rowCount > 0;
 }
 
 /**
  * Insert a new player row.
- * Domain validation (required fields, uniqueness) should be done in services.
- *
- * @param {Object} params
- * @param {number} params.userId
- * @param {string} params.name
- * @param {number} params.number
- * @param {string|null} [params.username]
- * @returns {Promise<Object>} Inserted player row
  */
-function createPlayer({ userId, name, number, username = null }) {
-  return new Promise((resolve, reject) => {
-    const sql = `
-      INSERT INTO players (user_id, name, number, username)
-      VALUES (?, ?, ?, ?)
-    `;
-
-    db.run(sql, [userId, name, number, username], function (err) {
-      if (err) {
-        reject(err);
-        return;
-      }
-
-      getPlayerByUserId(userId).then(resolve).catch(reject);
-    });
-  });
+async function createPlayer({ userId, name, number, username = null }) {
+  const sql = `
+    INSERT INTO players (user_id, name, number, username)
+    VALUES ($1, $2, $3, $4)
+    RETURNING *
+  `;
+  const { rows } = await db.query(sql, [userId, name, number, username]);
+  return rows[0];
 }
 
 /**
  * Get player by Telegram user_id.
- *
- * @param {number} userId
- * @returns {Promise<Object|null>}
  */
-function getPlayerByUserId(userId) {
-  return new Promise((resolve, reject) => {
-    const sql = 'SELECT * FROM players WHERE user_id = ?';
-
-    db.get(sql, [userId], (err, row) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-      resolve(row || null);
-    });
-  });
+async function getPlayerByUserId(userId) {
+  const { rows } = await db.query('SELECT * FROM players WHERE user_id = $1', [userId]);
+  return rows[0] || null;
 }
 
 /**
  * Get player by shirt number.
- *
- * @param {number} number
- * @returns {Promise<Object|null>}
  */
-function getPlayerByNumber(number) {
-  return new Promise((resolve, reject) => {
-    const sql = 'SELECT * FROM players WHERE number = ?';
-
-    db.get(sql, [number], (err, row) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-      resolve(row ?? null);
-    });
-  });
+async function getPlayerByNumber(number) {
+  const { rows } = await db.query('SELECT * FROM players WHERE number = $1', [number]);
+  return rows[0] || null;
 }
 
 /**
  * Get all players ordered by name.
- *
- * @returns {Promise<Array>}
  */
-function getAllPlayers() {
-  return new Promise((resolve, reject) => {
-    const sql = 'SELECT * FROM players ORDER BY name';
-
-    db.all(sql, [], (err, rows) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-      resolve(rows);
-    });
-  });
+async function getAllPlayers() {
+  const { rows } = await db.query('SELECT * FROM players ORDER BY name');
+  return rows;
 }
 
 /**
  * Update player information by user_id.
- * Only allows updating a subset of columns.
- *
- * @param {number} userId
- * @param {Object} updates
- * @returns {Promise<Object>} Updated player row
  */
-function updatePlayer(userId, updates) {
-  return new Promise((resolve, reject) => {
-    const allowedFields = ['name', 'number', 'username'];
-    const updateFields = [];
-    const values = [];
+async function updatePlayer(userId, updates) {
+  const allowedFields = ['name', 'number', 'username'];
+  const updateFields = [];
+  const values = [];
+  let idx = 1;
 
-    // Build update query dynamically
-    Object.keys(updates).forEach(key => {
-      if (allowedFields.includes(key)) {
-        updateFields.push(`${key} = ?`);
-        values.push(updates[key]);
-      }
-    });
-
-    if (updateFields.length === 0) {
-      reject(new Error('No valid fields to update'));
-      return;
+  Object.keys(updates).forEach(key => {
+    if (allowedFields.includes(key)) {
+      updateFields.push(`${key} = $${idx++}`);
+      values.push(updates[key]);
     }
-
-    updateFields.push('updated_at = CURRENT_TIMESTAMP');
-    values.push(userId);
-
-    const sql = `UPDATE players SET ${updateFields.join(', ')} WHERE user_id = ?`;
-
-    db.run(sql, values, function (err) {
-      if (err) {
-        reject(err);
-        return;
-      }
-
-      if (this.changes === 0) {
-        reject(new Error('Player not found'));
-        return;
-      }
-
-      getPlayerByUserId(userId).then(resolve).catch(reject);
-    });
   });
+
+  if (updateFields.length === 0) throw new Error('No valid fields to update');
+
+  updateFields.push('updated_at = NOW()');
+  values.push(userId);
+
+  const sql = `UPDATE players SET ${updateFields.join(', ')} WHERE user_id = $${idx}`;
+  const result = await db.query(sql, values);
+  if (result.rowCount === 0) throw new Error('Player not found');
+  return getPlayerByUserId(userId);
 }
 
 /**
- * Delete player by Telegram ID
- * @param {number} userId - Telegram user ID
- * @returns {Promise<boolean>} - True if player was deleted
+ * Delete player by Telegram ID.
  */
-function deletePlayer(userId) {
-  return new Promise((resolve, reject) => {
-    const sql = 'DELETE FROM players WHERE user_id = ?';
-
-    db.run(sql, [userId], function (err) {
-      if (err) {
-        reject(err);
-        return;
-      }
-
-      resolve(this.changes > 0);
-    });
-  });
+async function deletePlayer(userId) {
+  const result = await db.query('DELETE FROM players WHERE user_id = $1', [userId]);
+  return result.rowCount > 0;
 }
 
 /**
  * Get all players that share the same shirt number.
- *
- * @param {number} number
- * @returns {Promise<Array>}
  */
-function getPlayersByNumber(number) {
-  return new Promise((resolve, reject) => {
-    const sql = 'SELECT * FROM players WHERE number = ? ORDER BY name';
-
-    db.all(sql, [number], (err, rows) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-      resolve(rows);
-    });
-  });
+async function getPlayersByNumber(number) {
+  const { rows } = await db.query('SELECT * FROM players WHERE number = $1 ORDER BY name', [number]);
+  return rows;
 }
 
 /**
  * Search players by partial match on name or username.
- *
- * @param {string} searchTerm
- * @returns {Promise<Array>}
  */
-function searchPlayers(searchTerm) {
-  return new Promise((resolve, reject) => {
-    const sql =
-      'SELECT * FROM players WHERE name LIKE ? OR username LIKE ? ORDER BY name';
-    const searchPattern = `%${searchTerm}%`;
-
-    db.all(sql, [searchPattern, searchPattern], (err, rows) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-      resolve(rows);
-    });
-  });
+async function searchPlayers(searchTerm) {
+  const pattern = `%${searchTerm}%`;
+  const { rows } = await db.query('SELECT * FROM players WHERE name ILIKE $1 OR username ILIKE $2 ORDER BY name',
+    [pattern, pattern]
+  );
+  return rows;
 }
 
 module.exports = {

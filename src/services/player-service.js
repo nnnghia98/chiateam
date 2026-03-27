@@ -89,34 +89,22 @@ async function registerPlayer({ teleUser, number }) {
       player: created,
     };
   } catch (error) {
-    if (error.code === 'SQLITE_CONSTRAINT' && error.message) {
-      const msg = error.message;
-      if (msg.includes('players.number')) {
+    // PostgreSQL unique violation code: 23505
+    if (error.code === '23505' && error.constraint) {
+      if (error.constraint.includes('number')) {
         const existing = await getPlayerByNumber(number);
         if (existing) {
-          return {
-            ok: false,
-            code: 'NUMBER_IN_USE',
-            data: { player: existing },
-          };
+          return { ok: false, code: 'NUMBER_IN_USE', data: { player: existing } };
         }
       }
-      if (msg.includes('players.user_id')) {
+      if (error.constraint.includes('user_id')) {
         const existing = await getPlayerByUserId(userId);
         if (existing) {
-          return {
-            ok: false,
-            code: 'ALREADY_REGISTERED',
-            data: { player: existing },
-          };
+          return { ok: false, code: 'ALREADY_REGISTERED', data: { player: existing } };
         }
       }
     }
-    return {
-      ok: false,
-      code: 'UNEXPECTED_ERROR',
-      error,
-    };
+    return { ok: false, code: 'UNEXPECTED_ERROR', error };
   }
 }
 
@@ -148,14 +136,11 @@ async function registerPlayerForAnother({ name, number }) {
     const created = await createPlayerWithPlaceholder(trimmedName, number);
     return { ok: true, player: created };
   } catch (error) {
-    if (error.code === 'SQLITE_CONSTRAINT' && error.message?.includes('players.number')) {
+    // PostgreSQL unique violation code: 23505
+    if (error.code === '23505' && error.constraint && error.constraint.includes('number')) {
       const existingAfter = await getPlayerByNumber(number);
       if (existingAfter) {
-        return {
-          ok: false,
-          code: 'NUMBER_IN_USE',
-          data: { player: existingAfter },
-        };
+        return { ok: false, code: 'NUMBER_IN_USE', data: { player: existingAfter } };
       }
     }
     return { ok: false, code: 'UNEXPECTED_ERROR', error };

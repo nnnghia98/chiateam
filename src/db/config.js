@@ -1,21 +1,23 @@
-const path = require('path');
+const { Pool } = require('pg');
 const dotenv = require('dotenv');
-const sqlite3 = require('sqlite3').verbose();
 
 dotenv.config();
 
-const DATABASE_NAME = `${process.env.DATABASE_NAME || 'default'}.db`;
-const DB_DIR = process.env.DB_DIR || path.dirname(__filename);
-const SCHEMA_PATH = '../script/tables.sql';
+const db = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl:
+    process.env.NODE_ENV === 'production'
+      ? { rejectUnauthorized: false }
+      : false,
+});
 
-const dbPath = path.join(DB_DIR, DATABASE_NAME);
+db.on('error', err => {
+  console.error('Unexpected DB pool error:', err);
+});
 
-const db = new sqlite3.Database(dbPath);
+console.log(
+  'db config === DATABASE_URL is',
+  process.env.DATABASE_URL ? 'set' : 'NOT SET'
+);
 
-console.log('db config===', { DATABASE_NAME, DB_DIR, SCHEMA_PATH, dbPath });
-
-module.exports = {
-  dbPath,
-  SCHEMA_PATH,
-  db,
-};
+module.exports = { db };
