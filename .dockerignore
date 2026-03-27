@@ -259,3 +259,9 @@ config.json
 bot-token.txt node_modules/
 
 .DS_Store
+
+# Web UI — deployed separately to Vercel
+web/
+
+# Docs — not needed in container
+docs/
