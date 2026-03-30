@@ -10,6 +10,12 @@ const THREAD_TYPES = {
 
 const CHAT_ID = process.env.CHAT_ID;
 
+// Debug: Log thread configuration on startup
+console.log('📬 Thread configuration:', {
+  CHAT_ID,
+  THREAD_TYPES,
+});
+
 const sendMessage = async ({ msg, type, message, options = {} }) => {
   const chatId = CHAT_ID ?? msg.chat.id;
   const threadId = THREAD_TYPES[type];
@@ -38,14 +44,17 @@ const sendMessage = async ({ msg, type, message, options = {} }) => {
       code: error.response?.statusCode,
     });
 
-    // If thread not found, try sending without thread (fallback to main chat)
-    if (
-      error.message?.includes('message thread not found') &&
-      threadId != null
-    ) {
-      console.warn(
-        '[chat.sendMessage] Thread not found, retrying without thread_id'
-      );
+    // If thread not found or closed, try sending without thread (fallback to main chat)
+    const shouldFallback =
+      threadId != null &&
+      (error.message?.includes('message thread not found') ||
+        error.message?.includes('TOPIC_CLOSED'));
+
+    if (shouldFallback) {
+      const reason = error.message?.includes('TOPIC_CLOSED')
+        ? 'Topic is closed'
+        : 'Thread not found';
+      console.warn(`[chat.sendMessage] ${reason}, retrying without thread_id`);
       try {
         return await bot.sendMessage(chatId, message, options);
       } catch (fallbackError) {
