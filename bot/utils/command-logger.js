@@ -39,7 +39,7 @@ function logCommandUsage(msg) {
       '[telegram_command]',
       `time       : ${vnTime}`,
       `timezone   : ${VN_TIME_ZONE} (GMT+7)`,
-      `location   : Vietnam (Ho Chi Minh City)`,
+      'location   : Vietnam (Ho Chi Minh City)',
       `tele_id    : ${tele_id}`,
       `tele_name  : ${tele_name}`,
       `command    : ${command}`,

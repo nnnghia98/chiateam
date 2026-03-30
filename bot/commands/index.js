@@ -21,8 +21,7 @@ const clearTeamCommand = require('./team/clear-team');
 const meCommand = require('./player/me');
 const matchCommand = require('./match/match');
 const matchesCommand = require('./match/matches');
-const tienNuocCommand = require('./management/tien-nuoc');
-const teamThuaCommand = require('./management/team-thua');
+const resetCommand = require('./management/reset');
 const aiCommand = require('./ai/ai');
 
 module.exports = {
@@ -49,7 +48,6 @@ module.exports = {
   meCommand,
   matchCommand,
   matchesCommand,
-  tienNuocCommand,
-  teamThuaCommand,
+  resetCommand,
   aiCommand,
 };

@@ -155,7 +155,7 @@ const editStatsCommand = () => {
       sendMessage({
         msg,
         type: 'STATISTICS',
-        message: message,
+        message,
         options: {
           parse_mode: 'Markdown',
         },

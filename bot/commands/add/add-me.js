@@ -22,8 +22,9 @@ const addMeCommand = ({ members }) => {
       return;
     }
 
-    // Check if user already added (by userId if exists, or by name)
+    // Check if user already added (by userId)
     if (members.has(userId)) {
+      console.log(`⚠️ [addme] User ${name} (${userId}) already in bench`);
       sendMessage({
         msg,
         type: 'DEFAULT',
@@ -40,6 +41,7 @@ const addMeCommand = ({ members }) => {
     });
 
     if (isDuplicateName(msg.from.first_name, allNames)) {
+      console.log(`⚠️ [addme] Duplicate name detected: ${msg.from.first_name}`);
       sendMessage({
         msg,
         type: 'DEFAULT',
@@ -49,6 +51,7 @@ const addMeCommand = ({ members }) => {
     }
 
     members.set(userId, toEntry(name, userId));
+    console.log(`✅ [addme] Added ${name} (${userId}) to bench`);
     sendMessage({
       msg,
       type: 'MAIN',

@@ -31,9 +31,7 @@ const startCommand = () => {
 
 💰 *Tiền sân:*
 • \`/tiensan\` - Xem/đặt tiền sân (mặc định 580K)
-• \`/tiennuoc\` - Xem/đặt tiền nước (mặc định 60K)
-• \`/teamthua HOME|AWAY\` - Chọn team thua
-• \`/chiatien\` - Chia tiền (team thua trả thêm tiền nước)
+• \`/chiatien\` - Chia tiền
 
 🤖 *AI Assistant:*
 • \`/ai <câu hỏi>\` - Hỏi AI bất kỳ điều gì
@@ -42,7 +40,9 @@ const startCommand = () => {
 
 🗳 *Vote:*
 • \`/taovote\` - Tạo vote
-• \`/clearvote\` - Xóa tất cả vote
+• \`/demvote\` - Xem kết quả vote
+• \`/sync\` - Đồng bộ người vote vào bench (admin)
+• \`/clearvote\` - Xóa tất cả vote (admin)
 
 🏆 *Thống kê:*
 • \`/leaderboard\` - Xem bảng xếp hạng

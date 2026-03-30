@@ -54,6 +54,11 @@ const CLEAR_TEAM = {
   success: '✅ Đã xóa toàn bộ team.',
 };
 
+const RESET = {
+  success:
+    '🔄 *ĐÃ RESET TOÀN BỘ DỮ LIỆU*\n\n✅ Đã xóa:\n• Bench\n• Tất cả các team\n• Tiền sân → 580,000 VND\n• Team thua → null',
+};
+
 const CLEAR_TEAM_INDIVIDUAL = {
   emptyTeam: '⚠️ {team} trống.',
   instruction:
@@ -78,22 +83,10 @@ const CHIA_TIEN = {
 
 const TIEN_SAN = {
   instruction: '⚠️ Vui lòng nhập số tiền hợp lệ. Ví dụ: /tiensan 1000000',
-  noTiensan: '⚠️ Chưa thêm tiền sân.',
+  empty: '⚠️ Chưa thêm tiền sân.',
+  current: '💰 Tiền sân hiện tại: {value} VND',
   noMembers: '⚠️ Không có thành viên nào trong team để chia tiền.',
-  success: '✅ Đã thêm tiền sân: {value} VND',
-};
-
-const TIEN_NUOC = {
-  instruction: '⚠️ Vui lòng nhập số tiền hợp lệ. Ví dụ: /tiennuoc 60000',
-  current: '🧊 Tiền nước hiện tại: {value} VND',
-  success: '✅ Đã cập nhật tiền nước: {value} VND',
-};
-
-const TEAM_THUA = {
-  noTeamThua: '⚠️ Chưa chọn team thua. Dùng `/teamthua HOME` hoặc `/teamthua AWAY`',
-  current: '📋 Team thua hiện tại: *{team}*',
-  success: '✅ Đã chọn team thua: *{team}*',
-  instruction: '📋 *Cách sử dụng /teamthua:*\n\n• `/teamthua HOME` — Chọn HOME là team thua\n• `/teamthua AWAY` — Chọn AWAY là team thua',
+  success: '✅ Đã cập nhật tiền sân: {value} VND',
 };
 
 const SAN = {
@@ -107,7 +100,9 @@ const TAO_VOTE = {
   instruction:
     '📊 *Cách sử dụng /taovote:*\n' +
     '• `/taovote [question]` - Tạo vote với câu hỏi và 4 lựa chọn cố định (0, +1, +2, +3, +4)\n' +
-    '• `/clearvote` - Xóa tất cả vote đang hoạt động\n' +
+    '• `/demvote` - Kiểm tra kết quả vote\n' +
+    '• `/sync` - Đồng bộ người vote vào bench (admin)\n' +
+    '• `/clearvote` - Xóa tất cả vote đang hoạt động (admin)\n' +
     '\nVí dụ: `/taovote Sân XX ngày YY giờ ZZ`\n' +
     '\n*Lưu ý:* Vote sẽ có 4 lựa chọn: 0, +1, +2, +3, +4',
   shortInstruction:
@@ -171,9 +166,11 @@ const MATCH = {
     '• `/match mvp 10` - Cầu thủ số 10 là MVP\n' +
     '• `/match dd/mm/yyyy DELETE` - Xóa trận đấu (chỉ admin)\n\n' +
     'Ví dụ: `/match 23/02/2026` hoặc `/match 23/02/2026 3-1`',
-  invalidDate: '⚠️ Ngày không hợp lệ. Dùng định dạng dd/mm/yyyy. Ví dụ: 23/02/2026',
+  invalidDate:
+    '⚠️ Ngày không hợp lệ. Dùng định dạng dd/mm/yyyy. Ví dụ: 23/02/2026',
   invalidScore: '⚠️ Tỷ số không hợp lệ. Dùng định dạng HOME-AWAY, ví dụ: 3-1',
-  noMatch: '📭 Chưa có trận đấu nào được lưu cho ngày này. Dùng `/match SAVE` hoặc `/match dd/mm/yyyy SAVE` để lưu.',
+  noMatch:
+    '📭 Chưa có trận đấu nào được lưu cho ngày này. Dùng `/match SAVE` hoặc `/match dd/mm/yyyy SAVE` để lưu.',
   noDataToSave:
     '⚠️ Không đủ dữ liệu để lưu. Cần có team (/chiateam) và ít nhất sân hoặc tiền sân (/san, /tiensan).',
   saved: '✅ Đã lưu trận đấu!',
@@ -185,7 +182,8 @@ const MATCH = {
   invalidPlayerNumber: '⚠️ Số áo không hợp lệ.',
   deleteSuccess: '✅ Đã xóa trận đấu.',
   deleteNoMatch: '📭 Không có trận đấu nào cho ngày này để xóa.',
-  deleteNeedDate: '⚠️ Cần chỉ rõ ngày để xóa. Ví dụ: /match 23/02/2026 DELETE (chỉ admin).',
+  deleteNeedDate:
+    '⚠️ Cần chỉ rõ ngày để xóa. Ví dụ: /match 23/02/2026 DELETE (chỉ admin).',
 };
 
 const MATCHES = {
@@ -194,8 +192,7 @@ const MATCHES = {
 
 const PLAYERS = {
   header: '👥 **DANH SÁCH CẦU THỦ** 👥',
-  empty:
-    '📭 Chưa có cầu thủ nào đăng ký. Dùng `/register [số áo]` để đăng ký.',
+  empty: '📭 Chưa có cầu thủ nào đăng ký. Dùng `/register [số áo]` để đăng ký.',
   error: '❌ Có lỗi khi tải danh sách cầu thủ. Vui lòng thử lại sau.',
 };
 
@@ -239,12 +236,11 @@ module.exports = {
   REMOVE,
   CLEAR_BENCH,
   CLEAR_TEAM,
+  RESET,
   CLEAR_TEAM_INDIVIDUAL,
   UNKNOWN,
   CHIA_TIEN,
   TIEN_SAN,
-  TIEN_NUOC,
-  TEAM_THUA,
   SAN,
   TAO_VOTE,
   REGISTER,

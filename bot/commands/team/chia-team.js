@@ -38,7 +38,7 @@ const splitCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
     });
 
     const message =
-      `🎲 *Chia team* 🎲\n\n` +
+      '🎲 *Chia team* 🎲\n\n' +
       `👤 *HOME:*\n${Array.from(teamA.values()).map(getDisplayName).join('\n')}\n\n` +
       `👤 *AWAY:*\n${Array.from(teamB.values()).map(getDisplayName).join('\n')}`;
 
@@ -96,7 +96,7 @@ const splitCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
     });
 
     const message =
-      `🎲 *Chia 3 team* 🎲\n\n` +
+      '🎲 *Chia 3 team* 🎲\n\n' +
       `👤 *HOME:*\n${Array.from(team3A.values()).map(getDisplayName).join('\n')}\n\n` +
       `👤 *AWAY:*\n${Array.from(team3B.values()).map(getDisplayName).join('\n')}\n\n` +
       `👤 *EXTRA:*\n${Array.from(team3C.values()).map(getDisplayName).join('\n')}`;

@@ -27,7 +27,7 @@ const playersCommand = () => {
         statsByNumber[row.player_number] = row;
       });
 
-      let message = PLAYERS.header + '\n\n';
+      let message = `${PLAYERS.header  }\n\n`;
 
       players.forEach((player, index) => {
         const stats = statsByNumber[player.number] || {};

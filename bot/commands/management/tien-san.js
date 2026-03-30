@@ -5,6 +5,23 @@ const { TIEN_SAN } = require('../../utils/messages');
 const bot = require('../../bot');
 
 module.exports = (getTiensan, setTiensan) => {
+  bot.onText(/^\/tiensan$/, msg => {
+    const tiensan = getTiensan();
+    if (!tiensan) {
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: TIEN_SAN.empty,
+      });
+    } else {
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: TIEN_SAN.current.replace('{value}', formatMoney(tiensan)),
+      });
+    }
+  });
+
   bot.onText(/^\/tiensan (.+)$/, (msg, match) => {
     const input = match[1].replace(/[^\d]/g, '');
     if (!input || isNaN(Number(input))) {
@@ -22,22 +39,5 @@ module.exports = (getTiensan, setTiensan) => {
       type: 'ANNOUNCEMENT',
       message: TIEN_SAN.success.replace('{value}', formatMoney(value)),
     });
-  });
-
-  bot.onText(/^\/tiensan$/, msg => {
-    const tiensan = getTiensan();
-    if (!tiensan) {
-      sendMessage({
-        msg,
-        type: 'DEFAULT',
-        message: TIEN_SAN.noTiensan,
-      });
-    } else {
-      sendMessage({
-        msg,
-        type: 'ANNOUNCEMENT',
-        message: TIEN_SAN.success.replace('{value}', formatMoney(tiensan)),
-      });
-    }
   });
 };

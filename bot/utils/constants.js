@@ -11,6 +11,7 @@ const COMMANDS = [
   '/taovote',
   '/clearvote',
   '/demvote',
+  '/sync',
   '/san',
   '/clearsan',
   '/clearteam',
@@ -24,13 +25,7 @@ const COMMANDS = [
   '/me',
   '/match',
   '/matches',
-  '/autopoll',
-  '/setschedule',
-  '/setautopoll',
-  '/setautoremind',
-  '/testcron',
-  '/tiennuoc',
-  '/teamthua',
+  '/reset',
 ];
 
 const PATTERNS = {

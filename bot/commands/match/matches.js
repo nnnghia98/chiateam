@@ -36,7 +36,7 @@ function matchesCommand() {
         message += `• ${dateLabel}${score}\n`;
       });
 
-      message += `\n💡 Dùng \`/match dd/mm/yyyy\` để xem chi tiết`;
+      message += '\n💡 Dùng `/match dd/mm/yyyy` để xem chi tiết';
 
       sendMessage({
         msg,

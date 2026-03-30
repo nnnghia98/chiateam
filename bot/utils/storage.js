@@ -16,6 +16,7 @@ const DEFAULT_DATA = {
   tiensan: 580000,
   tiennuoc: 60000,
   teamThua: null,
+  activeVote: null,
   lastUpdated: null,
 };
 
@@ -40,6 +41,29 @@ function loadData() {
 }
 
 /**
+ * Get current time in Vietnam timezone (GMT+7)
+ * @returns {string} ISO string with Vietnam timezone offset
+ */
+function getVietnamTime() {
+  const now = new Date();
+  const vietnamOffset = 7 * 60; // GMT+7 in minutes
+  const localOffset = now.getTimezoneOffset();
+  const vietnamTime = new Date(
+    now.getTime() + (vietnamOffset + localOffset) * 60000
+  );
+
+  const year = vietnamTime.getFullYear();
+  const month = String(vietnamTime.getMonth() + 1).padStart(2, '0');
+  const day = String(vietnamTime.getDate()).padStart(2, '0');
+  const hours = String(vietnamTime.getHours()).padStart(2, '0');
+  const minutes = String(vietnamTime.getMinutes()).padStart(2, '0');
+  const seconds = String(vietnamTime.getSeconds()).padStart(2, '0');
+  const ms = String(vietnamTime.getMilliseconds()).padStart(3, '0');
+
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${ms}+07:00`;
+}
+
+/**
  * Save data to JSON file
  * @param {Object} data - The data to save
  */
@@ -47,7 +71,7 @@ function saveData(data) {
   try {
     const dataToSave = {
       ...data,
-      lastUpdated: new Date().toISOString(),
+      lastUpdated: getVietnamTime(),
     };
 
     fs.writeFileSync(STORAGE_FILE, JSON.stringify(dataToSave, null, 2), 'utf8');
@@ -127,6 +151,14 @@ function initializeStorage() {
   let tiensan = data.tiensan || 580000;
   let tiennuoc = data.tiennuoc || 60000;
   let teamThua = data.teamThua || null;
+  let activeVote = data.activeVote || null;
+
+  // Log if there's an active vote loaded
+  if (activeVote) {
+    console.log(
+      `📊 [storage] Loaded active vote: "${activeVote.question}" (${activeVote.totalVoters || 0} voters)`
+    );
+  }
 
   // Save function that serializes current state
   const save = () => {
@@ -140,6 +172,7 @@ function initializeStorage() {
       tiensan,
       tiennuoc,
       teamThua,
+      activeVote,
     });
   };
 
@@ -171,6 +204,11 @@ function initializeStorage() {
     getTeamThua: () => teamThua,
     setTeamThua: val => {
       teamThua = val;
+      save();
+    },
+    getActiveVote: () => activeVote,
+    setActiveVote: val => {
+      activeVote = val;
       save();
     },
     save, // Manual save function if needed

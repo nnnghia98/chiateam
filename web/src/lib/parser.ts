@@ -73,7 +73,7 @@ export function parseVenueMessage(text: string): MatchVenue {
   const venue: MatchVenue = {};
 
   // Remove /San prefix
-  let content = text.replace(/^\/San\s*/i, '').trim();
+  const content = text.replace(/^\/San\s*/i, '').trim();
   
   // If this is a team lineup (contains 👤), don't parse as venue
   if (content.includes('👤')) return venue;
