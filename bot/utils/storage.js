@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const STORAGE_FILE = path.join(__dirname, '../data.json');
+const STORAGE_FILE = path.join(__dirname, '../storage.json');
 
 /**
  * Default data structure for bot state
@@ -184,6 +184,35 @@ function initializeStorage() {
   createPersistentMap(team3B, 'team3B', save);
   createPersistentMap(team3C, 'team3C', save);
 
+  // Reset all data to defaults (batch operation - saves only once)
+  const resetAll = () => {
+    // Use original Map.clear() to avoid triggering individual saves
+    const originalBenchClear = Object.getPrototypeOf(bench).clear;
+    const originalTeamAClear = Object.getPrototypeOf(teamA).clear;
+    const originalTeamBClear = Object.getPrototypeOf(teamB).clear;
+    const originalTeam3AClear = Object.getPrototypeOf(team3A).clear;
+    const originalTeam3BClear = Object.getPrototypeOf(team3B).clear;
+    const originalTeam3CClear = Object.getPrototypeOf(team3C).clear;
+
+    // Clear all maps without triggering saves
+    originalBenchClear.call(bench);
+    originalTeamAClear.call(teamA);
+    originalTeamBClear.call(teamB);
+    originalTeam3AClear.call(team3A);
+    originalTeam3BClear.call(team3B);
+    originalTeam3CClear.call(team3C);
+
+    // Reset all values
+    tiensan = 580000;
+    tiennuoc = 60000;
+    teamThua = null;
+    activeVote = null;
+
+    // Save once at the end
+    save();
+    console.log('🔄 [storage] Reset all data to defaults');
+  };
+
   return {
     bench,
     teamA,
@@ -211,6 +240,7 @@ function initializeStorage() {
       activeVote = val;
       save();
     },
+    resetAll, // Batch reset function
     save, // Manual save function if needed
   };
 }

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The bot now uses a JSON file (`bot/data.json`) to persist data across server restarts. Previously, all data was stored in memory and would be lost when the server restarted.
+The bot now uses a JSON file (`bot/storage.json`) to persist data across server restarts. Previously, all data was stored in memory and would be lost when the server restarted.
 
 ## Persisted Data
 
@@ -20,7 +20,7 @@ The following data is now saved to disk:
 
 ## File Structure
 
-The data is stored in `bot/data.json` with the following structure:
+The data is stored in `bot/storage.json` with the following structure:
 
 ```json
 {
@@ -66,8 +66,8 @@ The storage system automatically saves to disk whenever:
 ## Files
 
 - **`bot/utils/storage.js`** - Storage utility functions
-- **`bot/data.json`** - Runtime data (auto-generated, gitignored)
-- **`bot/data.json.example`** - Example data structure
+- **`bot/storage.json`** - Runtime data (auto-generated, gitignored)
+- **`bot/storage.json.example`** - Example data structure
 
 ## Usage in Code
 
@@ -116,7 +116,7 @@ setTiensan(600000);
 
 The bot will automatically:
 
-1. Look for existing `bot/data.json` on startup
+1. Look for existing `bot/storage.json` on startup
 2. Load data if found
 3. Use default values if not found
 4. Create the file on first data change
@@ -130,7 +130,7 @@ To test persistence:
 1. Start the bot
 2. Run `/addme` to add yourself
 3. Stop the bot
-4. Check that `bot/data.json` was created
+4. Check that `bot/storage.json` was created
 5. Restart the bot
 6. Run `/bench` - you should still see yourself in the list
 
@@ -142,18 +142,18 @@ Check that:
 
 - The bot has write permissions in the `bot/` directory
 - No errors in console logs when saving
-- The `bot/data.json` file exists and is valid JSON
+- The `bot/storage.json` file exists and is valid JSON
 
-### Corrupted data.json
+### Corrupted storage.json
 
 1. Stop the bot
-2. Delete `bot/data.json`
-3. Optionally copy `bot/data.json.example` to `bot/data.json`
+2. Delete `bot/storage.json`
+3. Optionally copy `bot/storage.json.example` to `bot/storage.json`
 4. Restart the bot
 
 ### Manual data editing
 
-You can manually edit `bot/data.json` while the bot is stopped:
+You can manually edit `bot/storage.json` while the bot is stopped:
 
 - Ensure valid JSON format
 - Use proper array format for Map data: `[[key, value], ...]`
