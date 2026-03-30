@@ -17,7 +17,7 @@
 
 - **Persistent Vote Storage**:
   - Added `activeVote` to storage system (`bot/utils/storage.js`)
-  - Vote state now persists in `data.json` and survives bot restarts
+  - Vote state now persists in `storage.json` and survives bot restarts
   - Added `getActiveVote()` and `setActiveVote()` functions
   - Console logs active vote on bot startup
 
@@ -134,7 +134,7 @@
 - `bot/utils/constants.js` – Updated command list
 - `bot/commands/common/start.js` – Updated help menu
 - `bot/index.js` – Removed scheduler, updated imports
-- `bot/data.json.example` – Added activeVote field
+- `bot/storage.json.example` – Added activeVote field
 
 ### Files Deleted
 
@@ -164,3 +164,91 @@
 - [x] `/addme` prevents duplicates
 - [x] Bot restart preserves active vote
 - [x] Console logging provides clear diagnostics
+
+---
+
+## Sprint 11.1 – Production Stability & Storage Improvements (chiateam-bot)
+
+**Date**: March 30, 2026  
+**Focus**: Fixed production deployment issues, improved error handling, and optimized storage system.
+
+### Issues Resolved
+
+#### 1. Telegram Error Handling (`bot/utils/chat.js`)
+- **Problem**: Unhandled rejections from Telegram API errors causing bot crashes
+  - "message thread not found" when thread IDs are invalid/deleted
+  - "TOPIC_CLOSED" when trying to send to locked topics
+- **Solution**: 
+  - Added comprehensive try-catch error handling in `sendMessage()`
+  - Automatic fallback to main chat when thread errors occur
+  - Detailed error logging with context (chatId, threadId, type, error code)
+  - Prevents unhandled promise rejections
+
+#### 2. Environment Configuration (`bot/bot/index.js`)
+- **Problem**: Production environment variables not loading (`.env.production` ignored)
+  - `DEFAULT_THREAD_ID` was undefined, causing "Unknown thread type" warnings
+  - `dotenv.config()` only loaded `.env` by default
+- **Solution**:
+  - Load `.env.production` when `NODE_ENV=production`
+  - Load `.env` for development/other environments
+  - Added console log showing which config file was loaded
+  - Added thread configuration debug logging on startup
+
+#### 3. Storage File Naming
+- **Change**: Renamed `data.json` → `storage.json` throughout codebase
+- **Files Updated**:
+  - `bot/utils/storage.js` – Updated STORAGE_FILE path
+  - `.gitignore` – Ignore `storage.json` instead of `data.json`
+  - `nodemon.json` – Updated ignore pattern
+  - `bot/index.js` – Updated comment
+  - `docs/JSON_STORAGE.md` – All references updated
+  - `2026/sprint-11.md` – Documentation updated
+- **Files Renamed**:
+  - `bot/data.json` → `bot/storage.json`
+  - `bot/data.json.example` → `bot/storage.json.example`
+
+#### 4. `/reset` Command Completeness (`bot/commands/management/reset.js`)
+- **Problem**: `/reset` only cleared 8 out of 10 storage values
+  - Missing: `tiennuoc` (water cost), `activeVote` (poll state)
+- **Solution**: 
+  - Added `setTiennuoc()` and `setActiveVote()` to reset parameters
+  - Now properly resets all 10 values to defaults:
+    - Arrays → `[]`: bench, teamA, teamB, team3A, team3B, team3C
+    - Values → defaults: tiensan (580000), tiennuoc (60000), teamThua (null), activeVote (null)
+
+#### 5. `/reset` Save Loop Fix (`bot/utils/storage.js`)
+- **Problem**: Each clear/set operation triggered individual saves (10 saves per reset)
+  - Performance issue with rapid file writes
+  - Potential file system bottleneck
+- **Solution**: 
+  - Created batch `resetAll()` function that bypasses auto-save wrappers
+  - Uses original Map `clear()` methods directly
+  - Single save operation at the end
+  - **Result**: 10x performance improvement (1 save instead of 10)
+
+### Technical Improvements
+
+- **Error Resilience**: Bot continues operating even when threads are closed/deleted
+- **Production Ready**: Proper environment configuration loading for deployment
+- **Naming Consistency**: Clear distinction between storage files and other JSON data
+- **Complete Reset**: `/reset` now truly wipes all state to defaults
+- **Performance**: Batch operations prevent save loops and improve efficiency
+
+### Files Modified
+
+- `bot/utils/chat.js` – Error handling and fallback logic
+- `bot/bot/index.js` – Environment-aware dotenv configuration
+- `bot/utils/storage.js` – Renamed file path, added `resetAll()` batch function
+- `bot/commands/management/reset.js` – Simplified to use `resetAll()`
+- `bot/index.js` – Added `resetAll` to storage exports
+- `.gitignore` – Updated storage file pattern
+- `nodemon.json` – Updated ignore pattern
+- `docs/JSON_STORAGE.md` – Updated all documentation references
+
+### Impact
+
+- **Production Stability**: No more crashes from Telegram thread errors
+- **Proper Configuration**: Environment variables load correctly in all environments
+- **Clear Naming**: `storage.json` better reflects its purpose
+- **Complete Data Wiping**: `/reset` works as expected for fresh starts
+- **Better Performance**: Batch operations prevent unnecessary file I/O
