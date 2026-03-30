@@ -11,6 +11,9 @@ pids
 *.seed
 *.pid.lock
 
+# Bot persistent data
+bot/data.json
+
 # Coverage directory used by tools like istanbul
 coverage/
 *.lcov
