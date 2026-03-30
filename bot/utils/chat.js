@@ -26,7 +26,40 @@ const sendMessage = async ({ msg, type, message, options = {} }) => {
     console.warn(`[chat.sendMessage] Unknown thread type: ${type}`);
   }
 
-  return await bot.sendMessage(chatId, message, sendOptions);
+  try {
+    return await bot.sendMessage(chatId, message, sendOptions);
+  } catch (error) {
+    // Log error with context for debugging
+    console.error('[chat.sendMessage] Failed to send message:', {
+      error: error.message,
+      chatId,
+      threadId,
+      type,
+      code: error.response?.statusCode,
+    });
+
+    // If thread not found, try sending without thread (fallback to main chat)
+    if (
+      error.message?.includes('message thread not found') &&
+      threadId != null
+    ) {
+      console.warn(
+        '[chat.sendMessage] Thread not found, retrying without thread_id'
+      );
+      try {
+        return await bot.sendMessage(chatId, message, options);
+      } catch (fallbackError) {
+        console.error(
+          '[chat.sendMessage] Fallback also failed:',
+          fallbackError.message
+        );
+        throw fallbackError;
+      }
+    }
+
+    // Re-throw other errors
+    throw error;
+  }
 };
 
 module.exports = {
