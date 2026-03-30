@@ -27,8 +27,8 @@ async function applyMatchResult({ result, playerNumbers }) {
 
   const normalizedIds = Array.isArray(playerNumbers)
     ? playerNumbers
-        .map(n => Number(n))
-        .filter(n => Number.isInteger(n) && n > 0)
+      .map(n => Number(n))
+      .filter(n => Number.isInteger(n) && n > 0)
     : [];
 
   if (normalizedIds.length === 0) {

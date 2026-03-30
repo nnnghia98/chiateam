@@ -46,7 +46,7 @@ const updateLeaderboardCommand = () => {
           sendMessage({
             msg,
             type: 'DEFAULT',
-            message: message,
+            message,
             options: { parse_mode: 'Markdown' },
           });
           return;
@@ -58,13 +58,13 @@ const updateLeaderboardCommand = () => {
         const goalAssistResult =
           result === 'GOAL'
             ? await updateGoalStat({
-                playerNumber: playerNumberRaw,
-                delta: valueRaw,
-              })
+              playerNumber: playerNumberRaw,
+              delta: valueRaw,
+            })
             : await updateAssistStat({
-                playerNumber: playerNumberRaw,
-                delta: valueRaw,
-              });
+              playerNumber: playerNumberRaw,
+              delta: valueRaw,
+            });
 
         if (!goalAssistResult.ok) {
           if (goalAssistResult.code === 'INVALID_PLAYER_NUMBER') {
@@ -125,7 +125,7 @@ const updateLeaderboardCommand = () => {
         sendMessage({
           msg,
           type: 'STATISTICS',
-          message: message,
+          message,
           options: {
             parse_mode: 'Markdown',
           },
@@ -187,7 +187,7 @@ const updateLeaderboardCommand = () => {
         sendMessage({
           msg,
           type: 'DEFAULT',
-          message: message,
+          message,
           options: {
             parse_mode: 'Markdown',
           },
@@ -252,7 +252,7 @@ const updateLeaderboardCommand = () => {
       sendMessage({
         msg,
         type: 'STATISTICS',
-        message: message,
+        message,
         options: {
           parse_mode: 'Markdown',
         },

@@ -32,7 +32,7 @@ const uiApi = createUiApiServer({
 uiApi
   .start()
   .then(({ port }) => {
-    console.log(`✅ API Server successfully started`);
+    console.log('✅ API Server successfully started');
     console.log(`🧭 API running at http://localhost:${port}`);
   })
   .catch(err => {

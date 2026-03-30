@@ -8,5 +8,6 @@
   "tiensan": 580000,
   "tiennuoc": 60000,
   "teamThua": null,
+  "activeVote": null,
   "lastUpdated": null
 }

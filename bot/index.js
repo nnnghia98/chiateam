@@ -22,15 +22,13 @@ const {
   meCommand,
   matchCommand,
   matchesCommand,
-  tienNuocCommand,
-  teamThuaCommand,
+  resetCommand,
   aiCommand,
 } = require('./commands');
 
 const maintenanceMessage = require('./commands/maintainance');
 const bot = require('./bot');
 const { logCommandUsage } = require('./utils/command-logger');
-const { startWeeklyVoteScheduler } = require('./scheduler/weekly-vote');
 const { startTestServer } = require('./test-server');
 const { initializeStorage } = require('./utils/storage');
 
@@ -91,10 +89,10 @@ const storage = initializeStorage();
 const { bench: members, teamA, teamB, team3A, team3B, team3C } = storage;
 const getTiensan = storage.getTiensan;
 const setTiensan = storage.setTiensan;
-const getTiennuoc = storage.getTiennuoc;
-const setTiennuoc = storage.setTiennuoc;
 const getTeamThua = storage.getTeamThua;
 const setTeamThua = storage.setTeamThua;
+const getActiveVote = storage.getActiveVote;
+const setActiveVote = storage.setActiveVote;
 
 startCommand();
 unknownCommand();
@@ -106,13 +104,8 @@ clearBenchCommand({ members });
 addCommand({ members });
 teamCommand({ teamA, teamB, team3A, team3B, team3C });
 tiensanCommand(getTiensan, setTiensan);
-tienNuocCommand(getTiennuoc, setTiennuoc);
-teamThuaCommand(getTiensan, getTiennuoc, getTeamThua, setTeamThua, {
-  teamA,
-  teamB,
-});
-chiaTienCommand(getTiensan, getTiennuoc, getTeamThua, { teamA, teamB });
-taoVoteCommand();
+chiaTienCommand(getTiensan, getTeamThua, { teamA, teamB });
+taoVoteCommand({ members, getActiveVote, setActiveVote });
 sanCommand();
 leaderboardCommand();
 updateLeaderboardCommand();
@@ -125,10 +118,17 @@ clearTeamCommand({ teamA, teamB, team3A, team3B, team3C });
 meCommand();
 matchCommand({ getTiensan, teamA, teamB, team3C });
 matchesCommand();
+resetCommand({
+  members,
+  teamA,
+  teamB,
+  team3A,
+  team3B,
+  team3C,
+  setTiensan,
+  setTeamThua,
+});
 aiCommand();
-
-// Start weekly vote scheduler (Friday poll + Monday remind)
-startWeeklyVoteScheduler(bot);
 
 // Start HTTP test server in development mode
 startTestServer(bot);

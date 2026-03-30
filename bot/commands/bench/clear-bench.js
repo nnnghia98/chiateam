@@ -30,7 +30,7 @@ const clearBenchCommand = ({ members }) => {
     sendMessage({
       msg,
       type: 'DEFAULT',
-      message: message,
+      message,
       options: {
         parse_mode: 'Markdown',
       },
