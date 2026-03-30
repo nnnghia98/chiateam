@@ -1,0 +1,8 @@
+{
+  "ignore": ["bot/data.json", "node_modules/", ".git/", "*.test.js"],
+  "watch": ["bot/", "api/"],
+  "ext": "js,json",
+  "env": {
+    "NODE_ENV": "development"
+  }
+}

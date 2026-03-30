@@ -102,15 +102,18 @@
 ### Files Created
 
 **Frontend**:
+
 - `web/src/app/matches/page.tsx` – Main Matches page (server component)
 - `web/src/app/matches/_components/MatchAccordion.tsx` – Interactive accordion component (client component)
 
 ### Files Modified
 
 **Backend**:
+
 - `src/api/server.js` – Added `/api/matches` and `/api/matches/:date` endpoints
 
 **Frontend**:
+
 - `web/src/lib/api.ts` – Added Match and MatchPlayer types, fetchMatches() and fetchMatchByDate() functions
 - `web/src/app/_components/AppShell.tsx` – Added Matches navigation item
 
@@ -167,7 +170,7 @@
   - `getMatchWithPlayers` collects EXTRA-side rows into a separate `extraPlayers` array on the match object.
   - `formatMatchMessage` renders an **EXTRA** section below HOME and AWAY when `extraPlayers` is non-empty.
 
-- **Independent state architecture** (`src/index.js`):
+- **Independent state architecture** (`bot/index.js`):
   - Added three new in-memory Maps: `team3A`, `team3B`, `team3C`.
   - `teamA` / `teamB` are exclusively for the 2-team split.
   - `team3A` / `team3B` / `team3C` are exclusively for the 3-team split.
@@ -180,12 +183,12 @@
 
 - **5 independent Maps** replace the previous 2:
 
-  | Map | Owner command | Displayed by |
-  |-----|--------------|--------------|
-  | `teamA` | `/chiateam` | `/team` |
-  | `teamB` | `/chiateam` | `/team` |
-  | `team3A` | `/chiateam 3` | `/team 3` |
-  | `team3B` | `/chiateam 3` | `/team 3` |
+  | Map      | Owner command | Displayed by                          |
+  | -------- | ------------- | ------------------------------------- |
+  | `teamA`  | `/chiateam`   | `/team`                               |
+  | `teamB`  | `/chiateam`   | `/team`                               |
+  | `team3A` | `/chiateam 3` | `/team 3`                             |
+  | `team3B` | `/chiateam 3` | `/team 3`                             |
   | `team3C` | `/chiateam 3` | `/team 3`, `/match SAVE` (EXTRA side) |
 
 - **3-team size algorithm**: `base = floor(N / 3)`, `remainder = N % 3`. A shuffled index pool `[0,1,2]` determines which teams receive the extra slot(s), guaranteeing equal probability across all three teams.
@@ -209,7 +212,7 @@
 - `src/api/matches.js` – Added EXTRA side to `getMatchWithPlayers` and `createOrUpdateMatch`
 - `src/utils/messages.js` – Updated `CLEAR_TEAM`, `CLEAR_TEAM_INDIVIDUAL` messages; added EXTRA hint to `ADD_TO_TEAM`
 - `src/commands/common/start.js` – Added `/chiateam 3` and `/team 3` to help text
-- `src/index.js` – Added `team3A`, `team3B`, `team3C` Maps; updated all command wiring
+- `bot/index.js` – Added `team3A`, `team3B`, `team3C` Maps; updated all command wiring
 
 ### Future Enhancements
 

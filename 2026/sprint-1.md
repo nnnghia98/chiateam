@@ -27,7 +27,7 @@
     - `/taovote <question>` and `/clearvote`.
 
 - **In-memory identity model**
-  - Documented `members`, `teamA`, `teamB` in `src/index.js` as **ephemeral match state** keyed by synthetic IDs, storing **display names only** (not Telegram/DB IDs).
+  - Documented `members`, `teamA`, `teamB` in `bot/index.js` as **ephemeral match state** keyed by synthetic IDs, storing **display names only** (not Telegram/DB IDs).
 
 - **DB error handling**
   - Verified all DB-using commands (`/register`, `/leaderboard`, `/player`, `/update-leaderboard`, `/edit-stats`, `/me`) already:
@@ -60,6 +60,5 @@
 
 ### Commits
 
-- `dfc343d` – *chore: harden backend commands and permissions*  
-- `6d36069` – *chore: clean unknown copy and harden messaging*
-
+- `dfc343d` – _chore: harden backend commands and permissions_
+- `6d36069` – _chore: clean unknown copy and harden messaging_

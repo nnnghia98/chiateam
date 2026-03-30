@@ -17,7 +17,7 @@
     - Now **also** calls `updateGoalStat({ playerNumber, delta })` and `updateAssistStat({ playerNumber, delta })` from `leaderboard-service` to increment the aggregated `leaderboard.goal` and `leaderboard.assist` columns.
   - **Impact**: `/players` now correctly shows total goals/assists from all matches, not just from manual `/update-leaderboard GOAL/ASSIST` commands.
 
-- **Remove Conversations logging** (`src/api/server.js`, `src/index.js`, `web/src/lib/api.ts`, `web/src/app/_components/AppShell.tsx`, `web/src/app/page.tsx`, `web/src/app/conversations/page.tsx`):
+- **Remove Conversations logging** (`api/routes/server.js`, `bot/index.js`, `web/src/lib/api.ts`, `web/src/app/_components/AppShell.tsx`, `web/src/app/page.tsx`, `web/src/app/conversations/page.tsx`):
   - Deleted the ring buffer and `logConversationEvent` function from the UI API server.
   - Removed the `bot.on('message', ...)` listener that logged every Telegram message to the in-memory buffer.
   - Removed `GET /api/conversations` endpoint.
@@ -64,11 +64,13 @@
 ### Files Changed
 
 **Backend**:
+
 - `src/commands/match/match.js` – Added `updateGoalStat` and `updateAssistStat` calls
 - `src/api/server.js` – Removed Conversations endpoint, added Players endpoints
-- `src/index.js` – Removed message logging listener
+- `bot/index.js` – Removed message logging listener
 
 **Frontend**:
+
 - `web/src/app/_components/AppShell.tsx` – Replaced Conversations nav with Players nav
 - `web/src/app/players/page.tsx` – New Players management page
 - `web/src/app/page.tsx` – Renamed conversation references to examples

@@ -43,7 +43,7 @@
   - New command `/players`: lists all registered players (from `players` table via `getAllPlayers`) with stats from `leaderboard` (`getMultiplePlayerStats`).
   - Per player: name, shirt number, total match / win / lose / draw, goals, assists, winrate. Players without a leaderboard row show zeros.
   - Messages: `PLAYERS.header`, `PLAYERS.empty`, `PLAYERS.error`. Reply uses `STATISTICS` thread like `/leaderboard`.
-  - Command registered in `src/commands/index.js`, `src/index.js`; added to start menu and `COMMANDS` in `src/utils/constants.js`.
+  - Command registered in `bot/commands/index.js`, `bot/index.js`; added to start menu and `COMMANDS` in `bot/utils/constants.js`.
 
 ### Impact
 
