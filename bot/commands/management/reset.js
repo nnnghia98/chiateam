@@ -4,32 +4,14 @@ const { RESET } = require('../../utils/messages');
 
 const bot = require('../../bot');
 
-const resetCommand = ({
-  members,
-  teamA,
-  teamB,
-  team3A,
-  team3B,
-  team3C,
-  setTiensan,
-  setTeamThua,
-}) => {
+const resetCommand = ({ resetAll }) => {
   bot.onText(/^\/reset$/, msg => {
     if (!requireAdmin(msg)) {
       return;
     }
 
-    // Clear all team and bench data
-    members.clear();
-    teamA.clear();
-    teamB.clear();
-    team3A.clear();
-    team3B.clear();
-    team3C.clear();
-
-    // Reset financial data and team thua
-    setTiensan(580000);
-    setTeamThua(null);
+    // Reset all data in one batch operation
+    resetAll();
 
     sendMessage({
       msg,
