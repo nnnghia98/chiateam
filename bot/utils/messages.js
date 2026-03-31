@@ -24,9 +24,9 @@ const ADD_ME = {
 const ADD_TO_TEAM = {
   emptyBench: '⚠️ Bench trống. Thêm member trước.',
   instruction:
-    '📋 *Bench hiện tại:*\n\n{numberedList}\n\n💡 *Cách sử dụng:*\n• `/addtoteam{team} 1,3,5` - Chọn member số 1, 3, 5\n• `/addtoteam{team} 1-3` - Chọn member từ 1 đến 3\n• `/addtoteam{team} all` - Chọn tất cả\n\n_Team: HOME | AWAY | EXTRA_',
+    '📋 *Bench hiện tại:*\n\n{numberedList}\n\n💡 *Cách sử dụng:*\n• `/addtoteam [2|3] {team} 1,3,5` - Chọn member số 1, 3, 5\n• `/addtoteam [2|3] {team} 1-3` - Chọn member từ 1 đến 3\n• `/addtoteam [2|3] {team} all` - Chọn tất cả\n\n_Mode: 2 (2 teams) | 3 (3 teams) - mặc định: 2_\n_Team: HOME | AWAY | EXTRA_',
   invalidSelection:
-    '⚠️ Không có lựa chọn hợp lệ. Ví dụ:\n`/addtoteam{team} 1,3,5` hoặc `/addtoteam{team} 1-3` hoặc `/addtoteam{team} all`',
+    '⚠️ Không có lựa chọn hợp lệ. Ví dụ:\n`/addtoteam HOME 1,3,5` hoặc `/addtoteam 3 HOME 1-3` hoặc `/addtoteam HOME all`',
   success:
     '✅ Đã thêm {count} member(s) vào {team}:\n{selectedNames}\n\n👤 *{team} hiện tại:*\n{teamMembers}',
 };
@@ -62,9 +62,9 @@ const RESET = {
 const CLEAR_TEAM_INDIVIDUAL = {
   emptyTeam: '⚠️ {team} trống.',
   instruction:
-    '👤 *{team} hiện tại:*\n\n{numberedList}\n\n💡 *Cách sử dụng:*\n• `/clearteam{teamType} 1,3,5` - Xóa member số 1, 3, 5 khỏi team\n• `/clearteam{teamType} 1-3` - Xóa member từ 1 đến 3 khỏi team\n• `/clearteam{teamType} all` - Xóa tất cả member khỏi team\n• `/clearteam{teamType} "John"` - Xóa member theo tên',
+    '👤 *{team} hiện tại:*\n\n{numberedList}\n\n💡 *Cách sử dụng:*\n• `/clearteam` - Xóa tất cả team\n• `/clearteam 2` - Xóa 2-team stack (HOME, AWAY)\n• `/clearteam 3` - Xóa 3-team stack (HOME, AWAY, EXTRA)\n• `/clearteam [2|3]{teamType} 1,3,5` - Xóa member số 1, 3, 5 khỏi team\n• `/clearteam [2|3]{teamType} 1-3` - Xóa member từ 1 đến 3 khỏi team\n• `/clearteam [2|3]{teamType} all` - Xóa tất cả member khỏi team\n• `/clearteam [2|3]{teamType} "John"` - Xóa member theo tên\n\n_Mode: 2 (2 teams) | 3 (3 teams) - mặc định: 2_',
   invalidSelection:
-    '⚠️ Không có lựa chọn hợp lệ. Ví dụ:\n`/clearteam{teamType} 1,3,5` hoặc `/clearteam{teamType} 1-3` hoặc `/clearteam{teamType} all` hoặc `/clearteam{teamType} "John"`',
+    '⚠️ Không có lựa chọn hợp lệ. Ví dụ:\n`/clearteam HOME 1,3,5` hoặc `/clearteam 3 HOME 1-3` hoặc `/clearteam HOME all`',
   noResetMembers: '⚠️ Không có member nào được xóa.',
   success: '✅ Đã xóa {count} member(s) khỏi {team}:\n{resetNames}',
 };

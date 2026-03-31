@@ -116,7 +116,7 @@ editStatsCommand();
 playerCommand();
 registerCommand();
 playersCommand();
-addToTeamCommand({ members, teamA, teamB, team3C });
+addToTeamCommand({ members, teamA, teamB, team3A, team3B, team3C });
 clearTeamCommand({ teamA, teamB, team3A, team3B, team3C });
 meCommand();
 matchCommand({ getTiensan, teamA, teamB, team3C });
