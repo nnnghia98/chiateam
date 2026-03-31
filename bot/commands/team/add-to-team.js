@@ -5,7 +5,14 @@ const { escapeMarkdown } = require('../../utils/format');
 
 const bot = require('../../bot');
 
-const addToTeamCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
+const addToTeamCommand = ({
+  members,
+  teamA,
+  teamB,
+  team3A,
+  team3B,
+  team3C,
+}) => {
   // Helper: Get the correct team based on mode (2 or 3) and team type
   const getTeam = (mode, teamType) => {
     if (mode === 3) {
@@ -18,7 +25,7 @@ const addToTeamCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => 
       if (teamType === 'AWAY') return teamB;
       if (teamType === 'EXTRA') return team3C; // EXTRA always uses team3C
     }
-    
+
     return null;
   };
 
@@ -145,7 +152,7 @@ const addToTeamCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => 
     const existingInTeam = new Set(Array.from(team.values()));
     const duplicates = [];
     const toAdd = [];
-    
+
     selectedEntries.forEach(([, entry]) => {
       if (existingInTeam.has(entry)) {
         duplicates.push(getDisplayName(entry));
@@ -167,7 +174,7 @@ const addToTeamCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => 
     if (duplicates.length > 0) {
       message += `⚠️ Đã bỏ qua ${duplicates.length} member đã có trong ${teamName}:\n${duplicates.map(name => escapeMarkdown(name)).join(', ')}\n\n`;
     }
-    
+
     if (toAdd.length > 0) {
       message += ADD_TO_TEAM.success
         .replace('{count}', selectedNames.length)

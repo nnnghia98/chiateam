@@ -1,7 +1,4 @@
-const {
-  CLEAR_TEAM,
-  CLEAR_TEAM_INDIVIDUAL,
-} = require('../../utils/messages');
+const { CLEAR_TEAM, CLEAR_TEAM_INDIVIDUAL } = require('../../utils/messages');
 const { getDisplayName } = require('../../utils/team-member');
 const { sendMessage } = require('../../utils/chat');
 const { requireAdmin } = require('../../utils/permissions');
@@ -22,7 +19,7 @@ const clearTeamCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
       if (teamType === 'AWAY') return teamB;
       if (teamType === 'EXTRA') return team3C;
     }
-    
+
     return null;
   };
 
@@ -32,7 +29,13 @@ const clearTeamCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
       return;
     }
 
-    if (teamA.size === 0 && teamB.size === 0 && team3A.size === 0 && team3B.size === 0 && team3C.size === 0) {
+    if (
+      teamA.size === 0 &&
+      teamB.size === 0 &&
+      team3A.size === 0 &&
+      team3B.size === 0 &&
+      team3C.size === 0
+    ) {
       sendMessage({
         msg,
         type: 'DEFAULT',
@@ -111,7 +114,8 @@ const clearTeamCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
     const mode = match[1] ? parseInt(match[1]) : 2; // Default to 2-team mode
     const teamType = match[2];
     const team = getTeam(mode, teamType);
-    const teamName = teamType === 'HOME' ? 'Home' : teamType === 'AWAY' ? 'Away' : 'Extra';
+    const teamName =
+      teamType === 'HOME' ? 'Home' : teamType === 'AWAY' ? 'Away' : 'Extra';
     const teamEntries = Array.from(team.entries());
     const teamNames = teamEntries.map(([, v]) => getDisplayName(v));
 
@@ -152,7 +156,8 @@ const clearTeamCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
     const teamType = match[2];
     const selection = match[3].trim();
     const team = getTeam(mode, teamType);
-    const teamName = teamType === 'HOME' ? 'Home' : teamType === 'AWAY' ? 'Away' : 'Extra';
+    const teamName =
+      teamType === 'HOME' ? 'Home' : teamType === 'AWAY' ? 'Away' : 'Extra';
     const teamEntries = Array.from(team.entries());
     const teamNames = teamEntries.map(([, v]) => getDisplayName(v));
 

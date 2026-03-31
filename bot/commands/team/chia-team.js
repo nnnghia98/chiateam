@@ -14,7 +14,7 @@ const splitCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
       ...Array.from(teamA.values()),
       ...Array.from(teamB.values()),
     ]);
-    
+
     const unassignedMembers = Array.from(members.values()).filter(
       member => !existingTeamMembers.has(member)
     );
@@ -41,14 +41,25 @@ const splitCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
 
     // Smart distribution: balance teams based on current sizes
     const currentSizes = [teamA.size, teamB.size];
-    const totalMembers = currentSizes[0] + currentSizes[1] + unassignedMembers.length;
+    const totalMembers =
+      currentSizes[0] + currentSizes[1] + unassignedMembers.length;
     const idealPerTeam = Math.floor(totalMembers / 2);
     const remainder = totalMembers % 2;
 
     // Calculate how many members each team needs
     const teams = [
-      { current: currentSizes[0], target: idealPerTeam, map: teamA, name: 'HOME' },
-      { current: currentSizes[1], target: idealPerTeam, map: teamB, name: 'AWAY' },
+      {
+        current: currentSizes[0],
+        target: idealPerTeam,
+        map: teamA,
+        name: 'HOME',
+      },
+      {
+        current: currentSizes[1],
+        target: idealPerTeam,
+        map: teamB,
+        name: 'AWAY',
+      },
     ];
 
     // Sort teams by current size (smallest first)
@@ -67,17 +78,22 @@ const splitCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
     // Distribute unassigned members to teams based on need
     let memberIndex = 0;
     teams.forEach(team => {
-      const membersToAdd = unassignedMembers.slice(memberIndex, memberIndex + team.needed);
-      
+      const membersToAdd = unassignedMembers.slice(
+        memberIndex,
+        memberIndex + team.needed
+      );
+
       // Get existing members in this team to check for duplicates
       const existingInTeam = new Set(Array.from(team.map.values()));
-      
+
       membersToAdd.forEach((entry, idx) => {
         // Only add if not already in this team
         if (!existingInTeam.has(entry)) {
           team.map.set(Date.now() + Math.random() + memberIndex + idx, entry);
         } else {
-          console.warn(`[chiateam] Skipped duplicate: ${getDisplayName(entry)} already in ${team.name}`);
+          console.warn(
+            `[chiateam] Skipped duplicate: ${getDisplayName(entry)} already in ${team.name}`
+          );
         }
       });
       memberIndex += team.needed;
@@ -85,8 +101,12 @@ const splitCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
 
     const message =
       '🎲 *Chia team* 🎲\n\n' +
-      `⚪ *HOME:*\n${Array.from(teamA.values()).map(v => escapeMarkdown(getDisplayName(v))).join('\n')}\n\n` +
-      `⚫ *AWAY:*\n${Array.from(teamB.values()).map(v => escapeMarkdown(getDisplayName(v))).join('\n')}`;
+      `⚪ *HOME:*\n${Array.from(teamA.values())
+        .map(v => escapeMarkdown(getDisplayName(v)))
+        .join('\n')}\n\n` +
+      `⚫ *AWAY:*\n${Array.from(teamB.values())
+        .map(v => escapeMarkdown(getDisplayName(v)))
+        .join('\n')}`;
 
     sendMessage({
       msg,
@@ -106,7 +126,7 @@ const splitCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
       ...Array.from(team3B.values()),
       ...Array.from(team3C.values()),
     ]);
-    
+
     const unassignedMembers = Array.from(members.values()).filter(
       member => !existingTeamMembers.has(member)
     );
@@ -133,15 +153,37 @@ const splitCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
 
     // Smart distribution: balance teams based on current sizes
     const currentSizes = [team3A.size, team3B.size, team3C.size];
-    const totalMembers = currentSizes[0] + currentSizes[1] + currentSizes[2] + unassignedMembers.length;
+    const totalMembers =
+      currentSizes[0] +
+      currentSizes[1] +
+      currentSizes[2] +
+      unassignedMembers.length;
     const idealPerTeam = Math.floor(totalMembers / 3);
     const remainder = totalMembers % 3;
 
     // Calculate how many members each team needs
     const teams = [
-      { index: 0, current: currentSizes[0], target: idealPerTeam, map: team3A, name: 'HOME' },
-      { index: 1, current: currentSizes[1], target: idealPerTeam, map: team3B, name: 'AWAY' },
-      { index: 2, current: currentSizes[2], target: idealPerTeam, map: team3C, name: 'EXTRA' },
+      {
+        index: 0,
+        current: currentSizes[0],
+        target: idealPerTeam,
+        map: team3A,
+        name: 'HOME',
+      },
+      {
+        index: 1,
+        current: currentSizes[1],
+        target: idealPerTeam,
+        map: team3B,
+        name: 'AWAY',
+      },
+      {
+        index: 2,
+        current: currentSizes[2],
+        target: idealPerTeam,
+        map: team3C,
+        name: 'EXTRA',
+      },
     ];
 
     // Sort teams by current size (smallest first) to prioritize filling smaller teams
@@ -151,7 +193,10 @@ const splitCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
     const remainderIndices = [0, 1, 2];
     for (let i = remainderIndices.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [remainderIndices[i], remainderIndices[j]] = [remainderIndices[j], remainderIndices[i]];
+      [remainderIndices[i], remainderIndices[j]] = [
+        remainderIndices[j],
+        remainderIndices[i],
+      ];
     }
     for (let i = 0; i < remainder; i++) {
       teams[remainderIndices[i]].target++;
@@ -165,17 +210,22 @@ const splitCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
     // Distribute unassigned members to teams based on need
     let memberIndex = 0;
     teams.forEach(team => {
-      const membersToAdd = unassignedMembers.slice(memberIndex, memberIndex + team.needed);
-      
+      const membersToAdd = unassignedMembers.slice(
+        memberIndex,
+        memberIndex + team.needed
+      );
+
       // Get existing members in this team to check for duplicates
       const existingInTeam = new Set(Array.from(team.map.values()));
-      
+
       membersToAdd.forEach((entry, idx) => {
         // Only add if not already in this team
         if (!existingInTeam.has(entry)) {
           team.map.set(Date.now() + Math.random() + memberIndex + idx, entry);
         } else {
-          console.warn(`[chiateam 3] Skipped duplicate: ${getDisplayName(entry)} already in ${team.name}`);
+          console.warn(
+            `[chiateam 3] Skipped duplicate: ${getDisplayName(entry)} already in ${team.name}`
+          );
         }
       });
       memberIndex += team.needed;
@@ -183,9 +233,15 @@ const splitCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
 
     const message =
       '🎲 *Chia 3 team* 🎲\n\n' +
-      `⚪ *HOME:*\n${Array.from(team3A.values()).map(v => escapeMarkdown(getDisplayName(v))).join('\n')}\n\n` +
-      `⚫ *AWAY:*\n${Array.from(team3B.values()).map(v => escapeMarkdown(getDisplayName(v))).join('\n')}\n\n` +
-      `🟠 *EXTRA:*\n${Array.from(team3C.values()).map(v => escapeMarkdown(getDisplayName(v))).join('\n')}`;
+      `⚪ *HOME:*\n${Array.from(team3A.values())
+        .map(v => escapeMarkdown(getDisplayName(v)))
+        .join('\n')}\n\n` +
+      `⚫ *AWAY:*\n${Array.from(team3B.values())
+        .map(v => escapeMarkdown(getDisplayName(v)))
+        .join('\n')}\n\n` +
+      `🟠 *EXTRA:*\n${Array.from(team3C.values())
+        .map(v => escapeMarkdown(getDisplayName(v)))
+        .join('\n')}`;
 
     sendMessage({
       msg,

@@ -175,16 +175,18 @@
 ### Issues Resolved
 
 #### 1. Telegram Error Handling (`bot/utils/chat.js`)
+
 - **Problem**: Unhandled rejections from Telegram API errors causing bot crashes
   - "message thread not found" when thread IDs are invalid/deleted
   - "TOPIC_CLOSED" when trying to send to locked topics
-- **Solution**: 
+- **Solution**:
   - Added comprehensive try-catch error handling in `sendMessage()`
   - Automatic fallback to main chat when thread errors occur
   - Detailed error logging with context (chatId, threadId, type, error code)
   - Prevents unhandled promise rejections
 
 #### 2. Environment Configuration (`bot/bot/index.js`)
+
 - **Problem**: Production environment variables not loading (`.env.production` ignored)
   - `DEFAULT_THREAD_ID` was undefined, causing "Unknown thread type" warnings
   - `dotenv.config()` only loaded `.env` by default
@@ -195,6 +197,7 @@
   - Added thread configuration debug logging on startup
 
 #### 3. Storage File Naming
+
 - **Change**: Renamed `data.json` → `storage.json` throughout codebase
 - **Files Updated**:
   - `bot/utils/storage.js` – Updated STORAGE_FILE path
@@ -208,19 +211,21 @@
   - `bot/data.json.example` → `bot/storage.json.example`
 
 #### 4. `/reset` Command Completeness (`bot/commands/management/reset.js`)
+
 - **Problem**: `/reset` only cleared 8 out of 10 storage values
   - Missing: `tiennuoc` (water cost), `activeVote` (poll state)
-- **Solution**: 
+- **Solution**:
   - Added `setTiennuoc()` and `setActiveVote()` to reset parameters
   - Now properly resets all 10 values to defaults:
     - Arrays → `[]`: bench, teamA, teamB, team3A, team3B, team3C
     - Values → defaults: tiensan (580000), tiennuoc (60000), teamThua (null), activeVote (null)
 
 #### 5. `/reset` Save Loop Fix (`bot/utils/storage.js`)
+
 - **Problem**: Each clear/set operation triggered individual saves (10 saves per reset)
   - Performance issue with rapid file writes
   - Potential file system bottleneck
-- **Solution**: 
+- **Solution**:
   - Created batch `resetAll()` function that bypasses auto-save wrappers
   - Uses original Map `clear()` methods directly
   - Single save operation at the end
@@ -263,6 +268,7 @@
 ### Issues Resolved & Features Added
 
 #### 1. Markdown Parsing Errors Fix (`bot/utils/format.js`, team commands)
+
 - **Problem**: Player names with special characters (`_`, `*`, `[`, etc.) broke Telegram's Markdown parser
   - Error: "can't parse entities: Can't find end of the entity starting at byte offset X"
   - Bot crashed when displaying team lists with formatted names
@@ -280,6 +286,7 @@
   - `bot/commands/match/match.js`
 
 #### 2. Explicit Team Mode Parameters (`/addtoteam`, `/clearteam`)
+
 - **Problem**: Confusion between 2-team and 3-team modes when using commands
 - **Solution**: Added optional `[2|3]` parameter to specify team stack explicitly
 - **New Syntax**:
@@ -296,6 +303,7 @@
   - `bot/index.js` – Passed team3A, team3B to addToTeamCommand
 
 #### 3. Visual Team Icons Update
+
 - **Change**: Updated team icons to represent shirt colors
   - ⚪ **HOME** (white shirt) – was 👤
   - ⚫ **AWAY** (black shirt) – was 👤
@@ -307,8 +315,9 @@
 - **Impact**: Instant visual identification of teams by color
 
 #### 4. Smart Team Balancing (`/chiateam`, `/chiateam 3`)
+
 - **Problem**: Commands would redistribute ALL members, losing manual adjustments
-- **Solution**: 
+- **Solution**:
   - Only assign **unassigned members** to teams
   - Preserve existing team assignments
   - Smart distribution to balance team sizes
@@ -328,22 +337,25 @@
 - **Files Updated**: `bot/commands/team/chia-team.js`
 
 #### 5. Duplicate Player Verification
+
 - **Problem**: Players could be added multiple times to the same team
-- **Solution**: 
+- **Solution**:
   - Check for duplicates before adding to teams
   - Skip duplicates in `/chiateam` with console warning
   - User-friendly messages in `/addtoteam` showing which members were skipped
   - Prevents data integrity issues
 - **Example Messages**:
+
   ```
   ⚠️ Đã bỏ qua 2 member đã có trong Home:
   Player1, Player2
-  
+
   ✅ Đã thêm 3 member(s) vào Home:
   Player3
   Player4
   Player5
   ```
+
 - **Files Updated**:
   - `bot/commands/team/chia-team.js` – Console logging for duplicates
   - `bot/commands/team/add-to-team.js` – User messages and filtering
@@ -359,15 +371,15 @@
 
 ### Command Summary
 
-| Command | Before | After |
-|---------|--------|-------|
-| `/addtoteam HOME 1,3` | Always adds to teamA | Defaults to teamA (2-team mode) |
-| `/addtoteam 3 HOME 1,3` | N/A | ✨ Explicitly adds to team3A (3-team mode) |
-| `/clearteam` | Clears all teams | Unchanged - clears all |
-| `/clearteam 2` | N/A | ✨ Clears only 2-team stack |
-| `/clearteam 3` | N/A | ✨ Clears only 3-team stack |
-| `/chiateam` | Resets teams, redistributes all | ✨ Preserves existing, balances new members |
-| `/chiateam 3` | Resets teams, redistributes all | ✨ Preserves existing, balances new members |
+| Command                 | Before                          | After                                       |
+| ----------------------- | ------------------------------- | ------------------------------------------- |
+| `/addtoteam HOME 1,3`   | Always adds to teamA            | Defaults to teamA (2-team mode)             |
+| `/addtoteam 3 HOME 1,3` | N/A                             | ✨ Explicitly adds to team3A (3-team mode)  |
+| `/clearteam`            | Clears all teams                | Unchanged - clears all                      |
+| `/clearteam 2`          | N/A                             | ✨ Clears only 2-team stack                 |
+| `/clearteam 3`          | N/A                             | ✨ Clears only 3-team stack                 |
+| `/chiateam`             | Resets teams, redistributes all | ✨ Preserves existing, balances new members |
+| `/chiateam 3`           | Resets teams, redistributes all | ✨ Preserves existing, balances new members |
 
 ### Files Modified
 
