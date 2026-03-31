@@ -84,15 +84,18 @@ if (bot) {
   });
 }
 
-// Initialize persistent storage (loads from data.json if exists)
+// Initialize persistent storage (loads from storage.json if exists)
 const storage = initializeStorage();
 const { bench: members, teamA, teamB, team3A, team3B, team3C } = storage;
 const getTiensan = storage.getTiensan;
 const setTiensan = storage.setTiensan;
+const getTiennuoc = storage.getTiennuoc;
+const setTiennuoc = storage.setTiennuoc;
 const getTeamThua = storage.getTeamThua;
 const setTeamThua = storage.setTeamThua;
 const getActiveVote = storage.getActiveVote;
 const setActiveVote = storage.setActiveVote;
+const resetAll = storage.resetAll;
 
 startCommand();
 unknownCommand();
@@ -113,21 +116,12 @@ editStatsCommand();
 playerCommand();
 registerCommand();
 playersCommand();
-addToTeamCommand({ members, teamA, teamB, team3C });
+addToTeamCommand({ members, teamA, teamB, team3A, team3B, team3C });
 clearTeamCommand({ teamA, teamB, team3A, team3B, team3C });
 meCommand();
 matchCommand({ getTiensan, teamA, teamB, team3C });
 matchesCommand();
-resetCommand({
-  members,
-  teamA,
-  teamB,
-  team3A,
-  team3B,
-  team3C,
-  setTiensan,
-  setTeamThua,
-});
+resetCommand({ resetAll });
 aiCommand();
 
 // Start HTTP test server in development mode

@@ -143,12 +143,12 @@ function formatMatchMessage(match, dateLabel, aiSummary = null) {
     }
     return s;
   };
-  msg += '\n👤 *HOME:*\n';
+  msg += '\n⚪ *HOME:*\n';
   msg += (match.homePlayers || []).map(fmt).join('\n') || '• (trống)';
-  msg += '\n\n👤 *AWAY:*\n';
+  msg += '\n\n⚫ *AWAY:*\n';
   msg += (match.awayPlayers || []).map(fmt).join('\n') || '• (trống)';
   if (match.extraPlayers && match.extraPlayers.length > 0) {
-    msg += '\n\n👤 *EXTRA:*\n';
+    msg += '\n\n� *EXTRA:*\n';
     msg += match.extraPlayers.map(fmt).join('\n');
   }
   if (aiSummary) {

@@ -1,22 +1,41 @@
-const {
-  CLEAR_TEAM,
-  CLEAR_TEAM_INDIVIDUAL,
-  VALIDATION,
-} = require('../../utils/messages');
+const { CLEAR_TEAM, CLEAR_TEAM_INDIVIDUAL } = require('../../utils/messages');
 const { getDisplayName } = require('../../utils/team-member');
 const { sendMessage } = require('../../utils/chat');
 const { requireAdmin } = require('../../utils/permissions');
+const { escapeMarkdown } = require('../../utils/format');
 
 const bot = require('../../bot');
 
 const clearTeamCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
+  // Helper: Get the correct team based on mode (2 or 3) and team type
+  const getTeam = (mode, teamType) => {
+    if (mode === 3) {
+      if (teamType === 'HOME') return team3A;
+      if (teamType === 'AWAY') return team3B;
+      if (teamType === 'EXTRA') return team3C;
+    } else {
+      // mode === 2 (default)
+      if (teamType === 'HOME') return teamA;
+      if (teamType === 'AWAY') return teamB;
+      if (teamType === 'EXTRA') return team3C;
+    }
+
+    return null;
+  };
+
   // Clear ALL team maps. Players stay in bench (bench is the persistent roster).
   bot.onText(/^\/clearteam$/, msg => {
     if (!requireAdmin(msg)) {
       return;
     }
 
-    if (teamA.size === 0 && teamB.size === 0 && team3A.size === 0 && team3B.size === 0 && team3C.size === 0) {
+    if (
+      teamA.size === 0 &&
+      teamB.size === 0 &&
+      team3A.size === 0 &&
+      team3B.size === 0 &&
+      team3C.size === 0
+    ) {
       sendMessage({
         msg,
         type: 'DEFAULT',
@@ -38,15 +57,65 @@ const clearTeamCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
     });
   });
 
-  // Show team roster for selective clear (HOME / AWAY / EXTRA)
-  bot.onText(/^\/clearteam (HOME|AWAY|EXTRA)$/, (msg, match) => {
+  // Clear specific team stack (2-team or 3-team)
+  bot.onText(/^\/clearteam (2|3)$/, msg => {
     if (!requireAdmin(msg)) {
       return;
     }
 
-    const teamType = match[1];
-    const team = teamType === 'HOME' ? teamA : teamType === 'AWAY' ? teamB : team3C;
-    const teamName = teamType === 'HOME' ? 'Home' : teamType === 'AWAY' ? 'Away' : 'Extra';
+    const mode = parseInt(msg.text.match(/\d+/)[0]);
+
+    if (mode === 2) {
+      if (teamA.size === 0 && teamB.size === 0) {
+        sendMessage({
+          msg,
+          type: 'DEFAULT',
+          message: '⚠️ 2-team stack đã trống rồi.',
+        });
+        return;
+      }
+
+      teamA.clear();
+      teamB.clear();
+
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: '✅ Đã xóa toàn bộ 2-team stack (HOME, AWAY).',
+      });
+    } else if (mode === 3) {
+      if (team3A.size === 0 && team3B.size === 0 && team3C.size === 0) {
+        sendMessage({
+          msg,
+          type: 'DEFAULT',
+          message: '⚠️ 3-team stack đã trống rồi.',
+        });
+        return;
+      }
+
+      team3A.clear();
+      team3B.clear();
+      team3C.clear();
+
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: '✅ Đã xóa toàn bộ 3-team stack (HOME, AWAY, EXTRA).',
+      });
+    }
+  });
+
+  // Show team roster for selective clear (HOME / AWAY / EXTRA)
+  bot.onText(/^\/clearteam (2|3)?\s*(HOME|AWAY|EXTRA)$/, (msg, match) => {
+    if (!requireAdmin(msg)) {
+      return;
+    }
+
+    const mode = match[1] ? parseInt(match[1]) : 2; // Default to 2-team mode
+    const teamType = match[2];
+    const team = getTeam(mode, teamType);
+    const teamName =
+      teamType === 'HOME' ? 'Home' : teamType === 'AWAY' ? 'Away' : 'Extra';
     const teamEntries = Array.from(team.entries());
     const teamNames = teamEntries.map(([, v]) => getDisplayName(v));
 
@@ -61,7 +130,7 @@ const clearTeamCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
     }
 
     const numberedList = teamNames
-      .map((name, index) => `${index + 1}. ${name}`)
+      .map((name, index) => `${index + 1}. ${escapeMarkdown(name)}`)
       .join('\n');
 
     const message = CLEAR_TEAM_INDIVIDUAL.instruction
@@ -78,15 +147,17 @@ const clearTeamCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
   });
 
   // Clear specific members from a team (HOME / AWAY / EXTRA)
-  bot.onText(/^\/clearteam (HOME|AWAY|EXTRA) (.+)$/, (msg, match) => {
+  bot.onText(/^\/clearteam (2|3)?\s*(HOME|AWAY|EXTRA) (.+)$/, (msg, match) => {
     if (!requireAdmin(msg)) {
       return;
     }
 
-    const teamType = match[1];
-    const selection = match[2].trim();
-    const team = teamType === 'HOME' ? teamA : teamType === 'AWAY' ? teamB : team3C;
-    const teamName = teamType === 'HOME' ? 'Home' : teamType === 'AWAY' ? 'Away' : 'Extra';
+    const mode = match[1] ? parseInt(match[1]) : 2; // Default to 2-team mode
+    const teamType = match[2];
+    const selection = match[3].trim();
+    const team = getTeam(mode, teamType);
+    const teamName =
+      teamType === 'HOME' ? 'Home' : teamType === 'AWAY' ? 'Away' : 'Extra';
     const teamEntries = Array.from(team.entries());
     const teamNames = teamEntries.map(([, v]) => getDisplayName(v));
 
@@ -181,7 +252,10 @@ const clearTeamCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
     const message = CLEAR_TEAM_INDIVIDUAL.success
       .replace('{count}', resetNames.length)
       .replace('{team}', teamName)
-      .replace('{resetNames}', resetNames.join('\n'));
+      .replace(
+        '{resetNames}',
+        resetNames.map(name => escapeMarkdown(name)).join('\n')
+      );
 
     sendMessage({
       msg,
