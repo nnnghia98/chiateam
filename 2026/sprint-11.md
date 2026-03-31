@@ -252,3 +252,139 @@
 - **Clear Naming**: `storage.json` better reflects its purpose
 - **Complete Data Wiping**: `/reset` works as expected for fresh starts
 - **Better Performance**: Batch operations prevent unnecessary file I/O
+
+---
+
+## Sprint 11.2 – Team Management & UX Enhancements (chiateam-bot)
+
+**Date**: March 31, 2026  
+**Focus**: Enhanced team management with smart balancing, visual improvements, and Markdown parsing fixes.
+
+### Issues Resolved & Features Added
+
+#### 1. Markdown Parsing Errors Fix (`bot/utils/format.js`, team commands)
+- **Problem**: Player names with special characters (`_`, `*`, `[`, etc.) broke Telegram's Markdown parser
+  - Error: "can't parse entities: Can't find end of the entity starting at byte offset X"
+  - Bot crashed when displaying team lists with formatted names
+- **Solution**:
+  - Created `escapeMarkdown()` function to escape Telegram special characters
+  - Applied to all commands displaying player names: `/clearbench`, `/addtoteam`, `/clearteam`, `/team`, `/chiateam`, `/match`
+  - Added comprehensive try-catch error handling to `/clearbench`
+- **Files Updated**:
+  - `bot/utils/format.js` – New `escapeMarkdown()` function
+  - `bot/commands/bench/clear-bench.js`
+  - `bot/commands/team/add-to-team.js`
+  - `bot/commands/team/clear-team.js`
+  - `bot/commands/team/team.js`
+  - `bot/commands/team/chia-team.js`
+  - `bot/commands/match/match.js`
+
+#### 2. Explicit Team Mode Parameters (`/addtoteam`, `/clearteam`)
+- **Problem**: Confusion between 2-team and 3-team modes when using commands
+- **Solution**: Added optional `[2|3]` parameter to specify team stack explicitly
+- **New Syntax**:
+  - `/addtoteam HOME 1,3,5` – Adds to 2-team mode (default)
+  - `/addtoteam 3 HOME 1,3,5` – Adds to 3-team mode
+  - `/clearteam 2` – Clears only 2-team stack
+  - `/clearteam 3` – Clears only 3-team stack
+  - `/clearteam 2 HOME 1,3` – Clears specific members from 2-team HOME
+- **Benefits**: Clear distinction between team modes, backward compatible (defaults to 2)
+- **Files Updated**:
+  - `bot/commands/team/add-to-team.js` – Added mode parameter logic
+  - `bot/commands/team/clear-team.js` – Added `/clearteam 2|3` commands
+  - `bot/utils/messages.js` – Updated instructions
+  - `bot/index.js` – Passed team3A, team3B to addToTeamCommand
+
+#### 3. Visual Team Icons Update
+- **Change**: Updated team icons to represent shirt colors
+  - ⚪ **HOME** (white shirt) – was 👤
+  - ⚫ **AWAY** (black shirt) – was 👤
+  - 🟠 **EXTRA** (orange shirt) – was 👤
+- **Files Updated**:
+  - `bot/commands/team/team.js`
+  - `bot/commands/team/chia-team.js`
+  - `bot/commands/match/match.js`
+- **Impact**: Instant visual identification of teams by color
+
+#### 4. Smart Team Balancing (`/chiateam`, `/chiateam 3`)
+- **Problem**: Commands would redistribute ALL members, losing manual adjustments
+- **Solution**: 
+  - Only assign **unassigned members** to teams
+  - Preserve existing team assignments
+  - Smart distribution to balance team sizes
+  - Calculate target sizes based on total members
+  - Prioritize filling smaller teams first
+  - Maximum team size difference: 1 player
+- **Example**:
+  - Existing: HOME (5), AWAY (3)
+  - New members: 6 join bench
+  - Old behavior: Reset all, split 14 members → HOME (7), AWAY (7) ❌ Lost previous assignments
+  - New behavior: Only assign 6 new → HOME needs 2, AWAY needs 4 → HOME (7), AWAY (7) ✅ Balanced while preserving
+- **Benefits**:
+  - Preserves manual team adjustments
+  - Handles late-joining players elegantly
+  - Always maintains balanced teams
+  - Prevents accidental team resets
+- **Files Updated**: `bot/commands/team/chia-team.js`
+
+#### 5. Duplicate Player Verification
+- **Problem**: Players could be added multiple times to the same team
+- **Solution**: 
+  - Check for duplicates before adding to teams
+  - Skip duplicates in `/chiateam` with console warning
+  - User-friendly messages in `/addtoteam` showing which members were skipped
+  - Prevents data integrity issues
+- **Example Messages**:
+  ```
+  ⚠️ Đã bỏ qua 2 member đã có trong Home:
+  Player1, Player2
+  
+  ✅ Đã thêm 3 member(s) vào Home:
+  Player3
+  Player4
+  Player5
+  ```
+- **Files Updated**:
+  - `bot/commands/team/chia-team.js` – Console logging for duplicates
+  - `bot/commands/team/add-to-team.js` – User messages and filtering
+
+### Technical Improvements
+
+- **Robust Markdown Handling**: All player names safely escaped before display
+- **Flexible Team Management**: Switch between 2-team and 3-team modes seamlessly
+- **Visual Clarity**: Color-coded teams for instant recognition
+- **Intelligent Distribution**: Automatic balancing while preserving manual changes
+- **Data Integrity**: Duplicate prevention maintains clean team rosters
+- **User Experience**: Clear messages explain what happened and why
+
+### Command Summary
+
+| Command | Before | After |
+|---------|--------|-------|
+| `/addtoteam HOME 1,3` | Always adds to teamA | Defaults to teamA (2-team mode) |
+| `/addtoteam 3 HOME 1,3` | N/A | ✨ Explicitly adds to team3A (3-team mode) |
+| `/clearteam` | Clears all teams | Unchanged - clears all |
+| `/clearteam 2` | N/A | ✨ Clears only 2-team stack |
+| `/clearteam 3` | N/A | ✨ Clears only 3-team stack |
+| `/chiateam` | Resets teams, redistributes all | ✨ Preserves existing, balances new members |
+| `/chiateam 3` | Resets teams, redistributes all | ✨ Preserves existing, balances new members |
+
+### Files Modified
+
+- `bot/utils/format.js` – Added `escapeMarkdown()` function
+- `bot/commands/bench/clear-bench.js` – Markdown escaping, error handling
+- `bot/commands/team/add-to-team.js` – Mode parameter, duplicate checking, Markdown escaping
+- `bot/commands/team/clear-team.js` – Mode parameter, `/clearteam 2|3` commands, Markdown escaping
+- `bot/commands/team/team.js` – Team icons, Markdown escaping
+- `bot/commands/team/chia-team.js` – Smart balancing, duplicate checking, preserve existing, Markdown escaping
+- `bot/commands/match/match.js` – Team icons
+- `bot/utils/messages.js` – Updated instructions for new syntax
+- `bot/index.js` – Added team3A, team3B to addToTeamCommand
+
+### Impact
+
+- **Better UX**: Visual team identification, clear error messages, flexible commands
+- **Smarter Logic**: Balances teams while respecting manual adjustments
+- **More Reliable**: No more Markdown parsing crashes
+- **Flexible Workflow**: Support both 2-team and 3-team modes simultaneously
+- **Data Quality**: Duplicate prevention keeps rosters clean
