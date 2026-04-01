@@ -9,7 +9,7 @@
     "dev": "NODE_ENV=development DOTENV_CONFIG_PATH=.env.dev nodemon -r dotenv/config bot/index.js",
     "dev:prod": "NODE_ENV=production DOTENV_CONFIG_PATH=.env.production nodemon -r dotenv/config bot/index.js",
     "start:bot": "NODE_ENV=production node bot/index.js",
-    "start:api": "NODE_ENV=production node api/index.js",
+    "start:api": "node api/index.js",
     "dev:bot": "NODE_ENV=development DOTENV_CONFIG_PATH=.env.dev nodemon -r dotenv/config bot/index.js",
     "dev:api": "NODE_ENV=development DOTENV_CONFIG_PATH=.env.dev nodemon -r dotenv/config api/index.js",
     "dev:web": "cd web && yarn dev",
