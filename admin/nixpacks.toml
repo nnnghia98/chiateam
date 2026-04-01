@@ -1,6 +1,9 @@
 [phases.setup]
 nixPkgs = ['nodejs_22', 'yarn']
 
+[env]
+NODE_VERSION = "22.13.0"
+
 [phases.install]
 cmds = ['yarn install --frozen-lockfile']
 
