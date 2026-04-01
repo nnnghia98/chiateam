@@ -88,8 +88,6 @@ yarn dev:bot
 
 Then interact with your bot through Telegram.
 
-For detailed testing documentation, see [docs/TESTING.md](docs/TESTING.md).
-
 ## Project Structure
 
 This project consists of four main components:
