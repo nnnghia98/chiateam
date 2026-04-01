@@ -129,6 +129,7 @@
   - Start command: `yarn start` (Next.js production)
 
 - **Environment Variables** (`.env.example`):
+
   ```env
   NEXT_PUBLIC_API_URL=http://localhost:8787
   NEXT_PUBLIC_ADMIN_PASSWORD=admin123
@@ -162,6 +163,7 @@
 ### Technical Architecture
 
 #### Admin Stack
+
 ```
 Frontend: Next.js 15 + React 19
 Styling: Tailwind CSS + shadcn/ui
@@ -172,6 +174,7 @@ UI: Radix UI + Lucide Icons
 ```
 
 #### API Stack
+
 ```
 Server: Node.js HTTP Server
 Database: PostgreSQL (via existing connection)
@@ -181,6 +184,7 @@ Endpoints: RESTful JSON API
 ```
 
 #### File Structure
+
 ```
 admin/
 ├── src/
@@ -275,6 +279,7 @@ chore(admin): add Railway deployment configuration
 ### Related Files
 
 **Admin Panel**:
+
 - `admin/src/app/dashboard/page.tsx`
 - `admin/src/app/players/page.tsx`
 - `admin/src/app/leaderboard/page.tsx`
@@ -285,10 +290,12 @@ chore(admin): add Railway deployment configuration
 - `admin/src/lib/api-client.ts`
 
 **API**:
+
 - `api/routes/server.js`
 - `api/routes/leaderboard.js`
 
 **Configuration**:
+
 - `admin/railway.json`
 - `admin/nixpacks.toml`
 - `admin/.env.example`
