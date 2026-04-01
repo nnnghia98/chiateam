@@ -78,7 +78,12 @@ async function applyMatchResultBatch(playerNumbers, result) {
           END,
           updated_at = NOW()
       `;
-      await client.query(sql, [playerNumber, winIncrement, loseIncrement, drawIncrement]);
+      await client.query(sql, [
+        playerNumber,
+        winIncrement,
+        loseIncrement,
+        drawIncrement,
+      ]);
       console.log(`✅ Updated stats for player ${playerNumber}`);
     }
     await client.query('COMMIT');
@@ -95,8 +100,15 @@ async function applyMatchResultBatch(playerNumbers, result) {
 /**
  * Upsert full totals for a player and recompute winrate.
  */
-async function upsertTotals(playerNumber, totalMatch, totalWin, totalLose, totalDraw = 0) {
-  const winrate = totalMatch > 0 ? Math.round((totalWin / totalMatch) * 1000) / 1000 : 0;
+async function upsertTotals(
+  playerNumber,
+  totalMatch,
+  totalWin,
+  totalLose,
+  totalDraw = 0
+) {
+  const winrate =
+    totalMatch > 0 ? Math.round((totalWin / totalMatch) * 1000) / 1000 : 0;
   await db.query(
     `INSERT INTO leaderboard (player_number, total_match, total_win, total_lose, total_draw, goal, assist, winrate, updated_at)
      VALUES ($1, $2, $3, $4, $5, 0, 0, $6, NOW())
@@ -115,7 +127,10 @@ async function upsertTotals(playerNumber, totalMatch, totalWin, totalLose, total
  * Get stats row for a single player_number.
  */
 async function getPlayerStats(playerNumber) {
-  const { rows } = await db.query('SELECT * FROM leaderboard WHERE player_number = $1', [playerNumber]);
+  const { rows } = await db.query(
+    'SELECT * FROM leaderboard WHERE player_number = $1',
+    [playerNumber]
+  );
   return rows[0] || null;
 }
 
@@ -159,6 +174,73 @@ async function updatePlayerAssist(playerNumber, assistValue) {
   );
 }
 
+/**
+ * Update player stats directly (for admin panel).
+ */
+async function updatePlayerStats(playerNumber, updates) {
+  const current = await getPlayerStats(playerNumber);
+  if (!current) {
+    // Create new entry if doesn't exist
+    const totalMatch = updates.total_match ?? 0;
+    const totalWin = updates.total_win ?? 0;
+    const totalLose = updates.total_lose ?? 0;
+    const totalDraw = updates.total_draw ?? 0;
+    const goal = updates.goal ?? 0;
+    const assist = updates.assist ?? 0;
+    const winrate =
+      totalMatch > 0 ? Math.round((totalWin / totalMatch) * 1000) / 1000 : 0;
+
+    await db.query(
+      `INSERT INTO leaderboard (player_number, total_match, total_win, total_lose, total_draw, goal, assist, winrate, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
+      [
+        playerNumber,
+        totalMatch,
+        totalWin,
+        totalLose,
+        totalDraw,
+        goal,
+        assist,
+        winrate,
+      ]
+    );
+    return;
+  }
+
+  // Update existing entry
+  const totalMatch = updates.total_match ?? current.total_match;
+  const totalWin = updates.total_win ?? current.total_win;
+  const totalLose = updates.total_lose ?? current.total_lose;
+  const totalDraw = updates.total_draw ?? current.total_draw;
+  const goal = updates.goal ?? current.goal;
+  const assist = updates.assist ?? current.assist;
+  const winrate =
+    totalMatch > 0 ? Math.round((totalWin / totalMatch) * 1000) / 1000 : 0;
+
+  await db.query(
+    `UPDATE leaderboard SET
+       total_match = $2,
+       total_win = $3,
+       total_lose = $4,
+       total_draw = $5,
+       goal = $6,
+       assist = $7,
+       winrate = $8,
+       updated_at = NOW()
+     WHERE player_number = $1`,
+    [
+      playerNumber,
+      totalMatch,
+      totalWin,
+      totalLose,
+      totalDraw,
+      goal,
+      assist,
+      winrate,
+    ]
+  );
+}
+
 module.exports = {
   findLeaderboardOrdered,
   applyMatchResultBatch,
@@ -167,4 +249,5 @@ module.exports = {
   getMultiplePlayerStats,
   updatePlayerGoal,
   updatePlayerAssist,
+  updatePlayerStats,
 };

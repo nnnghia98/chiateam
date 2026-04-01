@@ -89,3 +89,68 @@ yarn dev:bot
 Then interact with your bot through Telegram.
 
 For detailed testing documentation, see [docs/TESTING.md](docs/TESTING.md).
+
+## Project Structure
+
+This project consists of four main components:
+
+### 1. Bot (`/bot`)
+
+Telegram bot for team management, player registration, and match organization.
+
+**Start bot**:
+
+```bash
+yarn dev:bot      # Development
+yarn start:bot    # Production
+```
+
+### 2. API (`/api`)
+
+REST API server providing data access for the web and admin interfaces.
+
+**Start API**:
+
+```bash
+yarn dev:api      # Development
+yarn start:api    # Production
+```
+
+### 3. Web (`/web`)
+
+Public-facing Next.js web application for viewing matches and leaderboards.
+
+**Start web**:
+
+```bash
+yarn dev:web      # Development (runs on port 3000)
+```
+
+### 4. Admin (`/admin`)
+
+**NEW!** Admin dashboard for managing players, matches, and leaderboard data.
+
+**Features**:
+
+- 📊 Dashboard with overview statistics
+- 👥 Players management (CRUD operations)
+- ⚽ Matches management
+- 🏆 Leaderboard editing
+
+**Start admin**:
+
+```bash
+yarn dev:admin    # Development (runs on port 8389)
+yarn build:admin  # Build for production
+yarn start:admin  # Production
+```
+
+**Setup**:
+
+1. Navigate to admin folder: `cd admin`
+2. Install dependencies: `yarn install`
+3. Create `.env.local` file: `cp .env.example .env.local`
+4. Update `NEXT_PUBLIC_API_URL` to point to your API server
+5. Run development server: `yarn dev`
+
+See [admin/README.md](admin/README.md) for detailed documentation.
