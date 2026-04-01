@@ -5,15 +5,13 @@ const {
   registerPlayerForAnother,
   deletePlayerByNumber,
 } = require('../services/player-service');
-const {
-  getMultiplePlayerStats,
-} = require('../services/leaderboard-service');
-const {
-  listMatches,
-  getMatchWithPlayers,
-} = require('./matches');
+const { getMultiplePlayerStats } = require('../services/leaderboard-service');
+const { listMatches, getMatchWithPlayers } = require('./matches');
+const { updatePlayerStats } = require('./leaderboard');
 
-const DEFAULT_PORT = Number(process.env.UI_API_PORT || process.env.PORT || 8787);
+const DEFAULT_PORT = Number(
+  process.env.UI_API_PORT || process.env.PORT || 8787
+);
 
 function readJson(req) {
   return new Promise((resolve, reject) => {
@@ -60,23 +58,49 @@ function corsHeaders(req) {
   const baseAllowed = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
+    'http://localhost:8389', // Admin site
+    'http://127.0.0.1:8389',
   ];
   if (process.env.WEB_UI_URL) {
     baseAllowed.push(process.env.WEB_UI_URL);
+  }
+  if (process.env.ADMIN_UI_URL) {
+    baseAllowed.push(process.env.ADMIN_UI_URL);
   }
   const allowList = new Set(baseAllowed);
 
   if (origin && allowList.has(origin)) {
     return {
       'Access-Control-Allow-Origin': origin,
-      'Vary': 'Origin',
-      'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      Vary: 'Origin',
+      'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type,X-User-Role',
     };
   }
 
   // Default: no CORS unless explicitly allowed.
   return {};
+}
+
+function isAdmin(req) {
+  const userRole = req.headers['x-user-role'];
+  return userRole === 'admin';
+}
+
+function requireAdmin(req, res, headers) {
+  if (!isAdmin(req)) {
+    sendJson(
+      res,
+      403,
+      {
+        error: 'FORBIDDEN',
+        message: 'Admin access required for this operation',
+      },
+      headers
+    );
+    return false;
+  }
+  return true;
 }
 
 function createUiApiServer({ getStatus }) {
@@ -98,7 +122,10 @@ function createUiApiServer({ getStatus }) {
       return res.end();
     }
 
-    const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+    const url = new URL(
+      req.url || '/',
+      `http://${req.headers.host || 'localhost'}`
+    );
     const path = url.pathname;
 
     if (path === '/healthz') {
@@ -155,7 +182,12 @@ function createUiApiServer({ getStatus }) {
         return sendJson(res, 200, players, headers);
       } catch (e) {
         console.error('Error fetching players via UI API:', e);
-        return sendJson(res, 500, { error: 'Failed to fetch players' }, headers);
+        return sendJson(
+          res,
+          500,
+          { error: 'Failed to fetch players' },
+          headers
+        );
       }
     }
 
@@ -191,11 +223,18 @@ function createUiApiServer({ getStatus }) {
         return sendJson(res, 200, items, headers);
       } catch (e) {
         console.error('Error fetching player summaries via UI API:', e);
-        return sendJson(res, 500, { error: 'Failed to fetch player summaries' }, headers);
+        return sendJson(
+          res,
+          500,
+          { error: 'Failed to fetch player summaries' },
+          headers
+        );
       }
     }
 
     if (path === '/api/players' && req.method === 'POST') {
+      if (!requireAdmin(req, res, headers)) return;
+
       try {
         const payload = (await readJson(req)) || {};
         const name = typeof payload.name === 'string' ? payload.name : '';
@@ -203,7 +242,10 @@ function createUiApiServer({ getStatus }) {
 
         const result = await registerPlayerForAnother({ name, number });
         if (!result.ok) {
-          if (result.code === 'INVALID_NAME' || result.code === 'INVALID_NUMBER') {
+          if (
+            result.code === 'INVALID_NAME' ||
+            result.code === 'INVALID_NUMBER'
+          ) {
             return sendJson(
               res,
               400,
@@ -222,11 +264,18 @@ function createUiApiServer({ getStatus }) {
         return sendJson(res, 201, result.player, headers);
       } catch (e) {
         console.error('Error creating player via UI API:', e);
-        return sendJson(res, 500, { error: 'Failed to create player' }, headers);
+        return sendJson(
+          res,
+          500,
+          { error: 'Failed to create player' },
+          headers
+        );
       }
     }
 
     if (path.startsWith('/api/players/') && req.method === 'DELETE') {
+      if (!requireAdmin(req, res, headers)) return;
+
       const numStr = path.slice('/api/players/'.length);
       const number = Number(numStr);
       if (!Number.isInteger(number) || number <= 0) {
@@ -248,30 +297,46 @@ function createUiApiServer({ getStatus }) {
         return sendJson(res, 200, { ok: true }, headers);
       } catch (e) {
         console.error('Error deleting player via UI API:', e);
-        return sendJson(res, 500, { error: 'Failed to delete player' }, headers);
+        return sendJson(
+          res,
+          500,
+          { error: 'Failed to delete player' },
+          headers
+        );
       }
     }
 
     // Matches API
     if (path === '/api/matches' && req.method === 'GET') {
       try {
-        const limit = Math.min(parseInt(url.searchParams.get('limit') || '20', 10), 100);
-        const offset = Math.max(parseInt(url.searchParams.get('offset') || '0', 10), 0);
-        
+        const limit = Math.min(
+          parseInt(url.searchParams.get('limit') || '20', 10),
+          100
+        );
+        const offset = Math.max(
+          parseInt(url.searchParams.get('offset') || '0', 10),
+          0
+        );
+
         const matches = await listMatches(limit, offset);
-        
+
         // Fetch players for each match
         const matchesWithPlayers = await Promise.all(
-          matches.map(async (match) => {
+          matches.map(async match => {
             const fullMatch = await getMatchWithPlayers(match.match_date);
             return fullMatch || match;
           })
         );
-        
+
         return sendJson(res, 200, matchesWithPlayers, headers);
       } catch (e) {
         console.error('Error fetching matches via UI API:', e);
-        return sendJson(res, 500, { error: 'Failed to fetch matches' }, headers);
+        return sendJson(
+          res,
+          500,
+          { error: 'Failed to fetch matches' },
+          headers
+        );
       }
     }
 
@@ -286,6 +351,32 @@ function createUiApiServer({ getStatus }) {
       } catch (e) {
         console.error('Error fetching match via UI API:', e);
         return sendJson(res, 500, { error: 'Failed to fetch match' }, headers);
+      }
+    }
+
+    // Leaderboard API
+    if (path.startsWith('/api/leaderboard/') && req.method === 'PUT') {
+      if (!requireAdmin(req, res, headers)) return;
+
+      const playerNumberStr = path.slice('/api/leaderboard/'.length);
+      const playerNumber = Number(playerNumberStr);
+
+      if (!Number.isInteger(playerNumber) || playerNumber <= 0) {
+        return sendJson(res, 400, { error: 'INVALID_PLAYER_NUMBER' }, headers);
+      }
+
+      try {
+        const payload = (await readJson(req)) || {};
+        await updatePlayerStats(playerNumber, payload);
+        return sendJson(res, 200, { ok: true }, headers);
+      } catch (e) {
+        console.error('Error updating leaderboard entry via UI API:', e);
+        return sendJson(
+          res,
+          500,
+          { error: 'Failed to update leaderboard entry' },
+          headers
+        );
       }
     }
 
@@ -314,4 +405,3 @@ function createUiApiServer({ getStatus }) {
 }
 
 module.exports = { createUiApiServer };
-
