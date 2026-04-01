@@ -17,8 +17,7 @@
     "build:admin": "cd admin && yarn build",
     "start:admin": "cd admin && yarn start",
     "init-db": "node api/db/init-database.js",
-    "drop-db": "node api/db/drop-database.js",
-    "test:commands": "NODE_ENV=development node -r dotenv/config test-bot-commands.js"
+    "drop-db": "node api/db/drop-database.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",

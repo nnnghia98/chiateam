@@ -176,12 +176,6 @@ AI can execute database queries via function calling to answer:
 - `bot/commands/ai/project-context.js` - Project scope and context definitions
 - `bot/commands/ai/ai-functions.js` - Database query functions for AI
 
-**Tests**:
-
-- `test-ai-integration.js` - Integration test for AI functionality
-- `test-ai-project-scope.js` - Validate project scope filtering
-- `test-ai-database.js` - Test database query functions
-
 **Documentation**:
 
 - `docs/AI_INTEGRATION.md` - Complete AI integration guide
@@ -289,24 +283,6 @@ AI formulates answer: "Top 5 cầu thủ theo database..."
 # Mention bot
 @chiateam Top players in leaderboard?
 ```
-
-### Testing
-
-**Unit Tests**:
-
-```bash
-node test-ai-integration.js     # Test AI API connection
-node test-ai-project-scope.js   # Test scope filtering
-node test-ai-database.js        # Test database queries
-```
-
-**Integration Test Results**:
-
-- ✅ API Key validation
-- ✅ AI response generation
-- ✅ Match summary generation
-- ✅ Project scope filtering (14/14 tests passed)
-- ✅ Database query execution
 
 ### Dependencies
 
