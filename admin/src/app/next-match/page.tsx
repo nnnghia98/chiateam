@@ -124,7 +124,7 @@ const TEAM_ACCENT: Record<TeamKey, string> = {
   teamB: '#222222',
   team3A: '#ff385c',
   team3B: '#222222',
-  team3C: '#6a6a6a',
+  team3C: '#f97316',
 };
 
 // ─── Player chip ─────────────────────────────────────────────────────────────
@@ -140,7 +140,7 @@ function PlayerChip({
   teamKey: TeamKey;
   canEdit: boolean;
   onRemove: () => void;
-  onRename: (name: string) => void;
+  onRename: (_name: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(player.name);
@@ -232,8 +232,8 @@ function TeamColumn({
   teamKey: TeamKey;
   players: BotPlayer[];
   canEdit: boolean;
-  onRemove: (key: string) => void;
-  onRename: (key: string, name: string) => void;
+  onRemove: (_key: string) => void;
+  onRename: (_key: string, _name: string) => void;
   onClear: () => void;
 }) {
   const { ref, isDropTarget } = useDroppable({ id: teamKey });
@@ -357,7 +357,7 @@ export default function NextMatchPage() {
 
   // ── Mutators ──────────────────────────────────────────────────────────────
 
-  const mutate = useCallback((fn: (s: BotStorage) => BotStorage) => {
+  const mutate = useCallback((fn: (_s: BotStorage) => BotStorage) => {
     setStorage(prev => (prev ? fn(prev) : prev));
     setDirty(true);
   }, []);
@@ -885,8 +885,8 @@ export default function NextMatchPage() {
                 </Button>
               </div>
               <p className="text-xs text-[#888] mt-2">
-                "Reset all storage" clears all teams, bench, and vote data back
-                to defaults.
+                &quot;Reset all storage&quot; clears all teams, bench, and vote
+                data back to defaults.
               </p>
             </CardContent>
           </Card>

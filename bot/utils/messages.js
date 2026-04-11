@@ -56,7 +56,7 @@ const CLEAR_TEAM = {
 
 const RESET = {
   success:
-    '🔄 *ĐÃ RESET TOÀN BỘ DỮ LIỆU*\n\n✅ Đã xóa:\n• Bench\n• Tất cả các team\n• Tiền sân → 580,000 VND\n• Team thua → null',
+    '🔄 *ĐÃ RESET TOÀN BỘ DỮ LIỆU*\n\n✅ Đã xóa:\n• Bench\n• Tất cả các team\n• Tiền sân → null\n• Team thua → null',
 };
 
 const CLEAR_TEAM_INDIVIDUAL = {

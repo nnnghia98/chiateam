@@ -5,7 +5,7 @@ Deploy the admin app as a separate Next.js service with server-side env vars.
 ## Required environment variables
 
 ```env
-API_INTERNAL_URL=http://chiateam-api.railway.internal:8787
+API_INTERNAL_URL=url
 INTERNAL_API_AUTH_TOKEN=change-this-shared-internal-token
 ADMIN_SESSION_SECRET=change-this-session-secret
 ADMIN_PASSWORD=strong-admin-password
