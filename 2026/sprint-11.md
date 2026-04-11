@@ -103,7 +103,7 @@
   "team3A": [],
   "team3B": [],
   "team3C": [],
-  "tiensan": 580000,
+  "tiensan": null,
   "activeVote": {
     "id": "poll_id",
     "question": "Poll question",

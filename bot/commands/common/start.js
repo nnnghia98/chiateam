@@ -30,7 +30,7 @@ const startCommand = () => {
 • \`/matches\` - Danh sách trận đấu gần đây
 
 💰 *Tiền sân:*
-• \`/tiensan\` - Xem/đặt tiền sân (mặc định 580K)
+• \`/tiensan\` - Xem/đặt tiền sân
 • \`/chiatien\` - Chia tiền
 
 🤖 *AI Assistant:*
