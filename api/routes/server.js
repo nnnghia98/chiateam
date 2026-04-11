@@ -1,5 +1,13 @@
 const http = require('http');
 const { URL } = require('url');
+const fs = require('fs');
+const nodePath = require('path');
+
+const BOT_STORAGE_FILE = nodePath.resolve(
+  process.cwd(),
+  process.env.BOT_STATE_FILE ||
+    nodePath.join(__dirname, '../../.runtime/bot/storage.json')
+);
 const {
   getAllPlayers,
   getPlayerByNumber,
@@ -346,12 +354,7 @@ function createUiApiServer({ getStatus }) {
         return sendJson(res, 200, player, headers);
       } catch (e) {
         console.error('Error fetching player via UI API:', e);
-        return sendJson(
-          res,
-          500,
-          { error: 'Failed to fetch player' },
-          headers
-        );
+        return sendJson(res, 500, { error: 'Failed to fetch player' }, headers);
       }
     }
 
@@ -371,7 +374,9 @@ function createUiApiServer({ getStatus }) {
 
         if (Object.prototype.hasOwnProperty.call(payload, 'name')) {
           updates.name =
-            typeof payload.name === 'string' ? payload.name.trim() : payload.name;
+            typeof payload.name === 'string'
+              ? payload.name.trim()
+              : payload.name;
         }
         if (Object.prototype.hasOwnProperty.call(payload, 'username')) {
           updates.username =
@@ -498,12 +503,7 @@ function createUiApiServer({ getStatus }) {
         return sendJson(res, 201, match, headers);
       } catch (e) {
         console.error('Error creating match via UI API:', e);
-        return sendJson(
-          res,
-          500,
-          { error: 'Failed to create match' },
-          headers
-        );
+        return sendJson(res, 500, { error: 'Failed to create match' }, headers);
       }
     }
 
@@ -541,12 +541,7 @@ function createUiApiServer({ getStatus }) {
         return sendJson(res, 200, match, headers);
       } catch (e) {
         console.error('Error updating match via UI API:', e);
-        return sendJson(
-          res,
-          500,
-          { error: 'Failed to update match' },
-          headers
-        );
+        return sendJson(res, 500, { error: 'Failed to update match' }, headers);
       }
     }
 
@@ -564,12 +559,7 @@ function createUiApiServer({ getStatus }) {
         return sendJson(res, 200, { ok: true }, headers);
       } catch (e) {
         console.error('Error deleting match via UI API:', e);
-        return sendJson(
-          res,
-          500,
-          { error: 'Failed to delete match' },
-          headers
-        );
+        return sendJson(res, 500, { error: 'Failed to delete match' }, headers);
       }
     }
 
@@ -594,6 +584,189 @@ function createUiApiServer({ getStatus }) {
           res,
           500,
           { error: 'Failed to update leaderboard entry' },
+          headers
+        );
+      }
+    }
+
+    // Bot Storage API
+    const DEFAULT_BOT_STORAGE = {
+      bench: [],
+      teamA: [],
+      teamB: [],
+      team3A: [],
+      team3B: [],
+      team3C: [],
+      tiensan: 0,
+      tiennuoc: 0,
+      teamThua: null,
+      activeVote: null,
+      lastUpdated: null,
+    };
+
+    if (path === '/api/bot-storage' && req.method === 'GET') {
+      if (!requireAuthenticated(req, res, headers)) return;
+      try {
+        if (!fs.existsSync(BOT_STORAGE_FILE)) {
+          return sendJson(res, 200, DEFAULT_BOT_STORAGE, headers);
+        }
+        const raw = fs.readFileSync(BOT_STORAGE_FILE, 'utf8');
+        return sendJson(res, 200, JSON.parse(raw), headers);
+      } catch (e) {
+        console.error('Error reading bot storage:', e);
+        return sendJson(
+          res,
+          500,
+          { error: 'Failed to read bot storage' },
+          headers
+        );
+      }
+    }
+
+    if (path === '/api/bot-storage' && req.method === 'POST') {
+      if (!requireAdmin(req, res, headers)) return;
+      try {
+        const payload = (await readJson(req)) || {};
+        fs.mkdirSync(nodePath.dirname(BOT_STORAGE_FILE), { recursive: true });
+        const vietnamOffset = 7 * 60;
+        const localOffset = new Date().getTimezoneOffset();
+        const now = new Date(
+          Date.now() + (vietnamOffset + localOffset) * 60000
+        );
+        const toSave = {
+          ...DEFAULT_BOT_STORAGE,
+          ...payload,
+          lastUpdated: now.toISOString().replace('Z', '+07:00'),
+        };
+        fs.writeFileSync(
+          BOT_STORAGE_FILE,
+          JSON.stringify(toSave, null, 2),
+          'utf8'
+        );
+        return sendJson(res, 200, toSave, headers);
+      } catch (e) {
+        console.error('Error saving bot storage:', e);
+        return sendJson(
+          res,
+          500,
+          { error: 'Failed to save bot storage' },
+          headers
+        );
+      }
+    }
+
+    if (path === '/api/bot-storage/reset' && req.method === 'POST') {
+      if (!requireAdmin(req, res, headers)) return;
+      try {
+        fs.mkdirSync(nodePath.dirname(BOT_STORAGE_FILE), { recursive: true });
+        fs.writeFileSync(
+          BOT_STORAGE_FILE,
+          JSON.stringify(DEFAULT_BOT_STORAGE, null, 2),
+          'utf8'
+        );
+        return sendJson(res, 200, DEFAULT_BOT_STORAGE, headers);
+      } catch (e) {
+        console.error('Error resetting bot storage:', e);
+        return sendJson(
+          res,
+          500,
+          { error: 'Failed to reset bot storage' },
+          headers
+        );
+      }
+    }
+
+    if (path === '/api/bot-storage/sync' && req.method === 'POST') {
+      if (!requireAdmin(req, res, headers)) return;
+      try {
+        if (!fs.existsSync(BOT_STORAGE_FILE)) {
+          return sendJson(
+            res,
+            404,
+            { error: 'No storage file found' },
+            headers
+          );
+        }
+        const raw = fs.readFileSync(BOT_STORAGE_FILE, 'utf8');
+        const storage = JSON.parse(raw);
+
+        const activeVote = storage.activeVote;
+        if (!activeVote) {
+          return sendJson(res, 400, { error: 'NO_ACTIVE_VOTE' }, headers);
+        }
+
+        const benchMap = new Map(storage.bench || []);
+        const voters = Object.values(activeVote.votes || {});
+        let addedCount = 0;
+        let skippedCount = 0;
+        const addedNames = [];
+        const skippedNames = [];
+
+        voters.forEach(voter => {
+          const userId = voter.id;
+          const userName = voter.name;
+          const voteOption = voter.options[0];
+
+          if (voteOption === 0) return;
+
+          if (benchMap.has(userId)) {
+            skippedCount++;
+            skippedNames.push(userName);
+          } else {
+            benchMap.set(userId, { name: userName, userId });
+            addedCount++;
+            addedNames.push(userName);
+          }
+
+          if (voteOption >= 2) {
+            const friendsCount = voteOption - 1;
+            for (let i = 1; i <= friendsCount; i++) {
+              const friendName = `${userName} ${i}`;
+              const friendId = `${userId}_friend_${i}`;
+              if (benchMap.has(friendId)) {
+                skippedCount++;
+                skippedNames.push(friendName);
+              } else {
+                benchMap.set(friendId, { name: friendName });
+                addedCount++;
+                addedNames.push(friendName);
+              }
+            }
+          }
+        });
+
+        storage.bench = Array.from(benchMap.entries());
+        const vietnamOffset = 7 * 60;
+        const localOffset = new Date().getTimezoneOffset();
+        const now = new Date(
+          Date.now() + (vietnamOffset + localOffset) * 60000
+        );
+        storage.lastUpdated = now.toISOString().replace('Z', '+07:00');
+        fs.writeFileSync(
+          BOT_STORAGE_FILE,
+          JSON.stringify(storage, null, 2),
+          'utf8'
+        );
+
+        return sendJson(
+          res,
+          200,
+          {
+            ok: true,
+            addedCount,
+            skippedCount,
+            addedNames,
+            skippedNames,
+            storage,
+          },
+          headers
+        );
+      } catch (e) {
+        console.error('Error syncing bot storage:', e);
+        return sendJson(
+          res,
+          500,
+          { error: 'Failed to sync from vote' },
           headers
         );
       }

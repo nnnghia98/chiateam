@@ -20,8 +20,8 @@ const DEFAULT_DATA = {
   team3A: [],
   team3B: [],
   team3C: [],
-  tiensan: 580000,
-  tiennuoc: 60000,
+  tiensan: 0,
+  tiennuoc: 0,
   teamThua: null,
   activeVote: null,
   lastUpdated: null,
@@ -156,8 +156,8 @@ function initializeStorage() {
   const team3B = arrayToMap(data.team3B || []);
   const team3C = arrayToMap(data.team3C || []);
 
-  let tiensan = data.tiensan || 580000;
-  let tiennuoc = data.tiennuoc || 60000;
+  let tiensan = data.tiensan ?? 0;
+  let tiennuoc = data.tiennuoc ?? 0;
   let teamThua = data.teamThua || null;
   let activeVote = data.activeVote || null;
 
@@ -211,8 +211,8 @@ function initializeStorage() {
     originalTeam3CClear.call(team3C);
 
     // Reset all values
-    tiensan = 580000;
-    tiennuoc = 60000;
+    tiensan = 0;
+    tiennuoc = 0;
     teamThua = null;
     activeVote = null;
 

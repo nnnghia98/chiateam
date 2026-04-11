@@ -3,8 +3,7 @@ import { getInternalApiAuthToken, getSessionFromRequest } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 
-const API_URL =
-  process.env.API_INTERNAL_URL || 'http://chiateam-api.railway.internal:8787';
+const API_URL = process.env.API_INTERNAL_URL;
 type ProxyRouteContext = {
   params: Promise<{ path: string[] }>;
 };

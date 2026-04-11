@@ -14,8 +14,8 @@ The following data is now saved to disk:
 4. **team3A** - Team A (3-team split)
 5. **team3B** - Team B (3-team split)
 6. **team3C** - Team C/Extra (3-team split)
-7. **tiensan** - Field rental cost (default: 580000)
-8. **tiennuoc** - Water cost (default: 60000)
+7. **tiensan** - Field rental cost
+8. **tiennuoc** - Water cost
 9. **teamThua** - Which team lost the match
 
 ## File Structure
@@ -30,8 +30,8 @@ The default runtime file is `.runtime/bot/storage.json`. You can override it wit
   "team3A": [[userId, playerData], ...],
   "team3B": [[userId, playerData], ...],
   "team3C": [[userId, playerData], ...],
-  "tiensan": 580000,
-  "tiennuoc": 60000,
+  "tiensan": 0,
+  "tiennuoc": 0,
   "teamThua": "HOME" | "AWAY" | null,
   "lastUpdated": "2026-03-28T10:30:00.000Z"
 }

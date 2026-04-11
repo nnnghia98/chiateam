@@ -94,6 +94,30 @@ class ApiClient {
       body: JSON.stringify(data),
     });
   }
+
+  // Bot Storage
+  async getBotStorage() {
+    return this.fetch<any>('/api/bot-storage');
+  }
+
+  async saveBotStorage(data: any) {
+    return this.fetch<any>('/api/bot-storage', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async resetBotStorage() {
+    return this.fetch<any>('/api/bot-storage/reset', {
+      method: 'POST',
+    });
+  }
+
+  async syncBotStorageFromVote() {
+    return this.fetch<any>('/api/bot-storage/sync', {
+      method: 'POST',
+    });
+  }
 }
 
 export const apiClient = new ApiClient(API_URL);

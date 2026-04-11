@@ -13,6 +13,7 @@ import {
   Shield,
   Eye,
   Menu,
+  Swords,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
@@ -40,6 +41,11 @@ export function Navigation() {
       href: '/dashboard',
       label: 'Dashboard',
       icon: LayoutDashboard,
+    },
+    {
+      href: '/next-match',
+      label: 'Next Match',
+      icon: Swords,
     },
     {
       href: '/players',
