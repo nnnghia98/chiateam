@@ -2,7 +2,7 @@ const { COMMANDS } = require('../../utils/constants');
 const { UNKNOWN } = require('../../utils/messages');
 const { sendMessage } = require('../../utils/chat');
 
-const bot = require('../../bot');
+const bot = require('../../telegram-client');
 
 const unknownCommand = () => {
   bot.on('message', msg => {

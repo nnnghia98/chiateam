@@ -1,7 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 
-const STORAGE_FILE = path.join(__dirname, '../storage.json');
+const DEFAULT_STORAGE_FILE = path.join(
+  __dirname,
+  '../../.runtime/bot/storage.json'
+);
+const STORAGE_FILE = path.resolve(
+  process.cwd(),
+  process.env.BOT_STATE_FILE || DEFAULT_STORAGE_FILE
+);
 
 /**
  * Default data structure for bot state
@@ -69,6 +76,7 @@ function getVietnamTime() {
  */
 function saveData(data) {
   try {
+    fs.mkdirSync(path.dirname(STORAGE_FILE), { recursive: true });
     const dataToSave = {
       ...data,
       lastUpdated: getVietnamTime(),

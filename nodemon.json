@@ -1,8 +1,5 @@
 {
-  "ignore": ["bot/storage.json", "node_modules/", ".git/", "*.test.js"],
+  "ignore": [".runtime/", "node_modules/", ".git/", "*.test.js"],
   "watch": ["bot/", "api/"],
-  "ext": "js,json",
-  "env": {
-    "NODE_ENV": "development"
-  }
+  "ext": "js,json"
 }

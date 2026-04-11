@@ -2,7 +2,7 @@ const { sendMessage } = require('../../utils/chat');
 const { MATCHES } = require('../../utils/messages');
 const { listMatches } = require('../../../api/routes/matches');
 
-const bot = require('../../bot');
+const bot = require('../../telegram-client');
 
 function formatDateDisplay(isoDate) {
   const [y, m, d] = isoDate.split('-');

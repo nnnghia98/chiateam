@@ -10,7 +10,7 @@
 | ------------- | ------------------------------------------- |
 | Bot runtime   | Node.js + PM2, `node-telegram-bot-api`      |
 | Database      | SQLite (`chamhet.db`) on-disk               |
-| Web UI        | Next.js in Docker (port 3000)               |
+| Legacy Web UI | Next.js in Docker (port 3000)               |
 | API server    | Node.js HTTP (port 8787)                    |
 | Reverse proxy | Nginx (port 80)                             |
 | Server        | Ubuntu @ `15.152.155.89` (**gone forever**) |
@@ -27,7 +27,7 @@
 | ------------- | ----------------------------- | ------------------------------------------------------------ |
 | **Bot + API** | **Render.com**                | Free 750 hrs/mo, persistent service, no credit card required |
 | **Database**  | **Supabase** (PostgreSQL)     | Dashboard, Table Editor, 500 MB free                         |
-| **Web UI**    | **Vercel**                    | Zero-config Next.js, free                                    |
+| **Admin UI**  | **Vercel**                    | Zero-config Next.js, free                                    |
 | **AI**        | **Google AI Studio (Gemini)** | Match summaries, NL queries                                  |
 
 > **Why not Railway?** Railway's shared egress IPs are blocked by Telegram (confirmed from previous attempt).
@@ -126,13 +126,13 @@ CREATE TABLE match_player_stats (
 
 ### 4. Infrastructure
 
-**`Dockerfile`** — used for containerized deployment. Exposes port 8787, runs `yarn start:production`.
+**`Dockerfile`** — used for containerized deployment. Exposes port 8787 and starts the bot runtime.
 
 **`src/api/server.js`** — CORS updated:
 
 ```diff
 - 'http://15.152.155.89'
-+ process.env.WEB_UI_URL  // dynamic, set via env var
++ process.env.ADMIN_UI_URL  // dynamic, set via env var
 ```
 
 **`src/db/init-database.js`** — simplified to only test Supabase connection (schema managed via dashboard).
@@ -153,8 +153,9 @@ CREATE TABLE match_player_stats (
 | `STATISTICS_THREAD_ID`        | Render.com | Thread IDs                  |
 | `DATABASE_URL`                | Render.com | Supabase connection string  |
 | `GEMINI_API_KEY`              | Render.com | Google AI Studio key        |
-| `WEB_UI_URL`                  | Render.com | Vercel URL (for CORS)       |
-| `NEXT_PUBLIC_UI_API_BASE_URL` | Vercel     | Render.com service URL      |
+| `ADMIN_UI_URL`                | Render.com | Admin app URL (for CORS)    |
+| `INTERNAL_API_AUTH_TOKEN`     | Shared     | Trusted proxy-to-API auth   |
+| `API_INTERNAL_URL`            | Admin host | Server-side API base URL    |
 
 > `DATABASE_NAME`, `DB_PATH`, `DB_DIR` are **no longer needed**.
 
@@ -170,7 +171,7 @@ CREATE TABLE match_player_stats (
 | DB export   | `sqlite3 .dump`        | Supabase → Settings → Download backup |
 | DB import   | Manual                 | Supabase SQL Editor                   |
 | Public IP   | Static `15.152.155.89` | Render.com auto-assigned HTTPS URL    |
-| Web UI logs | `docker logs`          | Vercel dashboard                      |
+| Admin UI logs | `docker logs`        | Vercel dashboard                      |
 
 ---
 
@@ -188,7 +189,7 @@ sqlite3 src/chamhet.db .dump > backup.sql
 1. **Supabase** → create project → run schema above → copy `DATABASE_URL`
 2. **Google AI Studio** → get API key at [aistudio.google.com](https://aistudio.google.com)
 3. **Render.com** → see `docs/DEPLOY_RENDER.md` for full guide
-4. **Vercel** → import repo → root dir: `web/`
+4. **Vercel** → import repo → root dir: `admin/`
 
 ### 3. Test Locally
 
@@ -203,13 +204,15 @@ yarn dev                        # run bot locally
 
 1. Go to [render.com](https://render.com) → New → Web Service
 2. Connect your GitHub repo
-3. Set: **Build Command** `yarn install`, **Start Command** `yarn start:production`
+3. Set: **Build Command** `yarn install`, **Start Command** `yarn start:bot`
 4. Add all env vars from `.env` in the **Environment** tab
 5. Deploy
 
-### 5. Deploy Web UI (Vercel)
+### 5. Deploy Admin UI
 
-- Set env var: `NEXT_PUBLIC_UI_API_BASE_URL=https://chiateam-bot.onrender.com`
+- Set `API_INTERNAL_URL` to the API service URL reachable by the admin server
+- Set the same `INTERNAL_API_AUTH_TOKEN` value on both admin and API
+- Set `ADMIN_SESSION_SECRET`, `ADMIN_PASSWORD`, and `VIEWER_PASSWORD`
 
 ---
 
@@ -218,5 +221,5 @@ yarn dev                        # run bot locally
 - `node src/db/init-database.js` → `✅ Supabase connection successful`
 - `curl https://your-service-url.run.app/api/status` → `{"online":true}`
 - Telegram: `/start`, `/players`, `/leaderboard` → bot responds
-- Vercel URL → players and matches load
-- Add player via Web UI → appears in Supabase Table Editor
+- Vercel URL → admin dashboard loads and API requests succeed
+- Add player via Admin UI → appears in Supabase Table Editor

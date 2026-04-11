@@ -1,4 +1,5 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+// Browser requests always go through the Next.js proxy route.
+const API_URL = '/api/proxy';
 
 class ApiClient {
   private baseUrl: string;
@@ -7,26 +8,11 @@ class ApiClient {
     this.baseUrl = baseUrl;
   }
 
-  private getAuthHeaders(): HeadersInit {
-    const userRole =
-      typeof window !== 'undefined' ? localStorage.getItem('userRole') : null;
-
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-
-    if (userRole) {
-      headers['X-User-Role'] = userRole;
-    }
-
-    return headers;
-  }
-
   private async fetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       ...options,
       headers: {
-        ...this.getAuthHeaders(),
+        'Content-Type': 'application/json',
         ...options?.headers,
       },
     });

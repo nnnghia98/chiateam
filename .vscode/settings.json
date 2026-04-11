@@ -1,0 +1,22 @@
+{
+  "cSpell.words": [
+    "chiateam",
+    "TIEN",
+    "tiensan"
+  ],
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "prettier.requireConfig": true,
+  "prettier.useEditorConfig": false,
+  "snyk.advanced.organization": "8ada14ef-c95c-4812-90ab-930104a3f3fa",
+  "snyk.advanced.autoSelectOrganization": true
+}

@@ -8,6 +8,9 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'ChiaTeam Admin',
   description: 'Admin panel for ChiaTeam Bot',
+  icons: {
+    icon: '/logo-cham-het.png',
+  },
 };
 
 export const viewport: Viewport = {

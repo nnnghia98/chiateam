@@ -3,7 +3,7 @@ const {
 } = require('../../../api/services/leaderboard-service');
 const { sendMessage } = require('../../utils/chat');
 
-const bot = require('../../bot');
+const bot = require('../../telegram-client');
 
 const leaderboardCommand = () => {
   bot.onText(/^\/leaderboard$/, async msg => {

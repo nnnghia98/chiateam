@@ -3,7 +3,7 @@ const { toEntry, getDisplayName } = require('../../utils/team-member');
 const { ADD } = require('../../utils/messages');
 const { PATTERNS } = require('../../utils/constants');
 
-const bot = require('../../bot');
+const bot = require('../../telegram-client');
 const { sendMessage } = require('../../utils/chat');
 
 const addCommand = ({ members }) => {

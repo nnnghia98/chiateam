@@ -4,7 +4,7 @@ const { ADD_ME } = require('../../utils/messages');
 const { PATTERNS } = require('../../utils/constants');
 const { sendMessage } = require('../../utils/chat');
 
-const bot = require('../../bot');
+const bot = require('../../telegram-client');
 
 const addMeCommand = ({ members }) => {
   bot.onText(PATTERNS.add_me, msg => {

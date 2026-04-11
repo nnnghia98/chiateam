@@ -1,6 +1,6 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { sendMessage } = require('../../utils/chat');
-const bot = require('../../bot');
+const bot = require('../../telegram-client');
 
 let genAI;
 let chatSession;

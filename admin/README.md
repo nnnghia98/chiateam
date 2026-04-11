@@ -1,126 +1,42 @@
-# ChiaTeam Admin Client
+# ChiaTeam Admin
 
-A modern admin dashboard for managing the ChiaTeam football bot data.
+Next.js admin UI for viewing and managing players, matches, and leaderboard data.
 
-## Features
+## How it talks to the API
 
-- 📊 **Dashboard** - Overview of all statistics and recent activity
-- 👥 **Players Management** - View, create, edit, and delete player registrations
-- ⚽ **Matches Management** - Manage match records with scores and details
-- 🏆 **Leaderboard** - View and edit player statistics and rankings
+The browser never calls the API service directly.
 
-## Tech Stack
+- browser -> `/api/proxy/...`
+- Next.js proxy -> server-side API origin from `API_INTERNAL_URL`
+- proxy auth -> HTTP-only session cookie + `INTERNAL_API_AUTH_TOKEN`
 
-- **Framework**: Next.js 15 with TypeScript
-- **UI Components**: shadcn/ui (built on Radix UI)
-- **Styling**: Tailwind CSS
-- **Icons**: Lucide React
-- **API**: REST API integration with the ChiaTeam API server
+Viewer sessions can read. Admin sessions can mutate.
 
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+ and npm/yarn
-- ChiaTeam API server running (default: http://localhost:8080)
-
-### Installation
-
-1. Navigate to the admin directory:
+## Local setup
 
 ```bash
 cd admin
-```
-
-2. Install dependencies:
-
-```bash
-yarn install
-```
-
-3. Create a `.env.local` file:
-
-```bash
 cp .env.example .env.local
-```
-
-4. Update the environment variables:
-
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8080
-```
-
-### Development
-
-Run the development server:
-
-```bash
+yarn install
 yarn dev
 ```
 
-Open [http://localhost:8389](http://localhost:8389) in your browser.
+Required server-side env values:
 
-### Production Build
-
-Build the application:
-
-```bash
-yarn build
+```env
+API_INTERNAL_URL=http://localhost:8787
+INTERNAL_API_AUTH_TOKEN=change-this-shared-internal-token
+ADMIN_SESSION_SECRET=change-this-session-secret
+ADMIN_PASSWORD=admin123
+VIEWER_PASSWORD=viewer123
 ```
 
-Start the production server:
+Open [http://localhost:8389](http://localhost:8389).
 
-```bash
-yarn start
-```
+## App structure
 
-## Project Structure
-
-```
-admin/
-├── src/
-│   ├── app/                    # Next.js app directory
-│   │   ├── dashboard/         # Dashboard page
-│   │   ├── players/           # Players management page
-│   │   ├── matches/           # Matches management page
-│   │   ├── leaderboard/       # Leaderboard page
-│   │   ├── layout.tsx         # Root layout
-│   │   ├── page.tsx           # Home page
-│   │   └── globals.css        # Global styles
-│   ├── components/
-│   │   ├── ui/                # shadcn/ui components
-│   │   └── navigation.tsx     # Navigation component
-│   ├── lib/
-│   │   ├── api-client.ts      # API client utilities
-│   │   └── utils.ts           # Utility functions
-│   └── types/                 # TypeScript type definitions
-│       ├── player.ts
-│       ├── match.ts
-│       └── leaderboard.ts
-├── public/                    # Static files
-├── package.json
-├── tsconfig.json
-├── tailwind.config.js
-└── next.config.ts
-```
-
-## API Integration
-
-The admin client connects to the ChiaTeam API server. Make sure the API server is running before using the admin client.
-
-Default API endpoints:
-
-- `GET /players` - List all players
-- `POST /players` - Create a new player
-- `PUT /players/:number` - Update a player
-- `DELETE /players/:number` - Delete a player
-- `GET /matches` - List all matches
-- `POST /matches` - Create a match
-- `PUT /matches/:date` - Update a match
-- `DELETE /matches/:date` - Delete a match
-- `GET /leaderboard` - Get leaderboard data
-- `PUT /leaderboard/:playerNumber` - Update leaderboard entry
-
-## License
-
-MIT
+- `src/app/` routes and proxy/auth handlers
+- `src/components/` layout, navigation, UI primitives
+- `src/contexts/` session-aware auth state
+- `src/lib/` proxy client and server auth helpers
+- `src/types/` admin UI types

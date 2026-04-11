@@ -6,35 +6,45 @@ import { AuthProvider, useAuth } from '@/contexts/auth-context';
 import { Navigation } from '@/components/navigation';
 
 function ProtectedLayout({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
 
   useEffect(() => {
-    // Allow access to login page without authentication
-    if (pathname === '/login') {
+    if (isLoading) {
       return;
     }
 
-    // Redirect to login if not authenticated
-    if (!isAuthenticated) {
-      router.push('/login');
+    if (pathname === '/login') {
+      if (isAuthenticated) {
+        router.replace('/dashboard');
+      }
+      return;
     }
-  }, [isAuthenticated, pathname, router]);
 
-  // Show login page without navigation
+    if (!isAuthenticated) {
+      router.replace('/login');
+    }
+  }, [isAuthenticated, isLoading, pathname, router]);
+
   if (pathname === '/login') {
     return <>{children}</>;
   }
 
-  // Show nothing while redirecting
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading...
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
     return null;
   }
 
-  // Show authenticated layout
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#f2f2f2]">
       <Navigation />
       <main className="container mx-auto px-4 py-8">{children}</main>
     </div>

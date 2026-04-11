@@ -1,7 +1,7 @@
 const { formatMoney } = require('../../utils/format');
 const { CHIA_TIEN } = require('../../utils/messages');
 
-const bot = require('../../bot');
+const bot = require('../../telegram-client');
 const { sendMessage } = require('../../utils/chat');
 
 module.exports = (getTiensan, getTeamThua, { teamA, teamB }) => {

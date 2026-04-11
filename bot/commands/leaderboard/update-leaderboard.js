@@ -7,7 +7,7 @@ const { sendMessage } = require('../../utils/chat');
 const { UPDATE_LEADERBOARD } = require('../../utils/messages');
 const { requireAdmin } = require('../../utils/permissions');
 
-const bot = require('../../bot');
+const bot = require('../../telegram-client');
 
 const updateLeaderboardCommand = () => {
   // Handle command with parameters
@@ -58,13 +58,13 @@ const updateLeaderboardCommand = () => {
         const goalAssistResult =
           result === 'GOAL'
             ? await updateGoalStat({
-              playerNumber: playerNumberRaw,
-              delta: valueRaw,
-            })
+                playerNumber: playerNumberRaw,
+                delta: valueRaw,
+              })
             : await updateAssistStat({
-              playerNumber: playerNumberRaw,
-              delta: valueRaw,
-            });
+                playerNumber: playerNumberRaw,
+                delta: valueRaw,
+              });
 
         if (!goalAssistResult.ok) {
           if (goalAssistResult.code === 'INVALID_PLAYER_NUMBER') {

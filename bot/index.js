@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const {
   startCommand,
   addMeCommand,
@@ -27,7 +29,7 @@ const {
 } = require('./commands');
 
 const maintenanceMessage = require('./commands/maintainance');
-const bot = require('./bot');
+const bot = require('./telegram-client');
 const { logCommandUsage } = require('./utils/command-logger');
 const { startTestServer } = require('./test-server');
 const { initializeStorage } = require('./utils/storage');
@@ -56,8 +58,6 @@ installProcessCrashLogging();
 
 // Log environment information
 console.log('🚀 Starting ChiaTeam Bot...');
-console.log('🔧 Environment file loaded:', process.env.ENV_FILE || 'default');
-console.log('📝 Environment mode:', process.env.NODE_ENV || 'development');
 console.log('');
 
 // Maintenance mode check
@@ -90,7 +90,7 @@ if (bot) {
   });
 }
 
-// Initialize persistent storage (loads from storage.json if exists)
+// Initialize persistent storage (loads from BOT_STATE_FILE if it exists)
 const storage = initializeStorage();
 const { bench: members, teamA, teamB, team3A, team3B, team3C } = storage;
 const getTiensan = storage.getTiensan;

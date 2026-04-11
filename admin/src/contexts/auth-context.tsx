@@ -1,56 +1,83 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect } from 'react';
-
-type UserRole = 'admin' | 'viewer' | null;
+import { createContext, useContext, useEffect, useState } from 'react';
+import type { UserRole } from '@/lib/auth';
 
 interface AuthContextType {
-  role: UserRole;
+  role: UserRole | null;
   isAuthenticated: boolean;
-  login: (password: string) => boolean;
-  logout: () => void;
+  isLoading: boolean;
+  login: (_password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
   canEdit: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [role, setRole] = useState<UserRole>(null);
+  const [role, setRole] = useState<UserRole | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is already logged in
-    const savedRole = localStorage.getItem('userRole') as UserRole;
-    if (savedRole) {
-      setRole(savedRole);
-    }
+    const loadSession = async () => {
+      try {
+        const response = await fetch('/api/auth/session', { cache: 'no-store' });
+
+        if (!response.ok) {
+          setRole(null);
+          return;
+        }
+
+        const session = await response.json();
+        setRole(session.authenticated ? session.role : null);
+      } catch (error) {
+        console.error('Failed to load admin session:', error);
+        setRole(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadSession();
   }, []);
 
-  const login = (password: string): boolean => {
-    // Check against environment variables
-    const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'admin123';
-    const viewerPassword =
-      process.env.NEXT_PUBLIC_VIEWER_PASSWORD || 'viewer123';
+  const login = async (password: string): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password }),
+      });
 
-    if (password === adminPassword) {
-      setRole('admin');
-      localStorage.setItem('userRole', 'admin');
+      if (!response.ok) {
+        setRole(null);
+        return false;
+      }
+
+      const session = await response.json();
+      setRole(session.role);
       return true;
-    } else if (password === viewerPassword) {
-      setRole('viewer');
-      localStorage.setItem('userRole', 'viewer');
-      return true;
+    } catch (error) {
+      console.error('Failed to log in:', error);
+      setRole(null);
+      return false;
     }
-
-    return false;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (error) {
+      console.error('Failed to log out cleanly:', error);
+    }
     setRole(null);
-    localStorage.removeItem('userRole');
   };
 
   const value: AuthContextType = {
     role,
+    isLoading,
     isAuthenticated: role !== null,
     login,
     logout,

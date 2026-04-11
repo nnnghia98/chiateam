@@ -3,7 +3,7 @@ const { ADD_TO_TEAM } = require('../../utils/messages');
 const { sendMessage } = require('../../utils/chat');
 const { escapeMarkdown } = require('../../utils/format');
 
-const bot = require('../../bot');
+const bot = require('../../telegram-client');
 
 const addToTeamCommand = ({
   members,

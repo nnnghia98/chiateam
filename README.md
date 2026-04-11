@@ -1,154 +1,74 @@
-# My Telegram Bot
+# ChiaTeam Bot
 
-A Telegram bot for team management and organization.
+ChiaTeam is split into three runtime surfaces:
 
-## Environments
+- `bot/` for Telegram command handling and in-chat workflows
+- `api/` for admin-facing HTTP endpoints
+- `admin/` for the Next.js admin UI
 
-- **Production**: `/chiateam`
-- **Development**: `/chiateam-dev`
+## Start Commands
 
-## Git Flow
-
-1. Checkout new branch from main:
-
-   ```bash
-   git checkout -b abcxyz/dev
-   ```
-
-2. Work within `/chiateam-dev` directory
-
-3. Create Pull Request: `abcxyz/dev` → `main` (no delete merged branch)
-
-4. Keep working on `abcxyz/dev` branch
-
-## Development Workflow
-
-- All development work should be done in the `/chiateam-dev` directory
-- Production code is in the `/chiateam` directory
-- Use feature branches for development
-- Keep the development branch active for ongoing work
-
-## Testing
-
-### HTTP Test Server (Development Mode)
-
-The bot includes an HTTP test server for development that allows sending commands via HTTP requests instead of manually typing them in Telegram.
-
-**Start the bot in development mode**:
+Root commands are the source of truth:
 
 ```bash
 yarn dev:bot
+yarn dev:api
+yarn dev:admin
+
+yarn start:bot
+yarn start:api
+yarn start:admin
 ```
 
-The test server will automatically start on port 3001 (configurable via `TEST_SERVER_PORT`).
+`yarn start` maps to `yarn start:bot`.
 
-### Automated Test Flow
+## Environment Setup
 
-Run the complete automated test workflow:
+Root services read env from the repo root:
 
-```bash
-yarn test:commands
-```
+1. Copy `.env.example`
+2. Fill in Telegram, database, and runtime values
+3. Use `.env.dev` for local bot/API development when needed
 
-This script will:
+Important root variables:
 
-1. Connect to the HTTP test server
-2. Run through a complete workflow including:
-   - Add test user with `/addme`
-   - Add all players from database
-   - Add random players to bench (up to 15 total)
-   - Check bench with `/bench`
-   - Divide teams with `/chiateam`
-   - View teams with `/team`
-   - Set venue with `/san 19h15 - [this thursday] - sân số 8`
-   - Adjust teams with `/addtoteam`
-   - Save match with `/match SAVE`
-   - Update match score
-   - View matches list with `/matches`
-   - View latest match details
-   - Clear data with `/clearbench` and `/clearteam`
+- `DATABASE_URL`
+- `API_PORT`
+- `BOT_STATE_FILE`
+- `INTERNAL_API_AUTH_TOKEN`
+- `ADMIN_UI_URL`
 
-### Manual HTTP Testing
+Admin runs with its own server-side env file:
 
-You can also send individual commands using curl:
+1. Copy `admin/.env.example` to `admin/.env.local`
+2. Fill in:
+   - `API_INTERNAL_URL`
+   - `INTERNAL_API_AUTH_TOKEN`
+   - `ADMIN_SESSION_SECRET`
+   - `ADMIN_PASSWORD`
+   - `VIEWER_PASSWORD`
 
-```bash
-curl -X POST http://localhost:3001/test-command \
-  -H "Content-Type: application/json" \
-  -d '{"command": "/addme"}'
-```
+## Admin Access Model
 
-### Manual Testing in Telegram
+The browser talks only to the Next.js proxy under `admin/src/app/api/proxy`.
+The proxy:
 
-For testing interactive features (buttons, callbacks), test directly in Telegram:
+- validates the admin session from an HTTP-only cookie
+- forwards trusted role information to the API
+- authenticates to the API with `INTERNAL_API_AUTH_TOKEN`
 
-```bash
-yarn dev:bot
-```
+The API does not trust browser-supplied role headers.
 
-Then interact with your bot through Telegram.
+## Bot State
 
-## Project Structure
+Ephemeral team state is stored outside tracked source files.
 
-This project consists of four main components:
+- Default runtime file: `.runtime/bot/storage.json`
+- Override path with `BOT_STATE_FILE`
+- Example shape: `bot/storage.json.example`
 
-### 1. Bot (`/bot`)
+## Project Notes
 
-Telegram bot for team management, player registration, and match organization.
-
-**Start bot**:
-
-```bash
-yarn dev:bot      # Development
-yarn start:bot    # Production
-```
-
-### 2. API (`/api`)
-
-REST API server providing data access for the web and admin interfaces.
-
-**Start API**:
-
-```bash
-yarn dev:api      # Development
-yarn start:api    # Production
-```
-
-### 3. Web (`/web`)
-
-Public-facing Next.js web application for viewing matches and leaderboards.
-
-**Start web**:
-
-```bash
-yarn dev:web      # Development (runs on port 3000)
-```
-
-### 4. Admin (`/admin`)
-
-**NEW!** Admin dashboard for managing players, matches, and leaderboard data.
-
-**Features**:
-
-- 📊 Dashboard with overview statistics
-- 👥 Players management (CRUD operations)
-- ⚽ Matches management
-- 🏆 Leaderboard editing
-
-**Start admin**:
-
-```bash
-yarn dev:admin    # Development (runs on port 8389)
-yarn build:admin  # Build for production
-yarn start:admin  # Production
-```
-
-**Setup**:
-
-1. Navigate to admin folder: `cd admin`
-2. Install dependencies: `yarn install`
-3. Create `.env.local` file: `cp .env.example .env.local`
-4. Update `NEXT_PUBLIC_API_URL` to point to your API server
-5. Run development server: `yarn dev`
-
-See [admin/README.md](admin/README.md) for detailed documentation.
+- The legacy public `web/` app has been removed.
+- Historical sprint notes in `2026/` are kept for reference and may describe older repo layouts.
+- The legacy SQLite artifact under `bot/` is not part of the active runtime path.
