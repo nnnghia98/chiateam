@@ -1,0 +1,7 @@
+[build]
+builder = "railpack"
+buildCommand = "yarn install --frozen-lockfile && yarn build"
+
+[deploy]
+startCommand = "yarn start"
+restartPolicyType = "on_failure"
