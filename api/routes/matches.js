@@ -189,12 +189,72 @@ async function deleteMatchByDate(matchDate) {
   return result.rowCount > 0;
 }
 
+async function createMatch({
+  matchDate,
+  san = null,
+  tiensan = null,
+  homeScore = null,
+  awayScore = null,
+  notes = null,
+}) {
+  const { rows } = await db.query(
+    `INSERT INTO matches (match_date, san, tiensan, home_score, away_score, notes)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING *`,
+    [matchDate, san, tiensan, homeScore, awayScore, notes]
+  );
+  return rows[0];
+}
+
+async function updateMatchByDate(matchDate, updates) {
+  const fields = [];
+  const values = [];
+  let idx = 1;
+
+  if (Object.prototype.hasOwnProperty.call(updates, 'san')) {
+    fields.push(`san = $${idx++}`);
+    values.push(updates.san);
+  }
+  if (Object.prototype.hasOwnProperty.call(updates, 'tiensan')) {
+    fields.push(`tiensan = $${idx++}`);
+    values.push(updates.tiensan);
+  }
+  if (Object.prototype.hasOwnProperty.call(updates, 'homeScore')) {
+    fields.push(`home_score = $${idx++}`);
+    values.push(updates.homeScore);
+  }
+  if (Object.prototype.hasOwnProperty.call(updates, 'awayScore')) {
+    fields.push(`away_score = $${idx++}`);
+    values.push(updates.awayScore);
+  }
+  if (Object.prototype.hasOwnProperty.call(updates, 'notes')) {
+    fields.push(`notes = $${idx++}`);
+    values.push(updates.notes);
+  }
+
+  if (fields.length === 0) {
+    throw new Error('No valid fields to update');
+  }
+
+  fields.push('updated_at = NOW()');
+  values.push(matchDate);
+
+  const { rows } = await db.query(
+    `UPDATE matches SET ${fields.join(', ')} WHERE match_date = $${idx} RETURNING *`,
+    values
+  );
+
+  return rows[0] || null;
+}
+
 module.exports = {
   getMatchByDate,
   isPlayerInMatch,
   getMatchWithPlayers,
   createOrUpdateMatch,
+  createMatch,
   listMatches,
+  updateMatchByDate,
   updateMatchResult,
   deleteMatchByDate,
   getMatchPlayerStats,

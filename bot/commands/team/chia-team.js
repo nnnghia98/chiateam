@@ -4,7 +4,7 @@ const { sendMessage } = require('../../utils/chat');
 const { requireAdmin } = require('../../utils/permissions');
 const { escapeMarkdown } = require('../../utils/format');
 
-const bot = require('../../bot');
+const bot = require('../../telegram-client');
 
 const splitCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
   // Split into 2 teams (HOME / AWAY). Uses teamA/teamB. Bench is NOT cleared.

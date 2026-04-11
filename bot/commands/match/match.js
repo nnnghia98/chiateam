@@ -25,7 +25,7 @@ const { getDisplayName, getUserId } = require('../../utils/team-member');
 const sanCommand = require('../management/san');
 const { generateMatchSummary } = require('../../../api/services/ai-service');
 
-const bot = require('../../bot');
+const bot = require('../../telegram-client');
 
 /**
  * Get Thursday of the week containing the given date.

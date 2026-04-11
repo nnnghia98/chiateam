@@ -3,7 +3,7 @@ const { TAO_VOTE } = require('../../utils/messages');
 const { requireAdmin } = require('../../utils/permissions');
 const { toEntry } = require('../../utils/team-member');
 
-const bot = require('../../bot');
+const bot = require('../../telegram-client');
 
 const voteCommand = ({ members, getActiveVote, setActiveVote }) => {
   bot.on('poll_answer', pollAnswer => {

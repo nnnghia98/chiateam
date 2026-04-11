@@ -71,6 +71,7 @@ jobs:
             if command -v rsync >/dev/null 2>&1; then
               rsync -a --delete \
                 --exclude '.env' \
+                --exclude '.runtime/' \
                 --exclude 'src/*.db' \
                 "\$DEPLOY_TMP"/ ./
             else
@@ -91,7 +92,7 @@ jobs:
             if [ -f "ecosystem.config.js" ]; then
               pm2 start ecosystem.config.js --only chiateam || pm2 reload chiateam
             else
-              pm2 describe chiateam >/dev/null 2>&1 && pm2 restart chiateam || pm2 start yarn --name chiateam -- start:production
+              pm2 describe chiateam >/dev/null 2>&1 && pm2 restart chiateam || pm2 start yarn --name chiateam -- start:bot
             fi
 
             pm2 save

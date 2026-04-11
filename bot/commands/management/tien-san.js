@@ -2,7 +2,7 @@ const { formatMoney } = require('../../utils/format');
 const { sendMessage } = require('../../utils/chat');
 const { TIEN_SAN } = require('../../utils/messages');
 
-const bot = require('../../bot');
+const bot = require('../../telegram-client');
 
 module.exports = (getTiensan, setTiensan) => {
   bot.onText(/^\/tiensan$/, msg => {

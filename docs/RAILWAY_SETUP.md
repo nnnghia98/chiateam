@@ -21,9 +21,9 @@ MAIN_THREAD_ID=61684
 ANNOUNCEMENT_THREAD_ID=61897
 VIP_THREAD_ID=63171
 STATISTICS_THREAD_ID=73073
-DATABASE_NAME=chamhet
-WEB_UI_TOKEN=your_web_ui_token_here
-WEB_API_PORT=4000
+API_PORT=8787
+INTERNAL_API_AUTH_TOKEN=change-this-shared-internal-token
+BOT_STATE_FILE=.runtime/bot/storage.json
 ```
 
 ### Database (Supabase PostgreSQL)
@@ -36,8 +36,7 @@ DATABASE_URL=postgresql://postgres.[project-ref]:[password]@aws-1-ap-northeast-1
 
 ```
 GEMINI_API_KEY=your_gemini_api_key_here
-WEB_UI_URL=your_web_ui_url_here
-WEB_UI_ORIGIN=http://localhost:5173
+ADMIN_UI_URL=your_admin_app_url_here
 ```
 
 ### Environment Identifier (for logging)
@@ -51,7 +50,7 @@ ENV_FILE=railway
 Railway will automatically detect your Node.js project and use:
 
 - **Build Command:** `yarn install --frozen-lockfile`
-- **Start Command:** `node bot/index.js`
+- **Start Command:** `yarn start:bot`
 
 These are configured in `railway.json` and `Procfile`.
 
@@ -84,7 +83,7 @@ If you're also deploying the API server, you'll need to:
 
 1. Create a separate Railway service for the API
 2. Set the start command to: `node api/index.js`
-3. Expose the WEB_API_PORT (default: 4000)
+3. Expose the API_PORT (default: 8787)
 4. Update your webhook URLs in Telegram bot settings
 
 ## 🔄 Redeployment
@@ -119,7 +118,7 @@ Manual redeploy:
 
 Railway automatically assigns a PORT environment variable. If you need to expose the API:
 
-- Make sure `api/index.js` uses `process.env.PORT || 4000`
+- Make sure `api/index.js` uses `process.env.PORT || API_PORT`
 - Enable "Public Networking" in Railway service settings
 
 ## 📊 Multiple Services Setup
@@ -128,21 +127,21 @@ If you want to deploy both Bot and API separately:
 
 ### Service 1: Bot
 
-- Start Command: `node bot/index.js`
+- Start Command: `yarn start:bot`
 - No public port needed (unless webhook mode)
 
 ### Service 2: API
 
-- Start Command: `node api/index.js`
+- Start Command: `yarn start:api`
 - Enable public networking
 - Port: 4000 (or use Railway's PORT)
 
-### Service 3: Web UI (Optional)
+### Service 3: Admin UI (Optional)
 
-- Change to `web` directory as root
-- Start Command: `cd web && yarn build && yarn start`
+- Change to `admin` directory as root
+- Start Command: `cd admin && yarn build && yarn start`
 - Enable public networking
-- Port: 3000
+- Port: 8389
 
 ## 🎯 Current Configuration
 

@@ -42,9 +42,18 @@ async function updatePlayerByNumber(number, updates) {
   const values = [];
   let idx = 1;
 
-  if (updates.userId != null) { setClauses.push(`user_id = $${idx++}`); values.push(updates.userId); }
-  if (updates.name != null)   { setClauses.push(`name = $${idx++}`);    values.push(updates.name); }
-  if (updates.username != null) { setClauses.push(`username = $${idx++}`); values.push(updates.username); }
+  if (Object.prototype.hasOwnProperty.call(updates, 'userId')) {
+    setClauses.push(`user_id = $${idx++}`);
+    values.push(updates.userId);
+  }
+  if (Object.prototype.hasOwnProperty.call(updates, 'name')) {
+    setClauses.push(`name = $${idx++}`);
+    values.push(updates.name);
+  }
+  if (Object.prototype.hasOwnProperty.call(updates, 'username')) {
+    setClauses.push(`username = $${idx++}`);
+    values.push(updates.username);
+  }
 
   if (setClauses.length === 0) throw new Error('No valid fields to update');
 

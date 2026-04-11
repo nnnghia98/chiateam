@@ -111,14 +111,18 @@ export default function LeaderboardPage() {
   };
 
   if (loading) {
-    return <div className="text-center py-8">Loading...</div>;
+    return (
+      <div className="text-center py-8 text-[#6a6a6a] text-sm">Loading...</div>
+    );
   }
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Leaderboard Management</h1>
-        <p className="text-gray-600 mt-1">
+        <h1 className="text-3xl font-bold text-[#222222] tracking-tight">
+          Leaderboard Management
+        </h1>
+        <p className="text-[#6a6a6a] mt-1 text-sm">
           {canEdit
             ? 'View and modify player statistics'
             : 'View player statistics (read-only)'}
@@ -218,8 +222,8 @@ export default function LeaderboardPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Trophy className="w-6 h-6 text-yellow-500" />
+          <CardTitle className="flex items-center gap-2 text-base font-semibold text-[#222222]">
+            <Trophy className="w-5 h-5" style={{ color: '#ff385c' }} />
             Leaderboard ({leaderboard.length} players)
           </CardTitle>
         </CardHeader>
@@ -245,7 +249,7 @@ export default function LeaderboardPage() {
                 <TableRow key={entry.player.number}>
                   <TableCell className="font-bold">
                     {index === 0 && <span className="text-yellow-500">🥇</span>}
-                    {index === 1 && <span className="text-gray-400">🥈</span>}
+                    {index === 1 && <span>🥈</span>}
                     {index === 2 && <span className="text-orange-600">🥉</span>}
                     {index > 2 && `#${index + 1}`}
                   </TableCell>
@@ -274,7 +278,7 @@ export default function LeaderboardPage() {
                       {entry.stats.total_lose}
                     </span>
                     /
-                    <span className="text-gray-600">
+                    <span className="text-[#6a6a6a]">
                       {entry.stats.total_draw}
                     </span>
                   </TableCell>

@@ -3,7 +3,7 @@ const { getMultiplePlayerStats } = require('../../../api/routes/leaderboard');
 const { sendMessage } = require('../../utils/chat');
 const { PLAYERS } = require('../../utils/messages');
 
-const bot = require('../../bot');
+const bot = require('../../telegram-client');
 
 const playersCommand = () => {
   bot.onText(/^\/players$/, async msg => {
@@ -27,7 +27,7 @@ const playersCommand = () => {
         statsByNumber[row.player_number] = row;
       });
 
-      let message = `${PLAYERS.header  }\n\n`;
+      let message = `${PLAYERS.header}\n\n`;
 
       players.forEach((player, index) => {
         const stats = statsByNumber[player.number] || {};

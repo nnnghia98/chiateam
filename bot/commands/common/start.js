@@ -1,5 +1,5 @@
 const { sendMessage } = require('../../utils/chat');
-const bot = require('../../bot');
+const bot = require('../../telegram-client');
 
 const startCommand = () => {
   bot.onText(/^\/start$/, msg => {

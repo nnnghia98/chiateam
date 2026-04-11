@@ -1,4 +1,4 @@
-const bot = require('../bot');
+const bot = require('../telegram-client');
 
 const THREAD_TYPES = {
   DEFAULT: process.env.DEFAULT_THREAD_ID,

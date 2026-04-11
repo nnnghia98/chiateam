@@ -4,7 +4,7 @@ const { requireAdmin } = require('../../utils/permissions');
 
 const sanStrings = new Map();
 
-const bot = require('../../bot');
+const bot = require('../../telegram-client');
 
 function sanCommand() {
   bot.onText(/^\/san(?:\s+(.+))?$/, (msg, match) => {

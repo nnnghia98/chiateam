@@ -1,3 +1,4 @@
+require('dotenv').config();
 const { createUiApiServer } = require('./routes/server');
 
 function installProcessCrashLogging() {
@@ -24,8 +25,6 @@ installProcessCrashLogging();
 
 // Log environment information
 console.log('🚀 Starting ChiaTeam API Server...');
-console.log('🔧 Environment file loaded:', process.env.ENV_FILE || 'default');
-console.log('📝 Environment mode:', process.env.NODE_ENV || 'development');
 console.log('');
 
 const uiApi = createUiApiServer({

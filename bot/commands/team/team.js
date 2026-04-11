@@ -2,7 +2,7 @@ const { getDisplayName } = require('../../utils/team-member');
 const { sendMessage } = require('../../utils/chat');
 const { escapeMarkdown } = require('../../utils/format');
 
-const bot = require('../../bot');
+const bot = require('../../telegram-client');
 
 const teamsCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
   // Show 2-team view (HOME / AWAY)

@@ -13,6 +13,7 @@ import {
   Shield,
   Eye,
   Menu,
+  Swords,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
@@ -30,8 +31,8 @@ export function Navigation() {
   const { role, logout } = useAuth();
   const [open, setOpen] = useState(false);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     router.push('/login');
   };
 
@@ -40,6 +41,11 @@ export function Navigation() {
       href: '/dashboard',
       label: 'Dashboard',
       icon: LayoutDashboard,
+    },
+    {
+      href: '/next-match',
+      label: 'Next Match',
+      icon: Swords,
     },
     {
       href: '/players',
@@ -59,15 +65,19 @@ export function Navigation() {
   ];
 
   return (
-    <nav className="bg-white border-b border-gray-200">
+    <nav className="bg-white border-b border-[#c1c1c1] sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
-          <Link href="/" className="text-xl font-bold text-gray-900">
+          <Link
+            href="/"
+            className="text-xl font-bold tracking-tight"
+            style={{ color: '#ff385c' }}
+          >
             ChiaTeam Admin
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center space-x-4">
+          <div className="hidden lg:flex items-center">
             {links.map(link => {
               const Icon = link.icon;
               const isActive = pathname === link.href;
@@ -76,10 +86,10 @@ export function Navigation() {
                   key={link.href}
                   href={link.href}
                   className={cn(
-                    'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                    'flex items-center gap-2 px-4 h-16 text-sm font-medium transition-colors border-b-2',
                     isActive
-                      ? 'bg-gray-100 text-gray-900'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'border-[#222222] text-[#222222]'
+                      : 'border-transparent text-[#6a6a6a] hover:text-[#222222] hover:border-[#c1c1c1]'
                   )}
                 >
                   <Icon className="w-4 h-4" />
@@ -87,16 +97,16 @@ export function Navigation() {
                 </Link>
               );
             })}
-            <div className="flex items-center gap-2 pl-4 border-l border-gray-200">
-              <div className="flex items-center gap-1 text-sm font-medium text-gray-700">
+            <div className="flex items-center gap-2 pl-4 ml-2 border-l border-[#c1c1c1]">
+              <div className="flex items-center gap-1 text-sm font-medium text-[#222222]">
                 {role === 'admin' ? (
                   <>
-                    <Shield className="w-4 h-4 text-green-600" />
+                    <Shield className="w-4 h-4 text-[#ff385c]" />
                     <span>Admin</span>
                   </>
                 ) : (
                   <>
-                    <Eye className="w-4 h-4 text-blue-600" />
+                    <Eye className="w-4 h-4 text-[#6a6a6a]" />
                     <span>Viewer</span>
                   </>
                 )}
@@ -104,8 +114,10 @@ export function Navigation() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleLogout}
-                className="flex items-center gap-1"
+                onClick={() => {
+                  void handleLogout();
+                }}
+                className="flex items-center gap-1 border-[#c1c1c1] text-[#222222] hover:border-[#222222] rounded-airbnb"
               >
                 <LogOut className="w-4 h-4" />
                 Logout
@@ -117,26 +129,34 @@ export function Navigation() {
           <div className="lg:hidden">
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-[#c1c1c1] text-[#222222] hover:border-[#222222] rounded-airbnb"
+                >
                   <Menu className="w-5 h-5" />
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-[280px] sm:w-[320px]">
                 <SheetHeader>
-                  <SheetTitle>Menu</SheetTitle>
+                  <SheetTitle className="text-[#222222] font-semibold tracking-tight">
+                    Menu
+                  </SheetTitle>
                 </SheetHeader>
                 <div className="flex flex-col gap-4 mt-6">
                   {/* User Role Badge */}
-                  <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-2 px-4 py-3 bg-[#f2f2f2] rounded-airbnb">
                     {role === 'admin' ? (
                       <>
-                        <Shield className="w-5 h-5 text-green-600" />
-                        <span className="font-medium text-gray-900">Admin</span>
+                        <Shield className="w-5 h-5 text-[#ff385c]" />
+                        <span className="font-medium text-[#222222]">
+                          Admin
+                        </span>
                       </>
                     ) : (
                       <>
-                        <Eye className="w-5 h-5 text-blue-600" />
-                        <span className="font-medium text-gray-900">
+                        <Eye className="w-5 h-5 text-[#6a6a6a]" />
+                        <span className="font-medium text-[#222222]">
                           Viewer
                         </span>
                       </>
@@ -144,7 +164,7 @@ export function Navigation() {
                   </div>
 
                   {/* Navigation Links */}
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-1">
                     {links.map(link => {
                       const Icon = link.icon;
                       const isActive = pathname === link.href;
@@ -154,10 +174,10 @@ export function Navigation() {
                           href={link.href}
                           onClick={() => setOpen(false)}
                           className={cn(
-                            'flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-colors',
+                            'flex items-center gap-3 px-4 py-3 rounded-airbnb text-base font-medium transition-colors',
                             isActive
-                              ? 'bg-gray-100 text-gray-900'
-                              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                              ? 'bg-[#f2f2f2] text-[#222222]'
+                              : 'text-[#6a6a6a] hover:bg-[#f2f2f2] hover:text-[#222222]'
                           )}
                         >
                           <Icon className="w-5 h-5" />
@@ -168,11 +188,13 @@ export function Navigation() {
                   </div>
 
                   {/* Logout Button */}
-                  <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="mt-4 pt-4 border-t border-[#c1c1c1]">
                     <Button
                       variant="outline"
-                      className="w-full justify-start gap-2"
-                      onClick={handleLogout}
+                      className="w-full justify-start gap-2 border-[#c1c1c1] text-[#222222] hover:border-[#222222] rounded-airbnb"
+                      onClick={() => {
+                        void handleLogout();
+                      }}
                     >
                       <LogOut className="w-5 h-5" />
                       Logout

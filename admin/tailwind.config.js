@@ -42,11 +42,39 @@ module.exports = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+        /* Airbnb palette */
+        airbnb: {
+          red: '#ff385c',
+          'red-dark': '#e00b41',
+          dark: '#222222',
+          secondary: '#6a6a6a',
+          surface: '#f2f2f2',
+          border: '#c1c1c1',
+          error: '#c13515',
+          legal: '#428bff',
+        },
       },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+        /* Airbnb scale */
+        airbnb: '8px',
+        badge: '14px',
+        card: '20px',
+        large: '32px',
+      },
+      boxShadow: {
+        'airbnb-card':
+          'rgba(0,0,0,0.02) 0px 0px 0px 1px, rgba(0,0,0,0.04) 0px 2px 6px, rgba(0,0,0,0.1) 0px 4px 8px',
+        'airbnb-hover': 'rgba(0,0,0,0.08) 0px 4px 12px',
+        'airbnb-focus':
+          'rgb(255,255,255) 0px 0px 0px 4px, rgba(0,0,0,0.2) 0px 0px 0px 6px',
+      },
+      fontWeight: {
+        medium: '500',
+        semibold: '600',
+        bold: '700',
       },
     },
   },

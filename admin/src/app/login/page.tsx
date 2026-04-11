@@ -21,7 +21,7 @@ export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -30,7 +30,7 @@ export default function LoginPage() {
       return;
     }
 
-    const success = login(password);
+    const success = await login(password);
     if (success) {
       router.push('/dashboard');
     } else {
@@ -40,23 +40,30 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-[#f2f2f2]">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-4">
-            <Lock className="h-12 w-12 text-primary" />
+            <div className="w-14 h-14 rounded-full bg-[#f2f2f2] flex items-center justify-center">
+              <Lock className="h-7 w-7" style={{ color: '#ff385c' }} />
+            </div>
           </div>
-          <CardTitle className="text-2xl text-center">
-            ChiaTeam Admin Login
+          <CardTitle className="text-2xl text-center text-[#222222] font-bold tracking-tight">
+            ChiaTeam Admin
           </CardTitle>
-          <CardDescription className="text-center">
+          <CardDescription className="text-center text-[#6a6a6a]">
             Enter your password to access the admin panel
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label
+                htmlFor="password"
+                className="text-sm font-medium text-[#222222]"
+              >
+                Password
+              </Label>
               <Input
                 id="password"
                 type="password"
@@ -67,7 +74,7 @@ export default function LoginPage() {
               />
             </div>
             {error && (
-              <div className="text-sm text-red-600 bg-red-50 p-3 rounded">
+              <div className="text-sm text-[#c13515] bg-red-50 p-3 rounded-airbnb border border-red-100">
                 {error}
               </div>
             )}
@@ -75,9 +82,9 @@ export default function LoginPage() {
               Login
             </Button>
           </form>
-          <div className="mt-6 text-xs text-gray-500 text-center space-y-1">
-            <p>💡 Hint:</p>
-            <p>Admin: Full access (view & edit)</p>
+          <div className="mt-6 text-xs text-[#6a6a6a] text-center space-y-1">
+            <p className="font-medium">Hint:</p>
+            <p>Admin: Full access (view &amp; edit)</p>
             <p>Viewer: Read-only access</p>
           </div>
         </CardContent>

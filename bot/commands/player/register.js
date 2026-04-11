@@ -7,7 +7,7 @@ const {
   deletePlayerByNumber,
 } = require('../../../api/services/player-service');
 
-const bot = require('../../bot');
+const bot = require('../../telegram-client');
 
 const registerCommand = () => {
   bot.onText(/^\/register$/, msg => {

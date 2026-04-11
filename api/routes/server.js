@@ -1,16 +1,34 @@
 const http = require('http');
 const { URL } = require('url');
-const { getAllPlayers } = require('./players');
+const fs = require('fs');
+const nodePath = require('path');
+
+const BOT_STORAGE_FILE = nodePath.resolve(
+  process.cwd(),
+  process.env.BOT_STATE_FILE ||
+    nodePath.join(__dirname, '../../.runtime/bot/storage.json')
+);
+const {
+  getAllPlayers,
+  getPlayerByNumber,
+  updatePlayerByNumber,
+} = require('./players');
 const {
   registerPlayerForAnother,
   deletePlayerByNumber,
 } = require('../services/player-service');
 const { getMultiplePlayerStats } = require('../services/leaderboard-service');
-const { listMatches, getMatchWithPlayers } = require('./matches');
+const {
+  createMatch,
+  deleteMatchByDate,
+  getMatchWithPlayers,
+  listMatches,
+  updateMatchByDate,
+} = require('./matches');
 const { updatePlayerStats } = require('./leaderboard');
 
 const DEFAULT_PORT = Number(
-  process.env.UI_API_PORT || process.env.PORT || 8787
+  process.env.API_PORT || process.env.UI_API_PORT || process.env.PORT || 8787
 );
 
 function readJson(req) {
@@ -74,7 +92,7 @@ function corsHeaders(req) {
       'Access-Control-Allow-Origin': origin,
       Vary: 'Origin',
       'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type,X-User-Role',
+      'Access-Control-Allow-Headers': 'Content-Type',
     };
   }
 
@@ -82,9 +100,53 @@ function corsHeaders(req) {
   return {};
 }
 
+function getInternalApiAuthToken() {
+  if (process.env.INTERNAL_API_AUTH_TOKEN) {
+    return process.env.INTERNAL_API_AUTH_TOKEN;
+  }
+
+  if (process.env.NODE_ENV !== 'production') {
+    return 'local-internal-api-token-change-me';
+  }
+
+  return null;
+}
+
+function getTrustedRole(req) {
+  const expectedToken = getInternalApiAuthToken();
+  const requestToken = req.headers['x-internal-api-auth'];
+
+  if (!expectedToken || requestToken !== expectedToken) {
+    return null;
+  }
+
+  const role = req.headers['x-admin-role'];
+  return role === 'admin' || role === 'viewer' ? role : null;
+}
+
 function isAdmin(req) {
-  const userRole = req.headers['x-user-role'];
-  return userRole === 'admin';
+  return getTrustedRole(req) === 'admin';
+}
+
+function isAuthenticated(req) {
+  return getTrustedRole(req) !== null;
+}
+
+function requireAuthenticated(req, res, headers) {
+  if (!isAuthenticated(req)) {
+    sendJson(
+      res,
+      401,
+      {
+        error: 'UNAUTHORIZED',
+        message: 'Authenticated admin session required',
+      },
+      headers
+    );
+    return false;
+  }
+
+  return true;
 }
 
 function requireAdmin(req, res, headers) {
@@ -151,10 +213,12 @@ function createUiApiServer({ getStatus }) {
     }
 
     if (path === '/api/settings' && req.method === 'GET') {
+      if (!requireAuthenticated(req, res, headers)) return;
       return sendJson(res, 200, settings, headers);
     }
 
     if (path === '/api/settings' && req.method === 'POST') {
+      if (!requireAdmin(req, res, headers)) return;
       try {
         const payload = (await readJson(req)) || {};
         if (typeof payload.maintenanceMode === 'boolean') {
@@ -175,7 +239,7 @@ function createUiApiServer({ getStatus }) {
       }
     }
 
-    // Players management API (for web console)
+    // Players management API (for admin UI)
     if (path === '/api/players' && req.method === 'GET') {
       try {
         const players = await getAllPlayers();
@@ -273,6 +337,67 @@ function createUiApiServer({ getStatus }) {
       }
     }
 
+    if (path.startsWith('/api/players/') && req.method === 'GET') {
+      const numStr = path.slice('/api/players/'.length);
+      const number = Number(numStr);
+
+      if (!Number.isInteger(number) || number <= 0) {
+        return sendJson(res, 400, { error: 'INVALID_NUMBER' }, headers);
+      }
+
+      try {
+        const player = await getPlayerByNumber(number);
+        if (!player) {
+          return sendJson(res, 404, { error: 'NOT_FOUND' }, headers);
+        }
+
+        return sendJson(res, 200, player, headers);
+      } catch (e) {
+        console.error('Error fetching player via UI API:', e);
+        return sendJson(res, 500, { error: 'Failed to fetch player' }, headers);
+      }
+    }
+
+    if (path.startsWith('/api/players/') && req.method === 'PUT') {
+      if (!requireAdmin(req, res, headers)) return;
+
+      const numStr = path.slice('/api/players/'.length);
+      const number = Number(numStr);
+
+      if (!Number.isInteger(number) || number <= 0) {
+        return sendJson(res, 400, { error: 'INVALID_NUMBER' }, headers);
+      }
+
+      try {
+        const payload = (await readJson(req)) || {};
+        const updates = {};
+
+        if (Object.prototype.hasOwnProperty.call(payload, 'name')) {
+          updates.name =
+            typeof payload.name === 'string'
+              ? payload.name.trim()
+              : payload.name;
+        }
+        if (Object.prototype.hasOwnProperty.call(payload, 'username')) {
+          updates.username =
+            payload.username == null || payload.username === ''
+              ? null
+              : String(payload.username);
+        }
+
+        const player = await updatePlayerByNumber(number, updates);
+        return sendJson(res, 200, player, headers);
+      } catch (e) {
+        console.error('Error updating player via UI API:', e);
+        return sendJson(
+          res,
+          500,
+          { error: 'Failed to update player' },
+          headers
+        );
+      }
+    }
+
     if (path.startsWith('/api/players/') && req.method === 'DELETE') {
       if (!requireAdmin(req, res, headers)) return;
 
@@ -354,6 +479,90 @@ function createUiApiServer({ getStatus }) {
       }
     }
 
+    if (path === '/api/matches' && req.method === 'POST') {
+      if (!requireAdmin(req, res, headers)) return;
+
+      try {
+        const payload = (await readJson(req)) || {};
+        const matchDate =
+          typeof payload.match_date === 'string' ? payload.match_date : '';
+
+        if (!matchDate) {
+          return sendJson(res, 400, { error: 'INVALID_MATCH_DATE' }, headers);
+        }
+
+        const match = await createMatch({
+          matchDate,
+          san: payload.san ?? null,
+          tiensan: payload.tiensan ?? null,
+          homeScore: payload.home_score ?? null,
+          awayScore: payload.away_score ?? null,
+          notes: payload.notes ?? null,
+        });
+
+        return sendJson(res, 201, match, headers);
+      } catch (e) {
+        console.error('Error creating match via UI API:', e);
+        return sendJson(res, 500, { error: 'Failed to create match' }, headers);
+      }
+    }
+
+    if (path.startsWith('/api/matches/') && req.method === 'PUT') {
+      if (!requireAdmin(req, res, headers)) return;
+
+      const matchDate = path.slice('/api/matches/'.length);
+
+      try {
+        const payload = (await readJson(req)) || {};
+        const updates = {};
+
+        if (Object.prototype.hasOwnProperty.call(payload, 'san')) {
+          updates.san = payload.san ?? null;
+        }
+        if (Object.prototype.hasOwnProperty.call(payload, 'tiensan')) {
+          updates.tiensan = payload.tiensan ?? null;
+        }
+        if (Object.prototype.hasOwnProperty.call(payload, 'home_score')) {
+          updates.homeScore = payload.home_score ?? null;
+        }
+        if (Object.prototype.hasOwnProperty.call(payload, 'away_score')) {
+          updates.awayScore = payload.away_score ?? null;
+        }
+        if (Object.prototype.hasOwnProperty.call(payload, 'notes')) {
+          updates.notes = payload.notes ?? null;
+        }
+
+        const match = await updateMatchByDate(matchDate, updates);
+
+        if (!match) {
+          return sendJson(res, 404, { error: 'NOT_FOUND' }, headers);
+        }
+
+        return sendJson(res, 200, match, headers);
+      } catch (e) {
+        console.error('Error updating match via UI API:', e);
+        return sendJson(res, 500, { error: 'Failed to update match' }, headers);
+      }
+    }
+
+    if (path.startsWith('/api/matches/') && req.method === 'DELETE') {
+      if (!requireAdmin(req, res, headers)) return;
+
+      const matchDate = path.slice('/api/matches/'.length);
+
+      try {
+        const deleted = await deleteMatchByDate(matchDate);
+        if (!deleted) {
+          return sendJson(res, 404, { error: 'NOT_FOUND' }, headers);
+        }
+
+        return sendJson(res, 200, { ok: true }, headers);
+      } catch (e) {
+        console.error('Error deleting match via UI API:', e);
+        return sendJson(res, 500, { error: 'Failed to delete match' }, headers);
+      }
+    }
+
     // Leaderboard API
     if (path.startsWith('/api/leaderboard/') && req.method === 'PUT') {
       if (!requireAdmin(req, res, headers)) return;
@@ -375,6 +584,189 @@ function createUiApiServer({ getStatus }) {
           res,
           500,
           { error: 'Failed to update leaderboard entry' },
+          headers
+        );
+      }
+    }
+
+    // Bot Storage API
+    const DEFAULT_BOT_STORAGE = {
+      bench: [],
+      teamA: [],
+      teamB: [],
+      team3A: [],
+      team3B: [],
+      team3C: [],
+      tiensan: 0,
+      tiennuoc: 0,
+      teamThua: null,
+      activeVote: null,
+      lastUpdated: null,
+    };
+
+    if (path === '/api/bot-storage' && req.method === 'GET') {
+      if (!requireAuthenticated(req, res, headers)) return;
+      try {
+        if (!fs.existsSync(BOT_STORAGE_FILE)) {
+          return sendJson(res, 200, DEFAULT_BOT_STORAGE, headers);
+        }
+        const raw = fs.readFileSync(BOT_STORAGE_FILE, 'utf8');
+        return sendJson(res, 200, JSON.parse(raw), headers);
+      } catch (e) {
+        console.error('Error reading bot storage:', e);
+        return sendJson(
+          res,
+          500,
+          { error: 'Failed to read bot storage' },
+          headers
+        );
+      }
+    }
+
+    if (path === '/api/bot-storage' && req.method === 'POST') {
+      if (!requireAdmin(req, res, headers)) return;
+      try {
+        const payload = (await readJson(req)) || {};
+        fs.mkdirSync(nodePath.dirname(BOT_STORAGE_FILE), { recursive: true });
+        const vietnamOffset = 7 * 60;
+        const localOffset = new Date().getTimezoneOffset();
+        const now = new Date(
+          Date.now() + (vietnamOffset + localOffset) * 60000
+        );
+        const toSave = {
+          ...DEFAULT_BOT_STORAGE,
+          ...payload,
+          lastUpdated: now.toISOString().replace('Z', '+07:00'),
+        };
+        fs.writeFileSync(
+          BOT_STORAGE_FILE,
+          JSON.stringify(toSave, null, 2),
+          'utf8'
+        );
+        return sendJson(res, 200, toSave, headers);
+      } catch (e) {
+        console.error('Error saving bot storage:', e);
+        return sendJson(
+          res,
+          500,
+          { error: 'Failed to save bot storage' },
+          headers
+        );
+      }
+    }
+
+    if (path === '/api/bot-storage/reset' && req.method === 'POST') {
+      if (!requireAdmin(req, res, headers)) return;
+      try {
+        fs.mkdirSync(nodePath.dirname(BOT_STORAGE_FILE), { recursive: true });
+        fs.writeFileSync(
+          BOT_STORAGE_FILE,
+          JSON.stringify(DEFAULT_BOT_STORAGE, null, 2),
+          'utf8'
+        );
+        return sendJson(res, 200, DEFAULT_BOT_STORAGE, headers);
+      } catch (e) {
+        console.error('Error resetting bot storage:', e);
+        return sendJson(
+          res,
+          500,
+          { error: 'Failed to reset bot storage' },
+          headers
+        );
+      }
+    }
+
+    if (path === '/api/bot-storage/sync' && req.method === 'POST') {
+      if (!requireAdmin(req, res, headers)) return;
+      try {
+        if (!fs.existsSync(BOT_STORAGE_FILE)) {
+          return sendJson(
+            res,
+            404,
+            { error: 'No storage file found' },
+            headers
+          );
+        }
+        const raw = fs.readFileSync(BOT_STORAGE_FILE, 'utf8');
+        const storage = JSON.parse(raw);
+
+        const activeVote = storage.activeVote;
+        if (!activeVote) {
+          return sendJson(res, 400, { error: 'NO_ACTIVE_VOTE' }, headers);
+        }
+
+        const benchMap = new Map(storage.bench || []);
+        const voters = Object.values(activeVote.votes || {});
+        let addedCount = 0;
+        let skippedCount = 0;
+        const addedNames = [];
+        const skippedNames = [];
+
+        voters.forEach(voter => {
+          const userId = voter.id;
+          const userName = voter.name;
+          const voteOption = voter.options[0];
+
+          if (voteOption === 0) return;
+
+          if (benchMap.has(userId)) {
+            skippedCount++;
+            skippedNames.push(userName);
+          } else {
+            benchMap.set(userId, { name: userName, userId });
+            addedCount++;
+            addedNames.push(userName);
+          }
+
+          if (voteOption >= 2) {
+            const friendsCount = voteOption - 1;
+            for (let i = 1; i <= friendsCount; i++) {
+              const friendName = `${userName} ${i}`;
+              const friendId = `${userId}_friend_${i}`;
+              if (benchMap.has(friendId)) {
+                skippedCount++;
+                skippedNames.push(friendName);
+              } else {
+                benchMap.set(friendId, { name: friendName });
+                addedCount++;
+                addedNames.push(friendName);
+              }
+            }
+          }
+        });
+
+        storage.bench = Array.from(benchMap.entries());
+        const vietnamOffset = 7 * 60;
+        const localOffset = new Date().getTimezoneOffset();
+        const now = new Date(
+          Date.now() + (vietnamOffset + localOffset) * 60000
+        );
+        storage.lastUpdated = now.toISOString().replace('Z', '+07:00');
+        fs.writeFileSync(
+          BOT_STORAGE_FILE,
+          JSON.stringify(storage, null, 2),
+          'utf8'
+        );
+
+        return sendJson(
+          res,
+          200,
+          {
+            ok: true,
+            addedCount,
+            skippedCount,
+            addedNames,
+            skippedNames,
+            storage,
+          },
+          headers
+        );
+      } catch (e) {
+        console.error('Error syncing bot storage:', e);
+        return sendJson(
+          res,
+          500,
+          { error: 'Failed to sync from vote' },
           headers
         );
       }

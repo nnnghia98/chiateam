@@ -15,7 +15,7 @@ Render.com offers a **free Web Service tier** — no credit card required, no su
    - **Branch:** `main` (or your deploy branch)
    - **Runtime:** Node
    - **Build Command:** `yarn install`
-   - **Start Command:** `yarn start:production`
+   - **Start Command:** `yarn start:bot`
    - **Plan:** Free
 
 ## Set Environment Variables
@@ -35,7 +35,9 @@ In Render dashboard → your service → **Environment** tab, add all vars:
 | `STATISTICS_THREAD_ID` | `52` |
 | `DATABASE_URL` | Supabase connection string (URL-encode `@`→`%40`, `!`→`%21` in password) |
 | `GEMINI_API_KEY` | AI Studio key (optional) |
-| `WEB_UI_URL` | Vercel URL (for CORS) |
+| `ADMIN_UI_URL` | Admin app URL (for CORS) |
+| `INTERNAL_API_AUTH_TOKEN` | Shared token for trusted admin proxy calls |
+| `BOT_STATE_FILE` | Optional runtime state path (default: `.runtime/bot/storage.json`) |
 
 ## Deploy
 

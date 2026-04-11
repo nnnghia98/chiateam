@@ -2,7 +2,7 @@ const { sendMessage } = require('../../utils/chat');
 const { requireAdmin } = require('../../utils/permissions');
 const { RESET } = require('../../utils/messages');
 
-const bot = require('../../bot');
+const bot = require('../../telegram-client');
 
 const resetCommand = ({ resetAll }) => {
   bot.onText(/^\/reset$/, msg => {

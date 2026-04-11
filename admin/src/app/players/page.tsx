@@ -123,15 +123,19 @@ export default function PlayersPage() {
   };
 
   if (loading) {
-    return <div className="text-center py-8">Loading...</div>;
+    return (
+      <div className="text-center py-8 text-[#6a6a6a] text-sm">Loading...</div>
+    );
   }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Players Management</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-3xl font-bold text-[#222222] tracking-tight">
+            Players Management
+          </h1>
+          <p className="text-[#6a6a6a] mt-1 text-sm">
             {canEdit
               ? 'View and manage registered players'
               : 'View registered players (read-only)'}
@@ -238,11 +242,11 @@ export default function PlayersPage() {
                   </TableCell>
                   <TableCell>{player.name}</TableCell>
                   <TableCell>{player.username || '-'}</TableCell>
-                  <TableCell className="text-sm text-gray-500">
+                  <TableCell className="text-sm text-[#6a6a6a]">
                     {player.user_id}
                   </TableCell>
                   <TableCell
-                    className="text-sm text-gray-500"
+                    className="text-sm text-[#6a6a6a]"
                     suppressHydrationWarning
                   >
                     {new Date(player.created_at).toLocaleDateString()}

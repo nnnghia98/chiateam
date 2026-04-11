@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Match } from '@/types/match';
 import { apiClient } from '@/lib/api-client';
+import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -24,6 +25,7 @@ import {
 import { Plus, Pencil, Trash2, X } from 'lucide-react';
 
 export default function MatchesPage() {
+  const { canEdit } = useAuth();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingMatch, setEditingMatch] = useState<Match | null>(null);
@@ -154,17 +156,25 @@ export default function MatchesPage() {
   };
 
   if (loading) {
-    return <div className="text-center py-8">Loading...</div>;
+    return (
+      <div className="text-center py-8 text-[#6a6a6a] text-sm">Loading...</div>
+    );
   }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Matches Management</h1>
-          <p className="text-gray-600 mt-1">View and manage match records</p>
+          <h1 className="text-3xl font-bold text-[#222222] tracking-tight">
+            Matches Management
+          </h1>
+          <p className="text-[#6a6a6a] mt-1 text-sm">
+            {canEdit
+              ? 'View and manage match records'
+              : 'View match records (read-only)'}
+          </p>
         </div>
-        {!isCreating && !editingMatch && (
+        {canEdit && !isCreating && !editingMatch && (
           <Button onClick={startCreate}>
             <Plus className="w-4 h-4 mr-2" />
             Add Match
@@ -172,7 +182,7 @@ export default function MatchesPage() {
         )}
       </div>
 
-      {(isCreating || editingMatch) && (
+      {canEdit && (isCreating || editingMatch) && (
         <Card>
           <CardHeader>
             <CardTitle>
@@ -284,7 +294,9 @@ export default function MatchesPage() {
                 <TableHead>Score</TableHead>
                 <TableHead>Field Fee</TableHead>
                 <TableHead>Notes</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                {canEdit && (
+                  <TableHead className="text-right">Actions</TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -303,24 +315,26 @@ export default function MatchesPage() {
                   <TableCell className="max-w-xs truncate">
                     {match.notes || '-'}
                   </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => startEdit(match)}
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDelete(match.match_date)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+                  {canEdit && (
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => startEdit(match)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDelete(match.match_date)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>

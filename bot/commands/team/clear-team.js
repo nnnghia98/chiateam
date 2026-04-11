@@ -4,7 +4,7 @@ const { sendMessage } = require('../../utils/chat');
 const { requireAdmin } = require('../../utils/permissions');
 const { escapeMarkdown } = require('../../utils/format');
 
-const bot = require('../../bot');
+const bot = require('../../telegram-client');
 
 const clearTeamCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
   // Helper: Get the correct team based on mode (2 or 3) and team type

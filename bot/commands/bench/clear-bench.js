@@ -4,7 +4,7 @@ const { sendMessage } = require('../../utils/chat');
 const { requireAdmin } = require('../../utils/permissions');
 const { escapeMarkdown } = require('../../utils/format');
 
-const bot = require('../../bot');
+const bot = require('../../telegram-client');
 
 const clearBenchCommand = ({ members }) => {
   bot.onText(/^\/clearbench$/, msg => {

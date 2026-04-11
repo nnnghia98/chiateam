@@ -5,7 +5,7 @@ const {
 const { sendMessage } = require('../../utils/chat');
 const { requireAdmin } = require('../../utils/permissions');
 
-const bot = require('../../bot');
+const bot = require('../../telegram-client');
 
 const editStatsCommand = () => {
   // Handle command with parameters

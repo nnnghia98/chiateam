@@ -63,7 +63,6 @@ if [ $? -eq 0 ]; then
     echo "========================================="
     echo ""
     echo "🌐 Bot API: http://${SERVER_HOST}/api/status"
-    echo "🌐 Web UI: http://${SERVER_HOST}"
     echo ""
     echo "To view logs:"
     echo "  ssh ${SERVER_USER}@${SERVER_HOST} 'pm2 logs chiateam'"

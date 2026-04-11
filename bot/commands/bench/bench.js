@@ -2,7 +2,7 @@ const { getDisplayName } = require('../../utils/team-member');
 const { BENCH } = require('../../utils/messages');
 const { sendMessage } = require('../../utils/chat');
 
-const bot = require('../../bot');
+const bot = require('../../telegram-client');
 
 const benchCommand = ({ members }) => {
   bot.onText(/^\/bench$/, msg => {
