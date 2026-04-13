@@ -6,6 +6,8 @@ The bot uses a persistent JSON file to keep next-match roster and team state acr
 
 The default runtime file is `.runtime/bot/storage.json`. You can override it with `BOT_STATE_FILE`, but the data still belongs in that file-backed state.
 
+`activeVote` is the exception: it is mirrored into the PostgreSQL `current_match` table so Telegram poll tracking survives Railway redeploys.
+
 Before risky implementation or deployment work, back up the file first so it can be restored if needed.
 
 ## Persisted Data
@@ -21,6 +23,7 @@ The following data is now saved to disk:
 7. **tiensan** - Field rental cost
 8. **tiennuoc** - Water cost
 9. **teamThua** - Which team lost the match
+10. **activeVote** - Stored in both runtime state and PostgreSQL `current_match`
 
 ## File Structure
 
@@ -35,6 +38,7 @@ The following data is now saved to disk:
   "tiensan": 0,
   "tiennuoc": 0,
   "teamThua": "HOME" | "AWAY" | null,
+  "activeVote": null,
   "lastUpdated": "2026-03-28T10:30:00.000Z"
 }
 ```
@@ -64,6 +68,7 @@ The storage system automatically saves to disk whenever:
 - Field cost (tiensan) is updated
 - Water cost (tiennuoc) is updated
 - Team loss status (teamThua) is changed
+- Poll state (activeVote) is changed
 
 ## Files
 
@@ -119,7 +124,7 @@ setTiensan(600000);
 The bot will automatically:
 
 1. Look for existing runtime storage on startup
-2. Load data if found
+2. Overlay `activeVote` from PostgreSQL `current_match` when available
 3. Use default values if not found
 4. Create the file on first data change
 
