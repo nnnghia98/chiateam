@@ -1,4 +1,4 @@
-# ChiaTeam Admin
+# Chiateam Admin
 
 Next.js admin UI for viewing and managing players, matches, and leaderboard data.
 

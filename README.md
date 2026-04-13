@@ -35,6 +35,7 @@ Important root variables:
 - `DATABASE_URL`
 - `API_PORT`
 - `BOT_STATE_FILE`
+- `BOT_API_BASE_URL` when the bot runs separately from the API
 - `INTERNAL_API_AUTH_TOKEN`
 - `ADMIN_UI_URL`
 
@@ -61,11 +62,13 @@ The API does not trust browser-supplied role headers.
 
 ## Bot State
 
-Ephemeral team state is stored outside tracked source files.
+Persistent next-match state is stored outside tracked source files and must always live in the bot state file.
 
 - Default runtime file: `.runtime/bot/storage.json`
 - Override path with `BOT_STATE_FILE`
 - Example shape: `bot/storage.json.example`
+
+Before implementation or deployment work that could affect this file, take a backup and restore it if needed.
 
 ## Project Notes
 

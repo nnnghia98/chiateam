@@ -41,6 +41,13 @@ refactor(bot): extract common utils for commands
 docs(root): add git commit conventions
 ```
 
+## Persistent Bot Storage
+
+- `.runtime/bot/storage.json` (via `BOT_STATE_FILE`) is persistent state.
+- Next-match data must always stay in that JSON file.
+- Before risky changes to that data, make a backup and restore it if needed.
+- Do not migrate next-match data anywhere else unless the user explicitly approves that storage change.
+
 ---
 
 ## Trigger: "commit code"

@@ -33,7 +33,7 @@ export default function Home() {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold text-[#222222] tracking-tight">
-          ChiaTeam Admin
+          Chiateam Admin
         </h1>
         <p className="text-[#6a6a6a] mt-2 text-sm">
           Manage your football team data

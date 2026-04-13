@@ -49,7 +49,7 @@ export default function LoginPage() {
             </div>
           </div>
           <CardTitle className="text-2xl text-center text-[#222222] font-bold tracking-tight">
-            ChiaTeam Admin
+            Chiateam Admin
           </CardTitle>
           <CardDescription className="text-center text-[#6a6a6a]">
             Enter your password to access the admin panel

@@ -1,4 +1,4 @@
-# ChiaTeam Admin - Deployment Guide
+# Chiateam Admin - Deployment Guide
 
 Deploy the admin app as a separate Next.js service with server-side env vars.
 
