@@ -1,11 +1,13 @@
 const fs = require('fs');
 const path = require('path');
+const { db } = require('../db/config');
 
 const BOT_STORAGE_FILE = path.resolve(
   process.cwd(),
   process.env.BOT_STATE_FILE ||
     path.join(__dirname, '../../.runtime/bot/storage.json')
 );
+const CURRENT_MATCH_ROW_ID = 1;
 
 function createDefaultBotStorage() {
   return {
@@ -38,7 +40,7 @@ function ensureStorageDirectory() {
   fs.mkdirSync(path.dirname(BOT_STORAGE_FILE), { recursive: true });
 }
 
-function readBotStorage() {
+function readBotStorageFile() {
   if (!fs.existsSync(BOT_STORAGE_FILE)) {
     return createDefaultBotStorage();
   }
@@ -47,7 +49,7 @@ function readBotStorage() {
   return JSON.parse(raw);
 }
 
-function writeBotStorage(payload) {
+function writeBotStorageFile(payload) {
   ensureStorageDirectory();
   const toSave = {
     ...createDefaultBotStorage(),
@@ -59,7 +61,7 @@ function writeBotStorage(payload) {
   return toSave;
 }
 
-function resetBotStorage() {
+function resetBotStorageFile() {
   ensureStorageDirectory();
   const defaultStorage = createDefaultBotStorage();
   fs.writeFileSync(
@@ -70,16 +72,90 @@ function resetBotStorage() {
   return defaultStorage;
 }
 
-function syncBotStorageFromVote() {
-  if (!fs.existsSync(BOT_STORAGE_FILE)) {
-    return {
-      ok: false,
-      statusCode: 404,
-      body: { error: 'No storage file found' },
-    };
+async function ensureCurrentMatchTable() {
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS current_match (
+      id SMALLINT PRIMARY KEY CHECK (id = 1),
+      active_vote JSONB,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+}
+
+async function readActiveVoteFromDb() {
+  if (!process.env.DATABASE_URL) {
+    return null;
   }
 
-  const storage = JSON.parse(fs.readFileSync(BOT_STORAGE_FILE, 'utf8'));
+  await ensureCurrentMatchTable();
+  const result = await db.query(
+    'SELECT active_vote FROM current_match WHERE id = $1',
+    [CURRENT_MATCH_ROW_ID]
+  );
+
+  return result.rows[0]?.active_vote ?? null;
+}
+
+async function writeActiveVoteToDb(activeVote) {
+  if (!process.env.DATABASE_URL) {
+    return;
+  }
+
+  await ensureCurrentMatchTable();
+  await db.query(
+    `
+      INSERT INTO current_match (id, active_vote, updated_at)
+      VALUES ($1, $2::jsonb, NOW())
+      ON CONFLICT (id)
+      DO UPDATE SET
+        active_vote = EXCLUDED.active_vote,
+        updated_at = NOW()
+    `,
+    [CURRENT_MATCH_ROW_ID, JSON.stringify(activeVote)]
+  );
+}
+
+async function readBotStorage() {
+  const storage = readBotStorageFile();
+
+  try {
+    const activeVote = await readActiveVoteFromDb();
+    return {
+      ...storage,
+      activeVote,
+    };
+  } catch (error) {
+    console.error('❌ Failed to load activeVote from current_match:', error);
+    return storage;
+  }
+}
+
+async function writeBotStorage(payload) {
+  const toSave = writeBotStorageFile(payload);
+
+  try {
+    await writeActiveVoteToDb(toSave.activeVote ?? null);
+  } catch (error) {
+    console.error('❌ Failed to save activeVote to current_match:', error);
+  }
+
+  return toSave;
+}
+
+async function resetBotStorage() {
+  const defaultStorage = resetBotStorageFile();
+
+  try {
+    await writeActiveVoteToDb(null);
+  } catch (error) {
+    console.error('❌ Failed to clear activeVote in current_match:', error);
+  }
+
+  return defaultStorage;
+}
+
+async function syncBotStorageFromVote() {
+  const storage = await readBotStorage();
   const activeVote = storage.activeVote;
 
   if (!activeVote) {
@@ -132,8 +208,7 @@ function syncBotStorageFromVote() {
 
   storage.bench = Array.from(benchMap.entries());
   storage.lastUpdated = getCurrentVietnamTimestamp();
-
-  fs.writeFileSync(BOT_STORAGE_FILE, JSON.stringify(storage, null, 2), 'utf8');
+  await writeBotStorage(storage);
 
   return {
     ok: true,
@@ -152,6 +227,7 @@ function syncBotStorageFromVote() {
 module.exports = {
   createDefaultBotStorage,
   getBotStorageFilePath,
+  ensureCurrentMatchTable,
   readBotStorage,
   writeBotStorage,
   resetBotStorage,

@@ -1,4 +1,5 @@
 const { db } = require('./config');
+const { ensureCurrentMatchTable } = require('../services/bot-storage-service');
 
 /**
  * Verify Supabase connection.
@@ -7,7 +8,9 @@ const { db } = require('./config');
 async function initDatabase() {
   try {
     const result = await db.query('SELECT NOW() AS now');
+    await ensureCurrentMatchTable();
     console.log('✅ Supabase connection successful. Server time:', result.rows[0].now);
+    console.log('✅ Ensured current_match table exists');
   } catch (err) {
     console.error('❌ Failed to connect to Supabase:', err);
     throw err;

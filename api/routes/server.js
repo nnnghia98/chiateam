@@ -608,7 +608,7 @@ function createUiApiServer({ getStatus }) {
     if (path === '/api/bot-storage' && req.method === 'GET') {
       if (!requireAuthenticated(req, res, headers)) return;
       try {
-        return sendJson(res, 200, readBotStorage(), headers);
+        return sendJson(res, 200, await readBotStorage(), headers);
       } catch (e) {
         console.error('Error reading bot storage:', e);
         return sendJson(
@@ -624,7 +624,7 @@ function createUiApiServer({ getStatus }) {
       if (!requireAdmin(req, res, headers)) return;
       try {
         const payload = (await readJson(req)) || {};
-        const toSave = writeBotStorage(payload);
+        const toSave = await writeBotStorage(payload);
         return sendJson(res, 200, toSave, headers);
       } catch (e) {
         console.error('Error saving bot storage:', e);
@@ -640,7 +640,7 @@ function createUiApiServer({ getStatus }) {
     if (path === '/api/bot-storage/reset' && req.method === 'POST') {
       if (!requireAdmin(req, res, headers)) return;
       try {
-        return sendJson(res, 200, resetBotStorage(), headers);
+        return sendJson(res, 200, await resetBotStorage(), headers);
       } catch (e) {
         console.error('Error resetting bot storage:', e);
         return sendJson(
@@ -655,7 +655,7 @@ function createUiApiServer({ getStatus }) {
     if (path === '/api/bot-storage/sync' && req.method === 'POST') {
       if (!requireAdmin(req, res, headers)) return;
       try {
-        const result = syncBotStorageFromVote();
+        const result = await syncBotStorageFromVote();
         if (!result.ok) {
           return sendJson(
             res,
