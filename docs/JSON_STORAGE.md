@@ -2,7 +2,11 @@
 
 ## Overview
 
-The bot uses a JSON file to persist roster and team state across restarts. Previously, all data was stored in memory and would be lost when the process restarted.
+The bot uses a persistent JSON file to keep next-match roster and team state across restarts. The file is owned by the bot runtime, and next-match data must always stay in it.
+
+The default runtime file is `.runtime/bot/storage.json`. You can override it with `BOT_STATE_FILE`, but the data still belongs in that file-backed state.
+
+Before risky implementation or deployment work, back up the file first so it can be restored if needed.
 
 ## Persisted Data
 
@@ -19,8 +23,6 @@ The following data is now saved to disk:
 9. **teamThua** - Which team lost the match
 
 ## File Structure
-
-The default runtime file is `.runtime/bot/storage.json`. You can override it with `BOT_STATE_FILE`.
 
 ```json
 {
@@ -112,7 +114,7 @@ const currentCost = getTiensan();
 setTiensan(600000);
 ```
 
-## Migration from In-Memory Storage
+## Runtime Behavior
 
 The bot will automatically:
 
@@ -147,8 +149,8 @@ Check that:
 ### Corrupted storage.json
 
 1. Stop the bot
-2. Delete the runtime storage file
-3. Optionally copy `bot/storage.json.example` to the configured storage path
+2. Restore the runtime storage file from a backup
+3. If no backup exists, optionally copy `bot/storage.json.example` to the configured storage path
 4. Restart the bot
 
 ### Manual data editing
@@ -158,3 +160,5 @@ You can manually edit the runtime storage file while the bot is stopped:
 - Ensure valid JSON format
 - Use proper array format for Map data: `[[key, value], ...]`
 - Restart the bot to load changes
+
+If the file is being changed for implementation or deployment work, make a backup first so the persistent next-match state can be restored exactly.

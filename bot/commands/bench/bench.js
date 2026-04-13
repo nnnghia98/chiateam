@@ -4,8 +4,22 @@ const { sendMessage } = require('../../utils/chat');
 
 const bot = require('../../telegram-client');
 
-const benchCommand = ({ members }) => {
-  bot.onText(/^\/bench$/, msg => {
+const benchCommand = ({ members, refreshFromSource }) => {
+  bot.onText(/^\/bench$/, async msg => {
+    if (typeof refreshFromSource === 'function') {
+      try {
+        await refreshFromSource();
+      } catch (error) {
+        console.error('❌ [bench] Failed to refresh bot storage from API:', error);
+        await sendMessage({
+          msg,
+          type: 'DEFAULT',
+          message: '❌ Không thể tải bench hiện tại từ API.',
+        });
+        return;
+      }
+    }
+
     if (members.size === 0) {
       sendMessage({
         msg,

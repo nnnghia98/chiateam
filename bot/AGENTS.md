@@ -16,7 +16,7 @@ The active runtime starts at [index.js](/Users/nnnghia98/Projects/chiateam-bot/b
   Dev-only HTTP command bridge used for local testing.
 
 - [storage.json.example](/Users/nnnghia98/Projects/chiateam-bot/bot/storage.json.example)
-  Example persisted-state shape. Real runtime state is stored via `BOT_STATE_FILE`, not in this folder.
+  Example persisted-state shape. Real runtime state lives in `.runtime/bot/storage.json` via `BOT_STATE_FILE`.
 
 - [chamhet.db](/Users/nnnghia98/Projects/chiateam-bot/bot/chamhet.db)
   Legacy local artifact. Do not treat it as the active runtime database unless a task explicitly says to.
@@ -60,7 +60,7 @@ Use these folders as the first place to look:
 ## Shared Utilities
 
 - [utils/storage.js](/Users/nnnghia98/Projects/chiateam-bot/bot/utils/storage.js)
-  Shared mutable runtime state for bench, teams, costs, votes, and reset behavior.
+  Shared mutable runtime state for bench, teams, costs, votes, and reset behavior. Treat `.runtime/bot/storage.json` as persistent state, keep next-match data there, and back it up before risky changes.
 
 - [utils/chat.js](/Users/nnnghia98/Projects/chiateam-bot/bot/utils/chat.js)
   Message sending helpers.
@@ -87,3 +87,4 @@ Use these folders as the first place to look:
 - If a change touches bench/team/vote/cost state, inspect [utils/storage.js](/Users/nnnghia98/Projects/chiateam-bot/bot/utils/storage.js) before editing command code.
 - Reuse helpers from `utils/` instead of duplicating formatting, validation, or permission logic.
 - Do not add runtime writes to tracked files inside `bot/`. Persisted state belongs in `BOT_STATE_FILE`.
+- Do not move next-match data out of `.runtime/bot/storage.json` unless the user explicitly approves that storage change.

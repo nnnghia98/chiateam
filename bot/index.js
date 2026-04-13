@@ -90,47 +90,52 @@ if (bot) {
   });
 }
 
-// Initialize persistent storage (loads from BOT_STATE_FILE if it exists)
-const storage = initializeStorage();
-const { bench: members, teamA, teamB, team3A, team3B, team3C } = storage;
-const getTiensan = storage.getTiensan;
-const setTiensan = storage.setTiensan;
-const getTiennuoc = storage.getTiennuoc;
-const setTiennuoc = storage.setTiennuoc;
-const getTeamThua = storage.getTeamThua;
-const setTeamThua = storage.setTeamThua;
-const getActiveVote = storage.getActiveVote;
-const setActiveVote = storage.setActiveVote;
-const resetAll = storage.resetAll;
+async function bootstrapBot() {
+  // Initialize persistent storage through the API before commands start.
+  const storage = await initializeStorage();
+  const { bench: members, teamA, teamB, team3A, team3B, team3C } = storage;
+  const getTiensan = storage.getTiensan;
+  const setTiensan = storage.setTiensan;
+  const getTeamThua = storage.getTeamThua;
+  const getActiveVote = storage.getActiveVote;
+  const setActiveVote = storage.setActiveVote;
+  const refreshFromSource = storage.refreshFromSource;
+  const resetAll = storage.resetAll;
 
-startCommand();
-unknownCommand();
+  startCommand();
+  unknownCommand();
 
-addMeCommand({ members });
-chiateamCommand({ members, teamA, teamB, team3A, team3B, team3C });
-benchCommand({ members });
-clearBenchCommand({ members });
-addCommand({ members });
-teamCommand({ teamA, teamB, team3A, team3B, team3C });
-tiensanCommand(getTiensan, setTiensan);
-chiaTienCommand(getTiensan, getTeamThua, { teamA, teamB });
-taoVoteCommand({ members, getActiveVote, setActiveVote });
-sanCommand();
-leaderboardCommand();
-updateLeaderboardCommand();
-editStatsCommand();
-playerCommand();
-registerCommand();
-playersCommand();
-addToTeamCommand({ members, teamA, teamB, team3A, team3B, team3C });
-clearTeamCommand({ teamA, teamB, team3A, team3B, team3C });
-meCommand();
-matchCommand({ getTiensan, teamA, teamB, team3C });
-matchesCommand();
-resetCommand({ resetAll });
-aiCommand();
+  addMeCommand({ members });
+  chiateamCommand({ members, teamA, teamB, team3A, team3B, team3C });
+  benchCommand({ members, refreshFromSource });
+  clearBenchCommand({ members });
+  addCommand({ members });
+  teamCommand({ teamA, teamB, team3A, team3B, team3C });
+  tiensanCommand(getTiensan, setTiensan);
+  chiaTienCommand(getTiensan, getTeamThua, { teamA, teamB });
+  taoVoteCommand({ members, getActiveVote, setActiveVote });
+  sanCommand();
+  leaderboardCommand();
+  updateLeaderboardCommand();
+  editStatsCommand();
+  playerCommand();
+  registerCommand();
+  playersCommand();
+  addToTeamCommand({ members, teamA, teamB, team3A, team3B, team3C });
+  clearTeamCommand({ teamA, teamB, team3A, team3B, team3C });
+  meCommand();
+  matchCommand({ getTiensan, teamA, teamB, team3C });
+  matchesCommand();
+  resetCommand({ resetAll });
+  aiCommand();
 
-// Start HTTP test server in development mode
-startTestServer(bot);
+  // Start HTTP test server in development mode
+  startTestServer(bot);
 
-console.log('🤖 Bot is running...');
+  console.log('🤖 Bot is running...');
+}
+
+bootstrapBot().catch(error => {
+  console.error('❌ Failed to initialize bot storage:', error);
+  process.exit(1);
+});

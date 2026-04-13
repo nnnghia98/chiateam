@@ -1,13 +1,5 @@
 const http = require('http');
 const { URL } = require('url');
-const fs = require('fs');
-const nodePath = require('path');
-
-const BOT_STORAGE_FILE = nodePath.resolve(
-  process.cwd(),
-  process.env.BOT_STATE_FILE ||
-    nodePath.join(__dirname, '../../.runtime/bot/storage.json')
-);
 const {
   getAllPlayers,
   getPlayerByNumber,
@@ -17,6 +9,12 @@ const {
   registerPlayerForAnother,
   deletePlayerByNumber,
 } = require('../services/player-service');
+const {
+  readBotStorage,
+  writeBotStorage,
+  resetBotStorage,
+  syncBotStorageFromVote,
+} = require('../services/bot-storage-service');
 const { getMultiplePlayerStats } = require('../services/leaderboard-service');
 const {
   createMatch,
@@ -30,6 +28,22 @@ const { updatePlayerStats } = require('./leaderboard');
 const DEFAULT_PORT = Number(
   process.env.API_PORT || process.env.UI_API_PORT || process.env.PORT || 8787
 );
+
+function logRequest(req, res) {
+  const startedAt = Date.now();
+  const requestUrl = req.url || '/';
+  const clientIp =
+    req.headers['x-forwarded-for'] ||
+    req.socket?.remoteAddress ||
+    'unknown-ip';
+
+  res.on('finish', () => {
+    const durationMs = Date.now() - startedAt;
+    console.log(
+      `[API] ${req.method || 'UNKNOWN'} ${requestUrl} -> ${res.statusCode} (${durationMs}ms) ip=${clientIp}`
+    );
+  });
+}
 
 function readJson(req) {
   return new Promise((resolve, reject) => {
@@ -177,6 +191,7 @@ function createUiApiServer({ getStatus }) {
   };
 
   const server = http.createServer(async (req, res) => {
+    logRequest(req, res);
     const headers = corsHeaders(req);
 
     if (req.method === 'OPTIONS') {
@@ -590,28 +605,10 @@ function createUiApiServer({ getStatus }) {
     }
 
     // Bot Storage API
-    const DEFAULT_BOT_STORAGE = {
-      bench: [],
-      teamA: [],
-      teamB: [],
-      team3A: [],
-      team3B: [],
-      team3C: [],
-      tiensan: 0,
-      tiennuoc: 0,
-      teamThua: null,
-      activeVote: null,
-      lastUpdated: null,
-    };
-
     if (path === '/api/bot-storage' && req.method === 'GET') {
       if (!requireAuthenticated(req, res, headers)) return;
       try {
-        if (!fs.existsSync(BOT_STORAGE_FILE)) {
-          return sendJson(res, 200, DEFAULT_BOT_STORAGE, headers);
-        }
-        const raw = fs.readFileSync(BOT_STORAGE_FILE, 'utf8');
-        return sendJson(res, 200, JSON.parse(raw), headers);
+        return sendJson(res, 200, readBotStorage(), headers);
       } catch (e) {
         console.error('Error reading bot storage:', e);
         return sendJson(
@@ -627,22 +624,7 @@ function createUiApiServer({ getStatus }) {
       if (!requireAdmin(req, res, headers)) return;
       try {
         const payload = (await readJson(req)) || {};
-        fs.mkdirSync(nodePath.dirname(BOT_STORAGE_FILE), { recursive: true });
-        const vietnamOffset = 7 * 60;
-        const localOffset = new Date().getTimezoneOffset();
-        const now = new Date(
-          Date.now() + (vietnamOffset + localOffset) * 60000
-        );
-        const toSave = {
-          ...DEFAULT_BOT_STORAGE,
-          ...payload,
-          lastUpdated: now.toISOString().replace('Z', '+07:00'),
-        };
-        fs.writeFileSync(
-          BOT_STORAGE_FILE,
-          JSON.stringify(toSave, null, 2),
-          'utf8'
-        );
+        const toSave = writeBotStorage(payload);
         return sendJson(res, 200, toSave, headers);
       } catch (e) {
         console.error('Error saving bot storage:', e);
@@ -658,13 +640,7 @@ function createUiApiServer({ getStatus }) {
     if (path === '/api/bot-storage/reset' && req.method === 'POST') {
       if (!requireAdmin(req, res, headers)) return;
       try {
-        fs.mkdirSync(nodePath.dirname(BOT_STORAGE_FILE), { recursive: true });
-        fs.writeFileSync(
-          BOT_STORAGE_FILE,
-          JSON.stringify(DEFAULT_BOT_STORAGE, null, 2),
-          'utf8'
-        );
-        return sendJson(res, 200, DEFAULT_BOT_STORAGE, headers);
+        return sendJson(res, 200, resetBotStorage(), headers);
       } catch (e) {
         console.error('Error resetting bot storage:', e);
         return sendJson(
@@ -679,86 +655,19 @@ function createUiApiServer({ getStatus }) {
     if (path === '/api/bot-storage/sync' && req.method === 'POST') {
       if (!requireAdmin(req, res, headers)) return;
       try {
-        if (!fs.existsSync(BOT_STORAGE_FILE)) {
+        const result = syncBotStorageFromVote();
+        if (!result.ok) {
           return sendJson(
             res,
-            404,
-            { error: 'No storage file found' },
+            result.statusCode || 500,
+            result.body || { error: 'Failed to sync from vote' },
             headers
           );
         }
-        const raw = fs.readFileSync(BOT_STORAGE_FILE, 'utf8');
-        const storage = JSON.parse(raw);
-
-        const activeVote = storage.activeVote;
-        if (!activeVote) {
-          return sendJson(res, 400, { error: 'NO_ACTIVE_VOTE' }, headers);
-        }
-
-        const benchMap = new Map(storage.bench || []);
-        const voters = Object.values(activeVote.votes || {});
-        let addedCount = 0;
-        let skippedCount = 0;
-        const addedNames = [];
-        const skippedNames = [];
-
-        voters.forEach(voter => {
-          const userId = voter.id;
-          const userName = voter.name;
-          const voteOption = voter.options[0];
-
-          if (voteOption === 0) return;
-
-          if (benchMap.has(userId)) {
-            skippedCount++;
-            skippedNames.push(userName);
-          } else {
-            benchMap.set(userId, { name: userName, userId });
-            addedCount++;
-            addedNames.push(userName);
-          }
-
-          if (voteOption >= 2) {
-            const friendsCount = voteOption - 1;
-            for (let i = 1; i <= friendsCount; i++) {
-              const friendName = `${userName} ${i}`;
-              const friendId = `${userId}_friend_${i}`;
-              if (benchMap.has(friendId)) {
-                skippedCount++;
-                skippedNames.push(friendName);
-              } else {
-                benchMap.set(friendId, { name: friendName });
-                addedCount++;
-                addedNames.push(friendName);
-              }
-            }
-          }
-        });
-
-        storage.bench = Array.from(benchMap.entries());
-        const vietnamOffset = 7 * 60;
-        const localOffset = new Date().getTimezoneOffset();
-        const now = new Date(
-          Date.now() + (vietnamOffset + localOffset) * 60000
-        );
-        storage.lastUpdated = now.toISOString().replace('Z', '+07:00');
-        fs.writeFileSync(
-          BOT_STORAGE_FILE,
-          JSON.stringify(storage, null, 2),
-          'utf8'
-        );
-
         return sendJson(
           res,
-          200,
-          {
-            ok: true,
-            addedCount,
-            skippedCount,
-            addedNames,
-            skippedNames,
-            storage,
-          },
+          result.statusCode || 200,
+          result.body,
           headers
         );
       } catch (e) {
