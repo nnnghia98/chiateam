@@ -73,7 +73,7 @@ export function Navigation() {
             className="text-xl font-bold tracking-tight"
             style={{ color: '#ff385c' }}
           >
-            ChiaTeam Admin
+            Chiateam Admin
           </Link>
 
           {/* Desktop Navigation */}

@@ -1,4 +1,4 @@
-# ChiaTeam Admin - Quick Start
+# Chiateam Admin - Quick Start
 
 ## Prerequisites
 

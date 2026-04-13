@@ -6,7 +6,7 @@ import { ClientLayout } from '@/components/client-layout';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'ChiaTeam Admin',
+  title: 'Chiateam Admin',
   description: 'Admin panel for ChiaTeam Bot',
   icons: {
     icon: '/logo-cham-het.png',
