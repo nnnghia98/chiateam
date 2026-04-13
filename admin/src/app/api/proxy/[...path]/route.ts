@@ -48,7 +48,10 @@ async function proxyJsonRequest(
   };
 
   if (method === 'POST' || method === 'PUT') {
-    init.body = JSON.stringify(await request.json());
+    const rawBody = await request.text();
+    if (rawBody) {
+      init.body = rawBody;
+    }
   }
 
   try {
