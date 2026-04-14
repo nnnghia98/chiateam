@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('../config/load-env').loadEnv();
 
 const {
   startCommand,

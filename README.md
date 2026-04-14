@@ -26,9 +26,9 @@ yarn start:admin
 
 Root services read env from the repo root:
 
-1. Copy `.env.example`
-2. Fill in Telegram, database, and runtime values
-3. Use `.env.dev` for local bot/API development when needed
+1. Copy `.env.local.example` to `.env.local` for local/dev runtime
+2. Copy `.env.production.example` to `.env.production` for production runtime
+3. Fill in Telegram, database, and runtime values for each environment
 
 Important root variables:
 
@@ -48,6 +48,8 @@ Admin runs with its own server-side env file:
    - `ADMIN_SESSION_SECRET`
    - `ADMIN_PASSWORD`
    - `VIEWER_PASSWORD`
+
+For Docker/VPS deployment, these admin variables can also be provided in `.env.local` and `.env.production`.
 
 ## Admin Access Model
 
@@ -75,3 +77,33 @@ Before implementation or deployment work that could affect this file, take a bac
 - The legacy public `web/` app has been removed.
 - Historical sprint notes in `2026/` are kept for reference and may describe older repo layouts.
 - The legacy SQLite artifact under `bot/` is not part of the active runtime path.
+
+## Docker VPS Deployment
+
+- Compose stack definition: `docker-compose.yml`
+- CI/CD workflow: `.github/workflows/deploy.yml`
+- Full runbook: `docs/DEPLOY_VPS_DOCKER.md`
+
+## Local Docker Development
+
+Use the hybrid workflow:
+
+- Day-to-day coding: native `yarn dev:bot`, `yarn dev:api`, `yarn dev:admin`
+- Full-stack containerized dev/parity: Docker Compose
+
+Local Docker files:
+
+- Dev stack (hot reload): `docker-compose.dev.yml`
+- Prod parity stack: `docker-compose.yml`
+- Local runbook: `docs/LOCAL_DOCKER.md`
+
+Common commands:
+
+```bash
+yarn docker:dev:up
+yarn docker:dev:logs
+yarn docker:dev:down
+
+yarn docker:prod:up
+yarn docker:prod:down
+```
