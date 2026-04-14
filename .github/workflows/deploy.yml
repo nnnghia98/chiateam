@@ -79,8 +79,8 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
           mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_deploy.pem
+          chmod 600 ~/.ssh/id_deploy.pem
 
       - name: Upload compose files
         env:
@@ -89,8 +89,8 @@ jobs:
           APP_DIR: ${{ secrets.APP_DIR }}
         run: |
           set -euo pipefail
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 "${SSH_USER}@${SSH_HOST}" "mkdir -p '${APP_DIR}'"
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 docker-compose.yml "${SSH_USER}@${SSH_HOST}:${APP_DIR}/docker-compose.yml"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_deploy.pem "${SSH_USER}@${SSH_HOST}" "mkdir -p '${APP_DIR}'"
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_deploy.pem docker-compose.yml "${SSH_USER}@${SSH_HOST}:${APP_DIR}/docker-compose.yml"
 
       - name: Deploy on VPS
         env:
@@ -106,11 +106,21 @@ jobs:
           set -euo pipefail
           GHCR_TOKEN_B64=$(printf '%s' "${GHCR_TOKEN}" | base64 | tr -d '\n')
 
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 "${SSH_USER}@${SSH_HOST}" <<EOF
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_deploy.pem "${SSH_USER}@${SSH_HOST}" <<EOF
             set -euo pipefail
 
             APP_DIR="${APP_DIR}"
             cd "\$APP_DIR"
+
+            # Support both "docker" (user in docker group) and "sudo docker".
+            if docker info >/dev/null 2>&1; then
+              DOCKER_CMD="docker"
+            elif sudo -n docker info >/dev/null 2>&1; then
+              DOCKER_CMD="sudo -n docker"
+            else
+              echo "Docker access denied for user \$(whoami). Add user to docker group or allow passwordless sudo for docker."
+              exit 1
+            fi
 
             mkdir -p .runtime/bot
             mkdir -p backups/bot-storage
@@ -130,15 +140,15 @@ jobs:
               pm2 describe chiateam >/dev/null 2>&1 && pm2 delete chiateam || true
             fi
 
-            printf '%s' "${GHCR_TOKEN_B64}" | base64 -d | docker login ghcr.io -u "${GHCR_USERNAME}" --password-stdin
+            printf '%s' "${GHCR_TOKEN_B64}" | base64 -d | \$DOCKER_CMD login ghcr.io -u "${GHCR_USERNAME}" --password-stdin
 
             cat > .env.deploy <<ENVVARS
 APP_IMAGE=${APP_IMAGE}:${IMAGE_TAG}
 ADMIN_IMAGE=${ADMIN_IMAGE}:${IMAGE_TAG}
 ENVVARS
 
-            docker compose --env-file .env.deploy pull
-            docker compose --env-file .env.deploy up -d --remove-orphans --no-build
+            \$DOCKER_CMD compose --env-file .env.deploy pull
+            \$DOCKER_CMD compose --env-file .env.deploy up -d --remove-orphans --no-build
 
             curl -fsS http://127.0.0.1:8787/healthz >/dev/null
             curl -fsS http://127.0.0.1:8389 >/dev/null
