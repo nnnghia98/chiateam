@@ -1,0 +1,368 @@
+{
+  "info": {
+    "name": "ChiaTeam API",
+    "_postman_id": "6b2f79b0-95c0-46c4-bac5-f9791ab79180",
+    "description": "Collection for the ChiaTeam HTTP API used by the bot and admin UI.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8787",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "local-internal-api-token-change-me",
+      "type": "string"
+    },
+    {
+      "key": "playerNumber",
+      "value": "7",
+      "type": "string"
+    },
+    {
+      "key": "matchDate",
+      "value": "2026-04-11",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "System",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/healthz",
+              "host": ["{{baseUrl}}"],
+              "path": ["healthz"]
+            }
+          }
+        },
+        {
+          "name": "Status",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "status"]
+            }
+          }
+        },
+        {
+          "name": "Get Settings",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-internal-api-auth", "value": "{{authToken}}" },
+              { "key": "x-admin-role", "value": "viewer" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/settings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "settings"]
+            }
+          }
+        },
+        {
+          "name": "Update Settings",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-internal-api-auth", "value": "{{authToken}}" },
+              { "key": "x-admin-role", "value": "admin" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"maintenanceMode\": false,\n  \"debugLogging\": false,\n  \"botCommandPrefix\": \"/chiateam\",\n  \"allowedChatIds\": []\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/settings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "settings"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Players",
+      "item": [
+        {
+          "name": "List Players",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/players",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "players"]
+            }
+          }
+        },
+        {
+          "name": "Get Player",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/players/{{playerNumber}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "players", "{{playerNumber}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Player",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-internal-api-auth", "value": "{{authToken}}" },
+              { "key": "x-admin-role", "value": "admin" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nghia\",\n  \"number\": 7\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/players",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "players"]
+            }
+          }
+        },
+        {
+          "name": "Update Player",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "x-internal-api-auth", "value": "{{authToken}}" },
+              { "key": "x-admin-role", "value": "admin" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nghia Updated\",\n  \"username\": \"nghia98\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/players/{{playerNumber}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "players", "{{playerNumber}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Player",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "x-internal-api-auth", "value": "{{authToken}}" },
+              { "key": "x-admin-role", "value": "admin" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/players/{{playerNumber}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "players", "{{playerNumber}}"]
+            }
+          }
+        },
+        {
+          "name": "Player Summaries",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/player-summaries",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "player-summaries"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Matches",
+      "item": [
+        {
+          "name": "List Matches",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/matches?limit=20&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "matches"],
+              "query": [
+                { "key": "limit", "value": "20" },
+                { "key": "offset", "value": "0" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Match",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/matches/{{matchDate}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "matches", "{{matchDate}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Match",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-internal-api-auth", "value": "{{authToken}}" },
+              { "key": "x-admin-role", "value": "admin" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"match_date\": \"{{matchDate}}\",\n  \"san\": \"San A\",\n  \"tiensan\": 120000,\n  \"home_score\": 3,\n  \"away_score\": 2,\n  \"notes\": \"Good game\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/matches",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "matches"]
+            }
+          }
+        },
+        {
+          "name": "Update Match",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "x-internal-api-auth", "value": "{{authToken}}" },
+              { "key": "x-admin-role", "value": "admin" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"san\": \"San B\",\n  \"tiensan\": 150000,\n  \"home_score\": 1,\n  \"away_score\": 1,\n  \"notes\": \"Draw\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/matches/{{matchDate}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "matches", "{{matchDate}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Match",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "x-internal-api-auth", "value": "{{authToken}}" },
+              { "key": "x-admin-role", "value": "admin" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/matches/{{matchDate}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "matches", "{{matchDate}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Leaderboard",
+      "item": [
+        {
+          "name": "Update Player Stats",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "x-internal-api-auth", "value": "{{authToken}}" },
+              { "key": "x-admin-role", "value": "admin" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"goal\": 5,\n  \"assist\": 3,\n  \"total_match\": 10,\n  \"total_win\": 6,\n  \"total_lose\": 3,\n  \"total_draw\": 1,\n  \"winrate\": 0.6\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/leaderboard/{{playerNumber}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "leaderboard", "{{playerNumber}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bot Storage",
+      "item": [
+        {
+          "name": "Get Bot Storage",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-internal-api-auth", "value": "{{authToken}}" },
+              { "key": "x-admin-role", "value": "viewer" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/bot-storage",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bot-storage"]
+            }
+          }
+        },
+        {
+          "name": "Save Bot Storage",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-internal-api-auth", "value": "{{authToken}}" },
+              { "key": "x-admin-role", "value": "admin" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bench\": [[\"userId1\", {\"name\": \"Alice\", \"userId\": \"userId1\"}]],\n  \"teamA\": [],\n  \"teamB\": [],\n  \"team3A\": [],\n  \"team3B\": [],\n  \"team3C\": [],\n  \"tiensan\": 120000,\n  \"tiennuoc\": 0,\n  \"teamThua\": \"HOME\",\n  \"activeVote\": {\n    \"id\": \"telegram-poll-id\",\n    \"question\": \"Toi nay ai da?\",\n    \"options\": [\"0\", \"+1\", \"+2\", \"+3\", \"+4\"],\n    \"chatId\": -1001234567890,\n    \"messageId\": 321,\n    \"createdBy\": \"Nghia\",\n    \"createdAt\": \"2026-04-13T12:00:00.000Z\",\n    \"totalVoters\": 0,\n    \"votes\": {}\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bot-storage",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bot-storage"]
+            }
+          }
+        },
+        {
+          "name": "Reset Bot Storage",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-internal-api-auth", "value": "{{authToken}}" },
+              { "key": "x-admin-role", "value": "admin" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/bot-storage/reset",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bot-storage", "reset"]
+            }
+          }
+        },
+        {
+          "name": "Sync Vote To Bench",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-internal-api-auth", "value": "{{authToken}}" },
+              { "key": "x-admin-role", "value": "admin" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/bot-storage/sync",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bot-storage", "sync"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

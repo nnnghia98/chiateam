@@ -1,0 +1,88 @@
+services:
+  api:
+    image: node:22-alpine
+    working_dir: /app
+    command:
+      [
+        "sh",
+        "-c",
+        "corepack enable && if [ ! -d node_modules ] || [ ! -f node_modules/.yarn-integrity ]; then yarn install --frozen-lockfile; fi && yarn dev:api",
+      ]
+    restart: unless-stopped
+    env_file:
+      - .env.local
+    environment:
+      NODE_ENV: development
+      API_PORT: 8787
+      BOT_STATE_FILE: .runtime/bot/storage.json
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "8787:8787"
+    volumes:
+      - ./:/app
+      - app_node_modules:/app/node_modules
+      - ./.runtime/bot:/app/.runtime/bot
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8787/healthz').then((res)=>process.exit(res.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+
+  bot:
+    image: node:22-alpine
+    working_dir: /app
+    command:
+      [
+        "sh",
+        "-c",
+        "corepack enable && if [ ! -d node_modules ] || [ ! -f node_modules/.yarn-integrity ]; then yarn install --frozen-lockfile; fi && yarn dev:bot",
+      ]
+    restart: unless-stopped
+    env_file:
+      - .env.local
+    environment:
+      NODE_ENV: development
+      BOT_API_BASE_URL: http://api:8787
+      CHOKIDAR_USEPOLLING: "true"
+    depends_on:
+      api:
+        condition: service_healthy
+    volumes:
+      - ./:/app
+      - app_node_modules:/app/node_modules
+
+  admin:
+    image: node:22-alpine
+    working_dir: /app/admin
+    command:
+      [
+        "sh",
+        "-c",
+        "corepack enable && if [ ! -d node_modules ] || [ ! -f node_modules/.yarn-integrity ]; then yarn install --frozen-lockfile; fi && yarn dev",
+      ]
+    restart: unless-stopped
+    env_file:
+      - .env.local
+    environment:
+      NODE_ENV: development
+      API_INTERNAL_URL: http://api:8787
+      CHOKIDAR_USEPOLLING: "true"
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "8389:8389"
+    volumes:
+      - ./:/app
+      - admin_node_modules:/app/admin/node_modules
+
+volumes:
+  app_node_modules:
+  admin_node_modules:

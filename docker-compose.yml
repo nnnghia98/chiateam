@@ -1,0 +1,64 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ${APP_IMAGE:-chiateam/app:local}
+    command: ["node", "api/index.js"]
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      NODE_ENV: production
+      API_PORT: 8787
+      BOT_STATE_FILE: .runtime/bot/storage.json
+    ports:
+      - "8787:8787"
+    volumes:
+      - ./.runtime/bot:/app/.runtime/bot
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8787/healthz').then((res)=>process.exit(res.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ${APP_IMAGE:-chiateam/app:local}
+    command: ["node", "bot/index.js"]
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      NODE_ENV: production
+      BOT_API_BASE_URL: http://api:8787
+    depends_on:
+      api:
+        condition: service_healthy
+
+  admin:
+    build:
+      context: .
+      dockerfile: admin/Dockerfile
+    image: ${ADMIN_IMAGE:-chiateam/admin:local}
+    command: ["node_modules/.bin/next", "start", "-p", "8389"]
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      NODE_ENV: production
+      API_INTERNAL_URL: http://api:8787
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "8389:8389"

@@ -1,4 +1,4 @@
-name: CI/CD to Ubuntu Server
+name: Docker Deploy to VPS
 
 on:
   push:
@@ -6,94 +6,140 @@ on:
   workflow_dispatch: {}
 
 jobs:
-  deploy:
+  build-and-push:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
-      - name: 📥 Checkout source code
+      - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: ⚙️ Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Set image names
+        run: |
+          REPO_LC=$(echo "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')
+          echo "APP_IMAGE=ghcr.io/${REPO_LC}/app" >> "$GITHUB_ENV"
+          echo "ADMIN_IMAGE=ghcr.io/${REPO_LC}/admin" >> "$GITHUB_ENV"
+          echo "IMAGE_TAG=sha-${GITHUB_SHA}" >> "$GITHUB_ENV"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
         with:
-          node-version: 22
-          cache: 'yarn'
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 📦 Install dependencies
+      - name: Build and push app image (bot/api)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ env.APP_IMAGE }}:${{ env.IMAGE_TAG }}
+            ${{ env.APP_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push admin image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./admin/Dockerfile
+          push: true
+          tags: |
+            ${{ env.ADMIN_IMAGE }}:${{ env.IMAGE_TAG }}
+            ${{ env.ADMIN_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set image names
         run: |
-          yarn install --frozen-lockfile
+          REPO_LC=$(echo "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')
+          echo "APP_IMAGE=ghcr.io/${REPO_LC}/app" >> "$GITHUB_ENV"
+          echo "ADMIN_IMAGE=ghcr.io/${REPO_LC}/admin" >> "$GITHUB_ENV"
+          echo "IMAGE_TAG=sha-${GITHUB_SHA}" >> "$GITHUB_ENV"
 
-      - name: 📦 Pack project for deployment
+      - name: Configure SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
-          tar \
-            --exclude='./.git' \
-            --exclude='./node_modules' \
-            --exclude='./.github' \
-            --exclude='./README.md' \
-            --exclude='./.env' \
-            --exclude='.DS_Store' \
-            -czf /tmp/build.tgz .
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
 
-      - name: 🚀 Upload & Deploy to Server
+      - name: Upload compose files
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           APP_DIR: ${{ secrets.APP_DIR }}
         run: |
-          set -e
+          set -euo pipefail
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 "${SSH_USER}@${SSH_HOST}" "mkdir -p '${APP_DIR}'"
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 docker-compose.yml "${SSH_USER}@${SSH_HOST}:${APP_DIR}/docker-compose.yml"
 
-          # Tạo private key tạm
-          mkdir -p ~/.ssh
-          echo "$SSH_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
+      - name: Deploy on VPS
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          APP_DIR: ${{ secrets.APP_DIR }}
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          APP_IMAGE: ${{ env.APP_IMAGE }}
+          ADMIN_IMAGE: ${{ env.ADMIN_IMAGE }}
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+        run: |
+          set -euo pipefail
+          GHCR_TOKEN_B64=$(printf '%s' "${GHCR_TOKEN}" | base64 | tr -d '\n')
 
-          # Tạo thư mục đích trên server
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ${SSH_USER}@${SSH_HOST} "mkdir -p '${APP_DIR}'"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 "${SSH_USER}@${SSH_HOST}" <<EOF
+            set -euo pipefail
 
-          # Upload gói code (đặt tên rõ ràng)
-          scp -i ~/.ssh/id_ed25519 /tmp/build.tgz ${SSH_USER}@${SSH_HOST}:"${APP_DIR}/build.tgz"
-
-          # Deploy trên server (KHÔNG dùng 'EOF' có quote để cho phép đưa APP_DIR vào)
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ${SSH_USER}@${SSH_HOST} <<EOF
-            set -e
             APP_DIR="${APP_DIR}"
             cd "\$APP_DIR"
 
-            # Giải nén code vào thư mục tạm để deploy an toàn
-            DEPLOY_TMP="/tmp/chiateam_deploy_tmp_\$\$"
-            rm -rf "\$DEPLOY_TMP"
-            mkdir -p "\$DEPLOY_TMP"
-            tar -xzf build.tgz -C "\$DEPLOY_TMP"
-            rm -f build.tgz
+            mkdir -p .runtime/bot
+            mkdir -p backups/bot-storage
 
-            # Đồng bộ code, giữ lại .env và database sqlite (src/*.db)
-            if command -v rsync >/dev/null 2>&1; then
-              rsync -a --delete \
-                --exclude '.env' \
-                --exclude '.runtime/' \
-                --exclude 'src/*.db' \
-                "\$DEPLOY_TMP"/ ./
-            else
-              # Fallback nếu không có rsync (ít tối ưu hơn)
-              cp -R "\$DEPLOY_TMP"/* ./
+            if [ ! -f ".env.production" ]; then
+              echo "Missing .env.production in \$APP_DIR. Create it before deploy."
+              exit 1
             fi
 
-            rm -rf "\$DEPLOY_TMP"
-
-            # Cài dependencies
-            if command -v yarn >/dev/null 2>&1; then
-              yarn install --frozen-lockfile
-            else
-              npm ci || npm install
+            STORAGE_FILE=".runtime/bot/storage.json"
+            if [ -f "\$STORAGE_FILE" ]; then
+              cp "\$STORAGE_FILE" "backups/bot-storage/storage-\$(date +%Y%m%d-%H%M%S).json"
             fi
 
-            # Restart app bằng PM2
-            if [ -f "ecosystem.config.js" ]; then
-              pm2 start ecosystem.config.js --only chiateam || pm2 reload chiateam
-            else
-              pm2 describe chiateam >/dev/null 2>&1 && pm2 restart chiateam || pm2 start yarn --name chiateam -- start:bot
+            if command -v pm2 >/dev/null 2>&1; then
+              pm2 describe chiateam >/dev/null 2>&1 && pm2 stop chiateam || true
+              pm2 describe chiateam >/dev/null 2>&1 && pm2 delete chiateam || true
             fi
 
-            pm2 save
+            printf '%s' "${GHCR_TOKEN_B64}" | base64 -d | docker login ghcr.io -u "${GHCR_USERNAME}" --password-stdin
+
+            cat > .env.deploy <<ENVVARS
+APP_IMAGE=${APP_IMAGE}:${IMAGE_TAG}
+ADMIN_IMAGE=${ADMIN_IMAGE}:${IMAGE_TAG}
+ENVVARS
+
+            docker compose --env-file .env.deploy pull
+            docker compose --env-file .env.deploy up -d --remove-orphans --no-build
+
+            curl -fsS http://127.0.0.1:8787/healthz >/dev/null
+            curl -fsS http://127.0.0.1:8389 >/dev/null
           EOF
