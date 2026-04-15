@@ -42,7 +42,7 @@ const clearBenchCommand = ({ members }) => {
       sendMessage({
         msg,
         type: 'DEFAULT',
-        message: '❌ Có lỗi xảy ra. Vui lòng thử lại.',
+        message: CLEAR_BENCH.listError,
       });
     }
   });
@@ -156,7 +156,7 @@ const clearBenchCommand = ({ members }) => {
       sendMessage({
         msg,
         type: 'DEFAULT',
-        message: '❌ Có lỗi xảy ra khi xóa người chơi. Vui lòng thử lại.',
+        message: CLEAR_BENCH.removeError,
       });
     }
   });

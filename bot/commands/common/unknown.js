@@ -20,7 +20,7 @@ const unknownCommand = () => {
     sendMessage({
       msg,
       type: 'DEFAULT',
-      message: `${userName}: ${UNKNOWN.warning}`,
+      message: UNKNOWN.buildWarning(userName),
     });
   });
 };

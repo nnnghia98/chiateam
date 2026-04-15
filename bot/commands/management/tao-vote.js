@@ -138,7 +138,7 @@ const voteCommand = ({ members, getActiveVote, setActiveVote }) => {
     sendMessage({
       msg,
       type: 'DEFAULT',
-      message: '🗑️ Đã xoá vote.',
+      message: TAO_VOTE.clearSuccess,
     });
   });
 
@@ -154,29 +154,11 @@ const voteCommand = ({ members, getActiveVote, setActiveVote }) => {
     }
 
     console.log(`📊 [taovote] Counting votes for: "${activeVote.question}"`);
-    const { question, options, votes, totalVoters } = activeVote;
-    let resultText = `${TAO_VOTE.result.replace('{question}', question)}\n\n`;
-
-    options.forEach((option, idx) => {
-      const voters = Object.values(votes)
-        .filter(vote => vote.options.includes(idx))
-        .map(vote => vote.name);
-
-      resultText += `*${option}* (${voters.length})\n`;
-      if (voters.length > 0) {
-        resultText += `*Ai vote?* ${voters.join(', ')}\n`;
-      } else {
-        resultText += '*Ai vote?* Chưa có ai vote\n';
-      }
-      resultText += '\n';
-    });
-
-    resultText += `*Số người vote:* ${totalVoters || 0}`;
 
     sendMessage({
       msg,
       type: 'MAIN',
-      message: resultText,
+      message: TAO_VOTE.buildVoteResult(activeVote),
       options: {
         parse_mode: 'Markdown',
       },
@@ -257,25 +239,17 @@ const voteCommand = ({ members, getActiveVote, setActiveVote }) => {
       }
     });
 
-    let message = '🔄 *ĐÃ ĐỒNG BỘ TỪ VOTE*\n\n';
-    message += `📊 Vote: "${activeVote.question}"\n`;
-    message += `👥 Tổng số người vote: ${voters.length}\n\n`;
-
-    if (addedCount > 0) {
-      message += `✅ *Đã thêm vào bench (${addedCount}):*\n`;
-      message += addedNames.map((name, i) => `${i + 1}. ${name}`).join('\n');
-      message += '\n\n';
-    }
-
-    if (skippedCount > 0) {
-      message += `⏭️ *Đã có trong bench (${skippedCount}):*\n`;
-      message += skippedNames.map((name, i) => `${i + 1}. ${name}`).join('\n');
-    }
-
     sendMessage({
       msg,
       type: 'ANNOUNCEMENT',
-      message,
+      message: TAO_VOTE.buildSyncSummary({
+        question: activeVote.question,
+        totalVoters: voters.length,
+        addedCount,
+        addedNames,
+        skippedCount,
+        skippedNames,
+      }),
       options: {
         parse_mode: 'Markdown',
       },

@@ -1,5 +1,4 @@
 const { sendMessage } = require('../../utils/chat');
-const { formatMoney } = require('../../utils/format');
 const { MATCH, VALIDATION } = require('../../utils/messages');
 const { requireAdmin } = require('../../utils/permissions');
 const {
@@ -120,45 +119,6 @@ async function buildPlayerEntries(teamA, teamB, team3C, allPlayers) {
 }
 
 /**
- * Format match for display.
- * @param {Object} match
- * @param {string} dateLabel - e.g. "23/02/2026"
- * @param {string|null} aiSummary - optional AI-generated summary
- * @returns {string}
- */
-function formatMatchMessage(match, dateLabel, aiSummary = null) {
-  let msg = `⚽ *Trận đấu ${dateLabel}* ⚽\n\n`;
-  if (match.san) msg += `📍 Sân: ${match.san}\n`;
-  if (match.tiensan) msg += `💸 Tiền sân: ${formatMoney(match.tiensan)} VND\n`;
-  if (match.home_score != null && match.away_score != null) {
-    msg += `\n📊 Kết quả: ${match.home_score} - ${match.away_score}\n`;
-  }
-  const fmt = p => {
-    let s = `• ${p.label}`;
-    if (p.goals != null || p.assists != null || p.isMvp) {
-      const parts = [];
-      if (p.goals) parts.push(`${p.goals}⚽`);
-      if (p.assists) parts.push(`${p.assists}🎯`);
-      if (p.isMvp) parts.unshift('⭐');
-      if (parts.length) s += ` (${parts.join(' ')})`;
-    }
-    return s;
-  };
-  msg += '\n⚪ *HOME:*\n';
-  msg += (match.homePlayers || []).map(fmt).join('\n') || '• (trống)';
-  msg += '\n\n⚫ *AWAY:*\n';
-  msg += (match.awayPlayers || []).map(fmt).join('\n') || '• (trống)';
-  if (match.extraPlayers && match.extraPlayers.length > 0) {
-    msg += '\n\n� *EXTRA:*\n';
-    msg += match.extraPlayers.map(fmt).join('\n');
-  }
-  if (aiSummary) {
-    msg += `\n\n🤖 *Bình luận AI:*\n${aiSummary}`;
-  }
-  return msg;
-}
-
-/**
  * Format date for display (dd/mm/yyyy).
  * @param {string} isoDate - YYYY-MM-DD
  * @returns {string}
@@ -225,7 +185,7 @@ function matchCommand({ getTiensan, teamA, teamB, team3C }) {
         sendMessage({
           msg,
           type: 'DEFAULT',
-          message: '❌ Có lỗi xảy ra khi xóa trận đấu. Vui lòng thử lại.',
+          message: MATCH.deleteError,
         });
       }
       return;
@@ -257,7 +217,11 @@ function matchCommand({ getTiensan, teamA, teamB, team3C }) {
         sendMessage({
           msg,
           type: 'DEFAULT',
-          message: `${MATCH.scoreUpdated}\n\n${formatMatchMessage(updated, formatDateDisplay(matchDate), aiSummary)}`,
+          message: MATCH.buildScoreUpdatedMessage(
+            updated,
+            formatDateDisplay(matchDate),
+            aiSummary
+          ),
           options: { parse_mode: 'Markdown' },
         });
       } catch (err) {
@@ -265,7 +229,7 @@ function matchCommand({ getTiensan, teamA, teamB, team3C }) {
         sendMessage({
           msg,
           type: 'DEFAULT',
-          message: '❌ Có lỗi xảy ra. Vui lòng thử lại.',
+          message: MATCH.genericError,
         });
       }
     };
@@ -346,7 +310,7 @@ function matchCommand({ getTiensan, teamA, teamB, team3C }) {
         sendMessage({
           msg,
           type: 'DEFAULT',
-          message: '❌ Có lỗi xảy ra. Vui lòng thử lại.',
+          message: MATCH.genericError,
         });
       }
     };
@@ -402,7 +366,7 @@ function matchCommand({ getTiensan, teamA, teamB, team3C }) {
         sendMessage({
           msg,
           type: 'ANNOUNCEMENT',
-          message: `${MATCH.saved}\n\n${formatMatchMessage(saved, dateLabel)}`,
+          message: MATCH.buildSavedMessage(saved, dateLabel),
           options: { parse_mode: 'Markdown' },
         });
       } catch (err) {
@@ -410,7 +374,7 @@ function matchCommand({ getTiensan, teamA, teamB, team3C }) {
         sendMessage({
           msg,
           type: 'DEFAULT',
-          message: '❌ Có lỗi xảy ra khi lưu trận đấu. Vui lòng thử lại.',
+          message: MATCH.saveError,
         });
       }
     } else {
@@ -437,7 +401,7 @@ function matchCommand({ getTiensan, teamA, teamB, team3C }) {
         sendMessage({
           msg,
           type: 'DEFAULT',
-          message: formatMatchMessage(m, dateLabel, aiSummary),
+          message: MATCH.buildMatchMessage(m, dateLabel, aiSummary),
           options: { parse_mode: 'Markdown' },
         });
       } catch (err) {
@@ -445,7 +409,7 @@ function matchCommand({ getTiensan, teamA, teamB, team3C }) {
         sendMessage({
           msg,
           type: 'DEFAULT',
-          message: '❌ Có lỗi xảy ra khi tải trận đấu. Vui lòng thử lại.',
+          message: MATCH.fetchError,
         });
       }
     }

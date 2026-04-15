@@ -1,4 +1,5 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { AI } = require('../../utils/messages');
 const { sendMessage } = require('../../utils/chat');
 const bot = require('../../telegram-client');
 
@@ -32,8 +33,7 @@ const aiCommand = () => {
       sendMessage({
         msg,
         type: 'DEFAULT',
-        message:
-          '❌ Tính năng AI chưa được kích hoạt. Vui lòng cấu hình GEMINI_API_KEY.',
+        message: AI.disabled,
       });
       return;
     }
@@ -42,12 +42,7 @@ const aiCommand = () => {
       sendMessage({
         msg,
         type: 'DEFAULT',
-        message:
-          '💬 *Cách dùng:* `/ai <câu hỏi của bạn>`\n\n' +
-          '*Ví dụ:*\n' +
-          '• `/ai Hãy viết một câu slogan cho đội bóng`\n' +
-          '• `/ai Gợi ý tên đội bóng hay`\n' +
-          '• `/ai Tóm tắt luật bóng đá 5 người`',
+        message: AI.usage,
         options: { parse_mode: 'Markdown' },
       });
       return;
@@ -58,7 +53,7 @@ const aiCommand = () => {
       sendMessage({
         msg,
         type: 'DEFAULT',
-        message: '🤔 Đang suy nghĩ...',
+        message: AI.thinking,
       });
 
       const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
@@ -70,7 +65,7 @@ const aiCommand = () => {
       sendMessage({
         msg,
         type: 'DEFAULT',
-        message: `🤖 *AI trả lời:*\n\n${response}`,
+        message: AI.buildResponse(response),
         options: { parse_mode: 'Markdown' },
       });
     } catch (err) {
@@ -78,8 +73,7 @@ const aiCommand = () => {
       sendMessage({
         msg,
         type: 'DEFAULT',
-        message:
-          '❌ Có lỗi xảy ra khi gọi AI. Vui lòng kiểm tra lại API key hoặc thử lại sau.',
+        message: AI.error,
       });
     }
   });
@@ -92,8 +86,7 @@ const aiCommand = () => {
       sendMessage({
         msg,
         type: 'DEFAULT',
-        message:
-          '❌ Tính năng AI chưa được kích hoạt. Vui lòng cấu hình GEMINI_API_KEY.',
+        message: AI.disabled,
       });
       return;
     }
@@ -102,10 +95,7 @@ const aiCommand = () => {
       sendMessage({
         msg,
         type: 'DEFAULT',
-        message:
-          '💬 *Cách dùng:* `/aichat <tin nhắn>`\n\n' +
-          'Khác với `/ai`, lệnh này duy trì ngữ cảnh cuộc trò chuyện.\n' +
-          'Sử dụng `/aichat reset` để bắt đầu cuộc trò chuyện mới.',
+        message: AI.chatUsage,
         options: { parse_mode: 'Markdown' },
       });
       return;
@@ -116,7 +106,7 @@ const aiCommand = () => {
       sendMessage({
         msg,
         type: 'DEFAULT',
-        message: '✅ Đã reset cuộc trò chuyện AI. Bắt đầu cuộc trò chuyện mới!',
+        message: AI.reset,
       });
       return;
     }
@@ -126,7 +116,7 @@ const aiCommand = () => {
       sendMessage({
         msg,
         type: 'DEFAULT',
-        message: '🤔 Đang suy nghĩ...',
+        message: AI.thinking,
       });
 
       const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
@@ -147,7 +137,7 @@ const aiCommand = () => {
       sendMessage({
         msg,
         type: 'DEFAULT',
-        message: `🤖 *AI trả lời:*\n\n${response}`,
+        message: AI.buildResponse(response),
         options: { parse_mode: 'Markdown' },
       });
     } catch (err) {
@@ -155,8 +145,7 @@ const aiCommand = () => {
       sendMessage({
         msg,
         type: 'DEFAULT',
-        message:
-          '❌ Có lỗi xảy ra khi gọi AI. Vui lòng kiểm tra lại API key hoặc thử lại sau.',
+        message: AI.error,
       });
     }
   });

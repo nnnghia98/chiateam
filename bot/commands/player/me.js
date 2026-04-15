@@ -1,3 +1,4 @@
+const { ME } = require('../../utils/messages');
 const { sendMessage } = require('../../utils/chat');
 const bot = require('../../telegram-client');
 
@@ -6,39 +7,33 @@ const meCommand = () => {
     const userId = msg.from.id;
     const name = msg.from.first_name || 'Không rõ';
     const username = msg.from.username || 'Chưa có';
-    let message = `👤 **Thông tin của bạn:**
-
-**Tên:** ${name}
-**ID:** ${userId}
-**Username:** @${username}`;
-
     // Query player data from database
     const { getPlayerByUserId } = require('../../../api/routes/players');
 
     try {
       const player = await getPlayerByUserId(userId);
+      const baseMessage = ME.buildMessage({ name, userId, username, player });
+      const message = player ? baseMessage : `${baseMessage}${ME.notRegistered}`;
 
-      if (player) {
-        message += `\n\n⚽ **Thông tin cầu thủ:**
-**Số áo:** ${player.number}
-**Bàn thắng:** ${player.goal || 0}
-**Kiến tạo:** ${player.assist || 0}`;
-      } else {
-        message +=
-          '\n\n⚠️ Bạn chưa đăng ký làm cầu thủ. Sử dụng "/register" để đăng ký.';
-      }
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message,
+        options: {
+          parse_mode: 'Markdown',
+        },
+      });
     } catch (error) {
       console.error('Error fetching player data:', error);
-      message += '\n\n❌ Có lỗi xảy ra khi lấy thông tin cầu thủ.';
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: ME.buildMessageWithFetchError({ name, userId, username }),
+        options: {
+          parse_mode: 'Markdown',
+        },
+      });
     }
-    sendMessage({
-      msg,
-      type: 'DEFAULT',
-      message,
-      options: {
-        parse_mode: 'Markdown',
-      },
-    });
   });
 };
 

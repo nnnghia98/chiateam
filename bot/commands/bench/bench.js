@@ -14,7 +14,7 @@ const benchCommand = ({ members, refreshFromSource }) => {
         await sendMessage({
           msg,
           type: 'DEFAULT',
-          message: '❌ Không thể tải bench hiện tại từ API.',
+          message: BENCH.refreshError,
         });
         return;
       }

@@ -172,7 +172,13 @@ const addToTeamCommand = ({
 
     let message = '';
     if (duplicates.length > 0) {
-      message += `⚠️ Đã bỏ qua ${duplicates.length} member đã có trong ${teamName}:\n${duplicates.map(name => escapeMarkdown(name)).join(', ')}\n\n`;
+      message += ADD_TO_TEAM.duplicateSkipped
+        .replace('{count}', duplicates.length)
+        .replace('{team}', teamName)
+        .replace(
+          '{names}',
+          duplicates.map(name => escapeMarkdown(name)).join(', ')
+        );
     }
 
     if (toAdd.length > 0) {
@@ -189,7 +195,9 @@ const addToTeamCommand = ({
         );
     } else if (duplicates.length > 0) {
       // All were duplicates, just show the duplicate warning
-      message = `⚠️ Tất cả ${duplicates.length} member đã có trong ${teamName} rồi.`;
+      message = ADD_TO_TEAM.allDuplicates
+        .replace('{count}', duplicates.length)
+        .replace('{team}', teamName);
     }
 
     sendMessage({

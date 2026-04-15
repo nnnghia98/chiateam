@@ -31,7 +31,7 @@ function sanCommand() {
         sendMessage({
           msg,
           type: 'ANNOUNCEMENT',
-          message: `Sân: ${currentSan}`,
+          message: SAN.currentAnnouncement.replace('{value}', currentSan),
         });
       } else {
         sendMessage({

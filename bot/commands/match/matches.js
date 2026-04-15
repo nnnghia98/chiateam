@@ -30,23 +30,19 @@ function matchesCommand() {
         return;
       }
 
-      let message = '📅 *Danh sách trận đấu* 📅\n\n';
-
-      matches.forEach(m => {
-        const dateLabel = formatDateDisplay(m.match_date);
-        const score =
-          m.home_score != null && m.away_score != null
-            ? ` ${m.home_score} - ${m.away_score}`
-            : '';
-        message += `• ${dateLabel}${score}\n`;
-      });
-
-      message += '\n💡 Dùng `/match dd/mm/yyyy` để xem chi tiết';
-
       sendMessage({
         msg,
         type: 'DEFAULT',
-        message,
+        message: MATCHES.buildList(
+          matches.map(match => {
+            const dateLabel = formatDateDisplay(match.match_date);
+            const score =
+              match.home_score != null && match.away_score != null
+                ? ` ${match.home_score} - ${match.away_score}`
+                : '';
+            return `• ${dateLabel}${score}`;
+          })
+        ),
         options: { parse_mode: 'Markdown' },
       });
     } catch (err) {
@@ -54,8 +50,7 @@ function matchesCommand() {
       sendMessage({
         msg,
         type: 'DEFAULT',
-        message:
-          '❌ Có lỗi xảy ra khi tải danh sách trận đấu. Vui lòng thử lại.',
+        message: MATCHES.error,
       });
     }
   });

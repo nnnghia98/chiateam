@@ -70,7 +70,7 @@ const clearTeamCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
         sendMessage({
           msg,
           type: 'DEFAULT',
-          message: '⚠️ 2-team stack đã trống rồi.',
+          message: CLEAR_TEAM.stack2Empty,
         });
         return;
       }
@@ -81,14 +81,14 @@ const clearTeamCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
       sendMessage({
         msg,
         type: 'DEFAULT',
-        message: '✅ Đã xóa toàn bộ 2-team stack (HOME, AWAY).',
+        message: CLEAR_TEAM.stack2Success,
       });
     } else if (mode === 3) {
       if (team3A.size === 0 && team3B.size === 0 && team3C.size === 0) {
         sendMessage({
           msg,
           type: 'DEFAULT',
-          message: '⚠️ 3-team stack đã trống rồi.',
+          message: CLEAR_TEAM.stack3Empty,
         });
         return;
       }
@@ -100,7 +100,7 @@ const clearTeamCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
       sendMessage({
         msg,
         type: 'DEFAULT',
-        message: '✅ Đã xóa toàn bộ 3-team stack (HOME, AWAY, EXTRA).',
+        message: CLEAR_TEAM.stack3Success,
       });
     }
   });
