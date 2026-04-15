@@ -1,4 +1,5 @@
 const { sendMessage } = require('../../utils/chat');
+const { isOnCooldown } = require('../../utils/cooldown');
 const { MATCHES } = require('../../utils/messages');
 const { listMatches } = require('../../../api/routes/matches');
 
@@ -11,6 +12,10 @@ function formatDateDisplay(isoDate) {
 
 function matchesCommand() {
   bot.onText(/^\/matches(?:\s+(\d+))?$/, async (msg, match) => {
+    if (isOnCooldown(msg, '/matches')) {
+      return;
+    }
+
     const limit = match[1] ? Math.min(parseInt(match[1], 10) || 10, 20) : 10;
 
     try {

@@ -33,21 +33,14 @@ const startCommand = () => {
 • \`/tiensan\` - Xem/đặt tiền sân
 • \`/chiatien\` - Chia tiền
 
-🤖 *AI Assistant:*
-• \`/ai <câu hỏi>\` - Hỏi AI bất kỳ điều gì
-• \`/aichat <tin nhắn>\` - Trò chuyện với AI (có ngữ cảnh)
-• \`@chiateam <câu hỏi>\` - Tag bot để hỏi AI
-
 🗳 *Vote:*
 • \`/taovote\` - Tạo vote
 • \`/demvote\` - Xem kết quả vote
 • \`/sync\` - Đồng bộ người vote vào bench (admin)
 • \`/clearvote\` - Xóa tất cả vote (admin)
 
-🏆 *Thống kê:*
-• \`/leaderboard\` - Xem bảng xếp hạng
+👥 *Cầu thủ:*
 • \`/players\` - Danh sách cầu thủ & thống kê
-• \`/update-leaderboard\` - Cập nhật thống kê
 • \`/player\` - Xem thông số chi tiết
 
 💡 Dùng sai cú pháp = ngu!`,

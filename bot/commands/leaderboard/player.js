@@ -1,10 +1,15 @@
 const { getPlayerStats } = require('../../../api/services/leaderboard-service');
 const { sendMessage } = require('../../utils/chat');
+const { isOnCooldown } = require('../../utils/cooldown');
 
 const bot = require('../../telegram-client');
 
 const playerCommand = () => {
   bot.onText(/^\/player$/, msg => {
+    if (isOnCooldown(msg, '/player')) {
+      return;
+    }
+
     sendMessage({
       msg,
       type: 'DEFAULT',
@@ -18,13 +23,17 @@ const playerCommand = () => {
         '💡 **Lưu ý:**\n' +
         '• Số áo phải là số nguyên dương\n' +
         '• Player phải có dữ liệu thống kê để xem được\n' +
-        '• Sử dụng `/update-leaderboard` để thêm dữ liệu\n' +
-        '• Sử dụng `/update-leaderboard GOAL/ASSIST` để cập nhật bàn thắng/kiến tạo',
+        '• Dùng `/players` để xem bảng thống kê tổng hợp\n' +
+        '• Dùng `/match dd/mm/yyyy` để xem chi tiết một trận',
       options: { parse_mode: 'Markdown' },
     });
   });
 
   bot.onText(/^\/player (.+)$/, async (msg, match) => {
+    if (isOnCooldown(msg, '/player')) {
+      return;
+    }
+
     try {
       const playerId = parseInt(match[1].trim());
 
@@ -55,7 +64,7 @@ const playerCommand = () => {
           message:
             '❌ **Không tìm thấy thông số của player số áo: ${playerId}**\n\n' +
             '�� Player này chưa có dữ liệu thống kê nào.\n' +
-            'Sử dụng `/update-leaderboard` để thêm dữ liệu cho player này.',
+            'Dùng `/players` để xem danh sách player hiện có.',
           options: { parse_mode: 'Markdown' },
         });
         return;
@@ -117,13 +126,8 @@ const playerCommand = () => {
 
       // Add footer with commands
       message += '💡 **Lệnh liên quan:**\n';
-      message += '• `/leaderboard` - Xem bảng xếp hạng\n';
-      message +=
-        '• `/update-leaderboard WIN/LOSE/DRAW [id1,id2,id3]` - Cập nhật thống kê\n';
-      message +=
-        '• `/update-leaderboard GOAL player_number value` - Cập nhật bàn thắng\n';
-      message +=
-        '• `/update-leaderboard ASSIST player_number value` - Cập nhật kiến tạo';
+      message += '• `/players` - Xem bảng thống kê tổng hợp\n';
+      message += '• `/match dd/mm/yyyy` - Xem chi tiết và cập nhật một trận';
 
       sendMessage({
         msg,

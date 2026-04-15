@@ -150,7 +150,7 @@ const editStatsCommand = () => {
         message += `   • Hòa: ${drawDiff > 0 ? '+' : ''}${drawDiff}\n\n`;
       }
 
-      message += '💡 Sử dụng `/leaderboard` để xem bảng xếp hạng mới';
+      message += '💡 Sử dụng `/players` để xem danh sách cầu thủ & thống kê mới';
 
       sendMessage({
         msg,

@@ -1,12 +1,17 @@
 const { getAllPlayers } = require('../../../api/routes/players');
 const { getMultiplePlayerStats } = require('../../../api/routes/leaderboard');
 const { sendMessage } = require('../../utils/chat');
+const { isOnCooldown } = require('../../utils/cooldown');
 const { PLAYERS } = require('../../utils/messages');
 
 const bot = require('../../telegram-client');
 
 const playersCommand = () => {
   bot.onText(/^\/players$/, async msg => {
+    if (isOnCooldown(msg, '/players')) {
+      return;
+    }
+
     try {
       const players = await getAllPlayers();
 

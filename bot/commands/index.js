@@ -5,12 +5,9 @@ const benchCommand = require('./bench/bench');
 const chiateamCommand = require('./team/chia-team');
 const teamCommand = require('./team/team');
 const clearBenchCommand = require('./bench/clear-bench');
-const unknownCommand = require('./common/unknown');
 const tiensanCommand = require('./management/tien-san');
 const chiaTienCommand = require('./management/chia-tien');
 const taoVoteCommand = require('./management/tao-vote');
-const leaderboardCommand = require('./leaderboard/leaderboard');
-const updateLeaderboardCommand = require('./leaderboard/update-leaderboard');
 const editStatsCommand = require('./leaderboard/edit-stats');
 const playerCommand = require('./leaderboard/player');
 const registerCommand = require('./player/register');
@@ -22,7 +19,6 @@ const meCommand = require('./player/me');
 const matchCommand = require('./match/match');
 const matchesCommand = require('./match/matches');
 const resetCommand = require('./management/reset');
-const aiCommand = require('./ai/ai');
 
 module.exports = {
   startCommand,
@@ -32,12 +28,9 @@ module.exports = {
   chiateamCommand,
   teamCommand,
   clearBenchCommand,
-  unknownCommand,
   tiensanCommand,
   chiaTienCommand,
   taoVoteCommand,
-  leaderboardCommand,
-  updateLeaderboardCommand,
   editStatsCommand,
   playerCommand,
   registerCommand,
@@ -49,5 +42,4 @@ module.exports = {
   matchCommand,
   matchesCommand,
   resetCommand,
-  aiCommand,
 };

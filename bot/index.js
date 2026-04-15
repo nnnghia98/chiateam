@@ -8,12 +8,9 @@ const {
   chiateamCommand,
   teamCommand,
   clearBenchCommand,
-  unknownCommand,
   tiensanCommand,
   chiaTienCommand,
   taoVoteCommand,
-  leaderboardCommand,
-  updateLeaderboardCommand,
   editStatsCommand,
   playerCommand,
   registerCommand,
@@ -25,7 +22,6 @@ const {
   matchCommand,
   matchesCommand,
   resetCommand,
-  aiCommand,
 } = require('./commands');
 
 const maintenanceMessage = require('./commands/maintainance');
@@ -103,7 +99,6 @@ async function bootstrapBot() {
   const resetAll = storage.resetAll;
 
   startCommand();
-  unknownCommand();
 
   addMeCommand({ members });
   chiateamCommand({ members, teamA, teamB, team3A, team3B, team3C });
@@ -115,8 +110,6 @@ async function bootstrapBot() {
   chiaTienCommand(getTiensan, getTeamThua, { teamA, teamB });
   taoVoteCommand({ members, getActiveVote, setActiveVote });
   sanCommand();
-  leaderboardCommand();
-  updateLeaderboardCommand();
   editStatsCommand();
   playerCommand();
   registerCommand();
@@ -127,7 +120,6 @@ async function bootstrapBot() {
   matchCommand({ getTiensan, teamA, teamB, team3C });
   matchesCommand();
   resetCommand({ resetAll });
-  aiCommand();
 
   // Start HTTP test server in development mode
   startTestServer(bot);

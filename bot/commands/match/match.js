@@ -22,6 +22,7 @@ const {
   getPlayerByUserId,
 } = require('../../../api/routes/players');
 const { getDisplayName, getUserId } = require('../../utils/team-member');
+const { isOnCooldown } = require('../../utils/cooldown');
 const sanCommand = require('../management/san');
 const { generateMatchSummary } = require('../../../api/services/ai-service');
 
@@ -171,6 +172,10 @@ function matchCommand({ getTiensan, teamA, teamB, team3C }) {
   const getSan = sanCommand.getSan;
 
   bot.onText(/^\/match(?:\s+(.+))?$/, async (msg, match) => {
+    if (isOnCooldown(msg, '/match')) {
+      return;
+    }
+
     const rawArgs = match[1]?.trim() || '';
     const parts = rawArgs ? rawArgs.split(/\s+/) : [];
     const isSave = parts.some(p => p.toUpperCase() === 'SAVE');
