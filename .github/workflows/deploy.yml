@@ -1,4 +1,4 @@
-name: Docker Deploy to VPS
+name: Deploy to VPS (Docker)
 
 on:
   push:
@@ -127,9 +127,7 @@ jobs:
 
             printf '%s' "${GHCR_TOKEN_B64}" | base64 -d | \$DOCKER_CMD login ghcr.io -u "${GHCR_USERNAME}" --password-stdin
 
-            cat > .env.deploy <<ENVVARS
-APP_IMAGE=${APP_IMAGE}:${IMAGE_TAG}
-ENVVARS
+            printf '%s\n' "APP_IMAGE=${APP_IMAGE}:${IMAGE_TAG}" > .env.deploy
 
             \$DOCKER_CMD compose --env-file .env.deploy pull
             \$DOCKER_CMD compose --env-file .env.deploy up -d --remove-orphans --no-build
