@@ -44,21 +44,3 @@ services:
     depends_on:
       api:
         condition: service_healthy
-
-  admin:
-    build:
-      context: .
-      dockerfile: admin/Dockerfile
-    image: ${ADMIN_IMAGE:-chiateam/admin:local}
-    command: ["node_modules/.bin/next", "start", "-p", "8389"]
-    restart: unless-stopped
-    env_file:
-      - .env.production
-    environment:
-      NODE_ENV: production
-      API_INTERNAL_URL: http://api:8787
-    depends_on:
-      api:
-        condition: service_healthy
-    ports:
-      - "8389:8389"

@@ -138,10 +138,11 @@ If you want to deploy both Bot and API separately:
 
 ### Service 3: Admin UI (Optional)
 
-- Change to `admin` directory as root
-- Start Command: `cd admin && yarn build && yarn start`
-- Enable public networking
-- Port: 8389
+Admin UI has been split into a separate repository.
+
+- Repo/location: `../chiateam-admin`
+- Deploy it as an independent Railway/Vercel service
+- Configure `API_INTERNAL_URL` and `INTERNAL_API_AUTH_TOKEN` to point to this API service
 
 ## 🎯 Current Configuration
 

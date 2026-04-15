@@ -22,7 +22,6 @@
 
 - `bot` — changes in the `bot/` directory
 - `api` — changes in the `api/` directory
-- `admin` — changes in the `admin/` directory
 - `root` — root-level config files (package.json, Procfile, etc.)
 
 #### Short Description
@@ -36,7 +35,7 @@
 ```
 feat(bot): add chia-team shuffle command
 fix(api): correct leaderboard score calculation
-chore(admin): update dependencies
+chore(root): update ci workflow
 refactor(bot): extract common utils for commands
 docs(root): add git commit conventions
 ```

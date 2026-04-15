@@ -20,7 +20,6 @@ jobs:
         run: |
           REPO_LC=$(echo "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')
           echo "APP_IMAGE=ghcr.io/${REPO_LC}/app" >> "$GITHUB_ENV"
-          echo "ADMIN_IMAGE=ghcr.io/${REPO_LC}/admin" >> "$GITHUB_ENV"
           echo "IMAGE_TAG=sha-${GITHUB_SHA}" >> "$GITHUB_ENV"
 
       - name: Set up Docker Buildx
@@ -45,18 +44,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Build and push admin image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./admin/Dockerfile
-          push: true
-          tags: |
-            ${{ env.ADMIN_IMAGE }}:${{ env.IMAGE_TAG }}
-            ${{ env.ADMIN_IMAGE }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
@@ -71,7 +58,6 @@ jobs:
         run: |
           REPO_LC=$(echo "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')
           echo "APP_IMAGE=ghcr.io/${REPO_LC}/app" >> "$GITHUB_ENV"
-          echo "ADMIN_IMAGE=ghcr.io/${REPO_LC}/admin" >> "$GITHUB_ENV"
           echo "IMAGE_TAG=sha-${GITHUB_SHA}" >> "$GITHUB_ENV"
 
       - name: Configure SSH key
@@ -100,7 +86,6 @@ jobs:
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
           APP_IMAGE: ${{ env.APP_IMAGE }}
-          ADMIN_IMAGE: ${{ env.ADMIN_IMAGE }}
           IMAGE_TAG: ${{ env.IMAGE_TAG }}
         run: |
           set -euo pipefail
@@ -144,12 +129,10 @@ jobs:
 
             cat > .env.deploy <<ENVVARS
 APP_IMAGE=${APP_IMAGE}:${IMAGE_TAG}
-ADMIN_IMAGE=${ADMIN_IMAGE}:${IMAGE_TAG}
 ENVVARS
 
             \$DOCKER_CMD compose --env-file .env.deploy pull
             \$DOCKER_CMD compose --env-file .env.deploy up -d --remove-orphans --no-build
 
             curl -fsS http://127.0.0.1:8787/healthz >/dev/null
-            curl -fsS http://127.0.0.1:8389 >/dev/null
           EOF
