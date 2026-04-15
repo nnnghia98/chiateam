@@ -10,7 +10,7 @@
 | ------------- | ------------------------------------------- |
 | Bot runtime   | Node.js + PM2, `node-telegram-bot-api`      |
 | Database      | SQLite (`chamhet.db`) on-disk               |
-| Legacy Web UI | Next.js in Docker (port 3000)               |
+| Admin UI      | Next.js in Docker (legacy, port 3000)       |
 | API server    | Node.js HTTP (port 8787)                    |
 | Reverse proxy | Nginx (port 80)                             |
 | Server        | Ubuntu @ `15.152.155.89` (**gone forever**) |

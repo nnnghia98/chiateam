@@ -52,7 +52,6 @@ Before implementation or deployment work that could affect this file, take a bac
 
 ## Project Notes
 
-- The legacy public `web/` app has been removed.
 - Admin split migration completed on 2026-04-15.
 - New admin codebase location: `../chiateam-admin`.
 - Historical sprint notes in `2026/` are kept for reference and may describe older repo layouts.
