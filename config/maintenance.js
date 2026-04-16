@@ -10,12 +10,8 @@ function isTruthy(value) {
   );
 }
 
-function isProduction() {
-  return process.env.NODE_ENV === 'production';
-}
-
 function isMaintenanceModeEnabled() {
-  return isProduction() && isTruthy(process.env.MAINTENANCE_MODE);
+  return isTruthy(process.env.MAINTENANCE_MODE);
 }
 
 function getMaintenanceUntil() {
