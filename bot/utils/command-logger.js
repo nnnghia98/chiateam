@@ -1,3 +1,9 @@
+const {
+  getCommandToken,
+  isSupportedCommandText,
+  normalizeCommandToken,
+} = require('./command-filter');
+
 function getTelegramDisplayName(from) {
   if (!from) return 'Unknown User';
   return from.first_name || from.username || 'Unknown User';
@@ -9,12 +15,14 @@ function getTelegramDisplayName(from) {
  */
 function logCommandUsage(msg) {
   if (!msg || !msg.text || typeof msg.text !== 'string') return;
-  if (!msg.text.startsWith('/')) return;
+  if (!isSupportedCommandText(msg.text)) return;
 
   const tele_id = msg.from?.id ?? null;
   const tele_name = getTelegramDisplayName(msg.from);
-  const command_exact = msg.text;
-  const command = command_exact.split(/\s+/)[0];
+  const command_exact = getCommandToken(msg.text);
+  const command = normalizeCommandToken(command_exact);
+
+  if (!command_exact || !command) return;
 
   // Telegram `msg.date` is seconds since epoch (UTC). Fallback to now.
   const usedAt = new Date((msg.date ? msg.date * 1000 : Date.now()));
@@ -51,4 +59,3 @@ function logCommandUsage(msg) {
 module.exports = {
   logCommandUsage,
 };
-

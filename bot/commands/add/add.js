@@ -58,7 +58,7 @@ const addCommand = ({ members }) => {
       sendMessage({
         msg,
         type: 'DEFAULT',
-        message: `${ADD.invalidNames} ${invalidNames.join(', ')}`,
+        message: ADD.invalidNamesMessage(invalidNames),
       });
 
       return;

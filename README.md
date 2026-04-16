@@ -37,6 +37,8 @@ Important root variables:
 - `BOT_API_BASE_URL` when the bot runs separately from the API
 - `INTERNAL_API_AUTH_TOKEN`
 - `ADMIN_UI_URL`
+- `MAINTENANCE_MODE` to pause production traffic without affecting local dev
+- `MAINTENANCE_UNTIL` for the bot/API maintenance message
 
 Admin-specific auth/session variables now belong only in the separate admin repo.
 

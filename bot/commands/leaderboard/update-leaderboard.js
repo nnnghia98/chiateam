@@ -222,37 +222,10 @@ const updateLeaderboardCommand = () => {
         return;
       }
 
-      // Create response message
-      const resultEmoji =
-        result === 'WIN' ? '✅' : result === 'LOSE' ? '❌' : '🤝';
-      const resultText =
-        result === 'WIN' ? 'THẮNG' : result === 'LOSE' ? 'THUA' : 'HÒA';
-
-      let message = `${resultEmoji} **CẬP NHẬT THỐNG KÊ** ${resultEmoji}\n\n`;
-      message += `🎯 **Kết quả:** ${resultText}\n`;
-      message += `👥 **Số người chơi:** ${playerIds.length}\n`;
-      message += `🆔 **ID người chơi:** ${playerIds.join(', ')}\n\n`;
-
-      // Update statistics for each player
-      message += '📊 **Thay đổi thống kê:**\n';
-      playerIds.forEach(playerId => {
-        let statChange = '';
-        if (result === 'WIN') {
-          statChange = '+1 thắng';
-        } else if (result === 'LOSE') {
-          statChange = '+1 thua';
-        } else {
-          statChange = '+1 hòa';
-        }
-        message += `   • ID ${playerId}: +1 trận, ${statChange}\n`;
-      });
-
-      message += '\n💡 Sử dụng `/leaderboard` để xem bảng xếp hạng mới';
-
       sendMessage({
         msg,
         type: 'STATISTICS',
-        message,
+        message: UPDATE_LEADERBOARD.buildSuccessMessage(result, playerIds),
         options: {
           parse_mode: 'Markdown',
         },

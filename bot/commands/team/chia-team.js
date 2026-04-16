@@ -1,4 +1,5 @@
 const shuffleArray = require('../../utils/shuffle');
+const { CHIA_TEAM } = require('../../utils/messages');
 const { getDisplayName } = require('../../utils/team-member');
 const { sendMessage } = require('../../utils/chat');
 const { requireAdmin } = require('../../utils/permissions');
@@ -23,7 +24,7 @@ const splitCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
       sendMessage({
         msg,
         type: 'DEFAULT',
-        message: '⚠️ Tất cả member đã có team rồi. Dùng /clearteam để reset.',
+        message: CHIA_TEAM.allAssigned,
       });
       return;
     }
@@ -32,7 +33,7 @@ const splitCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
       sendMessage({
         msg,
         type: 'DEFAULT',
-        message: '❗ Không đủ người để chia',
+        message: CHIA_TEAM.notEnough,
       });
       return;
     }
@@ -99,19 +100,13 @@ const splitCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
       memberIndex += team.needed;
     });
 
-    const message =
-      '🎲 *Chia team* 🎲\n\n' +
-      `⚪ *HOME:*\n${Array.from(teamA.values())
-        .map(v => escapeMarkdown(getDisplayName(v)))
-        .join('\n')}\n\n` +
-      `⚫ *AWAY:*\n${Array.from(teamB.values())
-        .map(v => escapeMarkdown(getDisplayName(v)))
-        .join('\n')}`;
-
     sendMessage({
       msg,
       type: 'ANNOUNCEMENT',
-      message,
+      message: CHIA_TEAM.buildTwoTeamMessage(
+        Array.from(teamA.values()).map(v => escapeMarkdown(getDisplayName(v))),
+        Array.from(teamB.values()).map(v => escapeMarkdown(getDisplayName(v)))
+      ),
       options: { parse_mode: 'Markdown' },
     });
   });
@@ -135,7 +130,7 @@ const splitCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
       sendMessage({
         msg,
         type: 'DEFAULT',
-        message: '⚠️ Tất cả member đã có team rồi. Dùng /clearteam để reset.',
+        message: CHIA_TEAM.allAssignedThree,
       });
       return;
     }
@@ -144,7 +139,7 @@ const splitCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
       sendMessage({
         msg,
         type: 'DEFAULT',
-        message: '❗ Cần ít nhất 3 người để chia 3 team',
+        message: CHIA_TEAM.notEnoughThree,
       });
       return;
     }
@@ -231,22 +226,14 @@ const splitCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
       memberIndex += team.needed;
     });
 
-    const message =
-      '🎲 *Chia 3 team* 🎲\n\n' +
-      `⚪ *HOME:*\n${Array.from(team3A.values())
-        .map(v => escapeMarkdown(getDisplayName(v)))
-        .join('\n')}\n\n` +
-      `⚫ *AWAY:*\n${Array.from(team3B.values())
-        .map(v => escapeMarkdown(getDisplayName(v)))
-        .join('\n')}\n\n` +
-      `🟠 *EXTRA:*\n${Array.from(team3C.values())
-        .map(v => escapeMarkdown(getDisplayName(v)))
-        .join('\n')}`;
-
     sendMessage({
       msg,
       type: 'ANNOUNCEMENT',
-      message,
+      message: CHIA_TEAM.buildThreeTeamMessage(
+        Array.from(team3A.values()).map(v => escapeMarkdown(getDisplayName(v))),
+        Array.from(team3B.values()).map(v => escapeMarkdown(getDisplayName(v))),
+        Array.from(team3C.values()).map(v => escapeMarkdown(getDisplayName(v)))
+      ),
       options: { parse_mode: 'Markdown' },
     });
   });

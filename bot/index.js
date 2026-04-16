@@ -8,12 +8,9 @@ const {
   chiateamCommand,
   teamCommand,
   clearBenchCommand,
-  unknownCommand,
   tiensanCommand,
   chiaTienCommand,
   taoVoteCommand,
-  leaderboardCommand,
-  updateLeaderboardCommand,
   editStatsCommand,
   playerCommand,
   registerCommand,
@@ -25,7 +22,6 @@ const {
   matchCommand,
   matchesCommand,
   resetCommand,
-  aiCommand,
 } = require('./commands');
 
 const maintenanceMessage = require('./commands/maintainance');
@@ -33,6 +29,10 @@ const bot = require('./telegram-client');
 const { logCommandUsage } = require('./utils/command-logger');
 const { startTestServer } = require('./test-server');
 const { initializeStorage } = require('./utils/storage');
+const {
+  isMaintenanceModeEnabled,
+  getMaintenanceUntil,
+} = require('../config/maintenance');
 
 function installProcessCrashLogging() {
   process.on('uncaughtException', err => {
@@ -61,8 +61,8 @@ console.log('🚀 Starting ChiaTeam Bot...');
 console.log('');
 
 // Maintenance mode check
-const isMaintenanceMode = false; // Set to true to enable maintenance mode
-const maintenanceUntil = '2026-10-02 12:00'; // Set maintenance end time
+const isMaintenanceMode = isMaintenanceModeEnabled();
+const maintenanceUntil = getMaintenanceUntil();
 
 if (isMaintenanceMode) {
   bot.on('message', msg => {
@@ -79,7 +79,7 @@ if (isMaintenanceMode) {
     }
   });
 
-  console.log('🔧 Bot is in maintenance mode...');
+  console.log(`🔧 Bot is in maintenance mode until ${maintenanceUntil}`);
   return;
 }
 
@@ -103,7 +103,6 @@ async function bootstrapBot() {
   const resetAll = storage.resetAll;
 
   startCommand();
-  unknownCommand();
 
   addMeCommand({ members });
   chiateamCommand({ members, teamA, teamB, team3A, team3B, team3C });
@@ -115,8 +114,6 @@ async function bootstrapBot() {
   chiaTienCommand(getTiensan, getTeamThua, { teamA, teamB });
   taoVoteCommand({ members, getActiveVote, setActiveVote });
   sanCommand();
-  leaderboardCommand();
-  updateLeaderboardCommand();
   editStatsCommand();
   playerCommand();
   registerCommand();
@@ -127,7 +124,6 @@ async function bootstrapBot() {
   matchCommand({ getTiensan, teamA, teamB, team3C });
   matchesCommand();
   resetCommand({ resetAll });
-  aiCommand();
 
   // Start HTTP test server in development mode
   startTestServer(bot);

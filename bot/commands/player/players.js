@@ -1,12 +1,17 @@
 const { getAllPlayers } = require('../../../api/routes/players');
 const { getMultiplePlayerStats } = require('../../../api/routes/leaderboard');
 const { sendMessage } = require('../../utils/chat');
+const { isOnCooldown } = require('../../utils/cooldown');
 const { PLAYERS } = require('../../utils/messages');
 
 const bot = require('../../telegram-client');
 
 const playersCommand = () => {
   bot.onText(/^\/players$/, async msg => {
+    if (isOnCooldown(msg, '/players')) {
+      return;
+    }
+
     try {
       const players = await getAllPlayers();
 
@@ -27,28 +32,10 @@ const playersCommand = () => {
         statsByNumber[row.player_number] = row;
       });
 
-      let message = `${PLAYERS.header}\n\n`;
-
-      players.forEach((player, index) => {
-        const stats = statsByNumber[player.number] || {};
-        const totalMatch = stats.total_match ?? 0;
-        const totalWin = stats.total_win ?? 0;
-        const totalLose = stats.total_lose ?? 0;
-        const totalDraw = stats.total_draw ?? 0;
-        const goal = stats.goal ?? 0;
-        const assist = stats.assist ?? 0;
-        const winrate =
-          stats.winrate != null ? (stats.winrate * 100).toFixed(1) : '0.0';
-
-        message += `**${index + 1}. ${player.name}** (#${player.number})\n`;
-        message += `   📊 Trận: ${totalMatch} | Thắng: ${totalWin} | Thua: ${totalLose} | Hòa: ${totalDraw}\n`;
-        message += `   ⚽ ${goal} bàn | 🎯 ${assist} KT | Winrate: ${winrate}%\n\n`;
-      });
-
       sendMessage({
         msg,
         type: 'STATISTICS',
-        message,
+        message: PLAYERS.buildList(players, statsByNumber),
         options: {
           parse_mode: 'Markdown',
         },
