@@ -1,11 +1,11 @@
-const maintenanceMessage = until => {
-  return `🔧 *BOT ĐANG BẢO TRÌ*
+const maintenanceMessage = () => {
+  return `🚫 *THÔNG BÁO NGỪNG HOẠT ĐỘNG*
 
-Bot hiện đã *tạm dừng hoạt động ngay từ lúc này* và sẽ không khả dụng cho đến *${until}*.
+Bot sẽ chính thức *ngừng hoạt động vĩnh viễn* kể từ *16/04/2026*.
 
 Cảm ơn mọi người đã đồng hành và sử dụng bot trong suốt thời gian qua.
 
-Hẹn gặp lại sau khi quá trình bảo trì hoàn tất. 🙏`;
+Sau thời điểm này, các tính năng của bot sẽ không còn khả dụng. Trân trọng! 🤝 🕊️`;
 };
 
 module.exports = maintenanceMessage;
