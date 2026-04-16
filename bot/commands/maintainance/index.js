@@ -1,9 +1,11 @@
 const maintenanceMessage = until => {
   return `🔧 *BOT ĐANG BẢO TRÌ*
 
-Bot hiện tại đang trong quá trình bảo trì và sẽ không hoạt động cho đến *${until}*.
+Bot hiện đã *tạm dừng hoạt động ngay từ lúc này* và sẽ không khả dụng cho đến *${until}*.
 
-Vui lòng thử lại sau. Xin lỗi vì sự bất tiện này! 🙏`;
+Cảm ơn mọi người đã đồng hành và sử dụng bot trong suốt thời gian qua.
+
+Hẹn gặp lại sau khi quá trình bảo trì hoàn tất. 🙏`;
 };
 
 module.exports = maintenanceMessage;
