@@ -29,6 +29,10 @@ const bot = require('./telegram-client');
 const { logCommandUsage } = require('./utils/command-logger');
 const { startTestServer } = require('./test-server');
 const { initializeStorage } = require('./utils/storage');
+const {
+  isMaintenanceModeEnabled,
+  getMaintenanceUntil,
+} = require('../config/maintenance');
 
 function installProcessCrashLogging() {
   process.on('uncaughtException', err => {
@@ -57,8 +61,8 @@ console.log('🚀 Starting ChiaTeam Bot...');
 console.log('');
 
 // Maintenance mode check
-const isMaintenanceMode = false; // Set to true to enable maintenance mode
-const maintenanceUntil = '2026-10-02 12:00'; // Set maintenance end time
+const isMaintenanceMode = isMaintenanceModeEnabled();
+const maintenanceUntil = getMaintenanceUntil();
 
 if (isMaintenanceMode) {
   bot.on('message', msg => {
@@ -75,7 +79,7 @@ if (isMaintenanceMode) {
     }
   });
 
-  console.log('🔧 Bot is in maintenance mode...');
+  console.log(`🔧 Bot is in maintenance mode until ${maintenanceUntil}`);
   return;
 }
 

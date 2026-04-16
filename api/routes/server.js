@@ -24,6 +24,10 @@ const {
   updateMatchByDate,
 } = require('./matches');
 const { updatePlayerStats } = require('./leaderboard');
+const {
+  isMaintenanceModeEnabled,
+  getMaintenanceUntil,
+} = require('../../config/maintenance');
 
 const DEFAULT_PORT = Number(
   process.env.API_PORT || process.env.UI_API_PORT || process.env.PORT || 8787
@@ -83,6 +87,13 @@ function sendText(res, statusCode, text, extraHeaders = {}) {
     ...extraHeaders,
   });
   res.end(text);
+}
+
+function isMaintenanceBypassRoute(path, method) {
+  if (path === '/healthz') return true;
+  if (path === '/api/status' && method === 'GET') return true;
+  if (path === '/api/settings') return true;
+  return false;
 }
 
 function corsHeaders(req) {
@@ -181,9 +192,12 @@ function requireAdmin(req, res, headers) {
 
 function createUiApiServer({ getStatus }) {
   const startedAt = new Date().toISOString();
+  const maintenanceMode = isMaintenanceModeEnabled();
+  const maintenanceUntil = getMaintenanceUntil();
+  const maintenanceControlledByEnv = maintenanceMode;
 
   const settings = {
-    maintenanceMode: false,
+    maintenanceMode,
     debugLogging: true,
     environment: process.env.NODE_ENV || 'development',
     botCommandPrefix: process.env.BOT_COMMAND_PREFIX || '/chiateam-dev',
@@ -216,8 +230,10 @@ function createUiApiServer({ getStatus }) {
         {
           startedAt,
           online: true,
+          maintenanceUntil: settings.maintenanceMode ? maintenanceUntil : null,
           settings: {
             maintenanceMode: settings.maintenanceMode,
+            maintenanceControlledByEnv,
             debugLogging: settings.debugLogging,
             environment: settings.environment,
           },
@@ -227,9 +243,34 @@ function createUiApiServer({ getStatus }) {
       );
     }
 
+    if (
+      settings.maintenanceMode &&
+      !isMaintenanceBypassRoute(path, req.method || 'GET')
+    ) {
+      return sendJson(
+        res,
+        503,
+        {
+          error: 'MAINTENANCE_MODE',
+          message: 'Service is temporarily unavailable for maintenance',
+          maintenanceUntil,
+        },
+        headers
+      );
+    }
+
     if (path === '/api/settings' && req.method === 'GET') {
       if (!requireAuthenticated(req, res, headers)) return;
-      return sendJson(res, 200, settings, headers);
+      return sendJson(
+        res,
+        200,
+        {
+          ...settings,
+          maintenanceControlledByEnv,
+          maintenanceUntil: settings.maintenanceMode ? maintenanceUntil : null,
+        },
+        headers
+      );
     }
 
     if (path === '/api/settings' && req.method === 'POST') {
@@ -237,6 +278,19 @@ function createUiApiServer({ getStatus }) {
       try {
         const payload = (await readJson(req)) || {};
         if (typeof payload.maintenanceMode === 'boolean') {
+          if (maintenanceControlledByEnv) {
+            return sendJson(
+              res,
+              409,
+              {
+                error: 'MAINTENANCE_CONTROLLED_BY_ENV',
+                message:
+                  'Production maintenance mode is controlled by MAINTENANCE_MODE',
+                maintenanceUntil,
+              },
+              headers
+            );
+          }
           settings.maintenanceMode = payload.maintenanceMode;
         }
         if (typeof payload.debugLogging === 'boolean') {
@@ -248,7 +302,16 @@ function createUiApiServer({ getStatus }) {
         if (Array.isArray(payload.allowedChatIds)) {
           settings.allowedChatIds = payload.allowedChatIds;
         }
-        return sendJson(res, 200, settings, headers);
+        return sendJson(
+          res,
+          200,
+          {
+            ...settings,
+            maintenanceControlledByEnv,
+            maintenanceUntil: settings.maintenanceMode ? maintenanceUntil : null,
+          },
+          headers
+        );
       } catch (e) {
         return sendJson(res, 400, { error: 'Invalid JSON payload' }, headers);
       }
