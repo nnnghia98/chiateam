@@ -1,5 +1,5 @@
-const { COMMANDS } = require('../../utils/constants');
 const { UNKNOWN } = require('../../utils/messages');
+const { isSupportedCommandText } = require('../../utils/command-filter');
 const { sendMessage } = require('../../utils/chat');
 
 const bot = require('../../telegram-client');
@@ -10,9 +10,7 @@ const unknownCommand = () => {
       return;
     }
 
-    const command = msg.text.split(' ')[0];
-
-    if (COMMANDS.includes(command)) {
+    if (isSupportedCommandText(msg.text)) {
       return;
     }
 

@@ -249,7 +249,9 @@ const START = {
 • \`/match dd/mm/yyyy DELETE\` - Xóa trận (chỉ admin)
 • \`/matches\` - Danh sách trận đấu gần đây
 
-💰 *Tiền sân:*
+📍 *Sân & chi phí:*
+• \`/san\` - Xem hoặc lưu sân hiện tại
+• \`/clearsan\` - Xóa sân hiện tại (admin)
 • \`/tiensan\` - Xem/đặt tiền sân
 • \`/chiatien\` - Chia tiền
 
@@ -260,10 +262,16 @@ const START = {
 • \`/clearvote\` - Xóa tất cả vote (admin)
 
 👥 *Cầu thủ:*
+• \`/register\` - Đăng ký cầu thủ
+• \`/me\` - Xem thông tin Telegram & đăng ký của bạn
 • \`/players\` - Danh sách cầu thủ & thống kê
 • \`/player\` - Xem thông số chi tiết
 
-💡 Dùng sai cú pháp = ngu!`,
+🛠 *Admin:*
+• \`/edit-stats\` - Chỉnh thống kê cầu thủ
+• \`/reset\` - Reset toàn bộ dữ liệu bot
+
+💡 Dùng \`/start\` bất cứ lúc nào để xem lại danh sách lệnh.`,
 };
 
 const MATCH = {
