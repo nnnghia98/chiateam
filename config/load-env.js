@@ -3,9 +3,7 @@ const path = require('path');
 const dotenv = require('dotenv');
 
 function getDefaultEnvFile() {
-  return process.env.NODE_ENV === 'production'
-    ? '.env.production'
-    : '.env.local';
+  return process.env.NODE_ENV === 'production' ? '.env.production' : '.env';
 }
 
 function loadEnv() {

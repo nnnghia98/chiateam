@@ -47,6 +47,12 @@ docs(root): add git commit conventions
 - Before risky changes to that data, make a backup and restore it if needed.
 - Do not migrate next-match data anywhere else unless the user explicitly approves that storage change.
 
+## Environment File Rules
+
+- Development commands and local Docker use the root `.env` file.
+- Production commands and VPS Docker use `.env.production`.
+- Do not reintroduce `.env.local`-based runtime paths unless the user explicitly asks for them.
+
 ---
 
 ## Trigger: "commit code"
