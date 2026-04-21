@@ -25,7 +25,7 @@ yarn start:api
 
 Root services read env from the repo root:
 
-1. Copy `.env.local.example` to `.env.local` for local/dev runtime
+1. Copy `.env.example` to `.env` for local/dev runtime
 2. Copy `.env.production.example` to `.env.production` for production runtime
 3. Fill in Telegram, database, and runtime values for each environment
 
@@ -37,7 +37,7 @@ Important root variables:
 - `BOT_API_BASE_URL` when the bot runs separately from the API
 - `INTERNAL_API_AUTH_TOKEN`
 - `ADMIN_UI_URL`
-- `MAINTENANCE_MODE` to pause production traffic without affecting local dev
+- `MAINTENANCE_MODE` to pause traffic in the current environment
 - `MAINTENANCE_UNTIL` for the bot/API maintenance message
 
 Admin-specific auth/session variables now belong only in the separate admin repo.

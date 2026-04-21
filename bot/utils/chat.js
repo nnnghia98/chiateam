@@ -19,14 +19,15 @@ console.log('📬 Thread configuration:', {
 const sendMessage = async ({ msg, type, message, options = {} }) => {
   const chatId = CHAT_ID ?? msg.chat.id;
   const threadId = THREAD_TYPES[type];
+  const baseOptions = { ...options };
 
   const sendOptions =
     threadId != null
       ? {
-          ...options,
+          ...baseOptions,
           message_thread_id: threadId,
         }
-      : options;
+      : baseOptions;
 
   if (type && threadId == null) {
     console.warn(`[chat.sendMessage] Unknown thread type: ${type}`);
@@ -56,7 +57,7 @@ const sendMessage = async ({ msg, type, message, options = {} }) => {
         : 'Thread not found';
       console.warn(`[chat.sendMessage] ${reason}, retrying without thread_id`);
       try {
-        return await bot.sendMessage(chatId, message, options);
+        return await bot.sendMessage(chatId, message, { ...options });
       } catch (fallbackError) {
         console.error(
           '[chat.sendMessage] Fallback also failed:',

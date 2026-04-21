@@ -1,0 +1,31 @@
+const REGISTERED_COMMANDS = Object.freeze([
+  '/start',
+  '/addme',
+  '/add',
+  '/bench',
+  '/chiateam',
+  '/team',
+  '/clearbench',
+  '/tiensan',
+  '/chiatien',
+  '/taovote',
+  '/clearvote',
+  '/demvote',
+  '/sync',
+  '/edit-stats',
+  '/player',
+  '/register',
+  '/players',
+  '/san',
+  '/clearsan',
+  '/addtoteam',
+  '/clearteam',
+  '/me',
+  '/match',
+  '/matches',
+  '/reset',
+]);
+
+module.exports = {
+  REGISTERED_COMMANDS,
+};

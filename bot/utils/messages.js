@@ -226,44 +226,56 @@ Ví dụ: \`/register 10\` hoặc \`/register Nghia 10\` (admin)`,
 };
 
 const START = {
-  help: `👋 *DANH SÁCH LỆNH HƯỚNG DẪN*
+  help: `👋 *CHIATEAM BOT*
 
-📝 *Quản lý danh sách:*
-• \`/addme\` - Tự add vào bench
-• \`/add\` - Add hộ vào bench
-• \`/bench\` - Xem bench
-• \`/clearbench\` - Xóa member khỏi bench
+*BẮT ĐẦU NHANH*
+• \`/addme\` - Tự thêm mình vào bench
+• \`/bench\` - Xem danh sách đang chờ
+• \`/chiateam\` - Chia 2 team
+• \`/team\` - Xem kết quả chia team
 
-⚽ *Quản lý team:*
-• \`/chiateam\` - Chia 2 team (HOME / AWAY)
-• \`/chiateam 3\` - Chia 3 team (HOME / AWAY / EXTRA) (admin)
-• \`/team\` - Xem 2 team
-• \`/team 3\` - Xem 3 team
-• \`/addtoteam\` - Thêm vào HOME / AWAY / EXTRA
-• \`/clearteam\` - Xóa member khỏi team
+*DANH SÁCH LỆNH*
 
-📅 *Trận đấu:*
+*BENCH*
+• \`/addme\` - Tự vào bench
+• \`/add\` - Thêm người vào bench
+• \`/bench\` - Xem bench hiện tại
+• \`/clearbench\` - Xóa người khỏi bench
+
+*TEAM*
+• \`/chiateam\` - Chia 2 team HOME / AWAY
+• \`/chiateam 3\` - Chia 3 team HOME / AWAY / EXTRA (admin)
+• \`/team\` - Xem 2 team hiện tại
+• \`/team 3\` - Xem 3 team hiện tại
+• \`/addtoteam\` - Thêm người vào team
+• \`/clearteam\` - Xóa người khỏi team
+
+*TRẬN ĐẤU*
 • \`/match\` - Xem trận tuần này
 • \`/match SAVE\` - Lưu trận từ dữ liệu hiện tại
 • \`/match dd/mm/yyyy\` - Xem trận theo ngày
-• \`/match dd/mm/yyyy DELETE\` - Xóa trận (chỉ admin)
-• \`/matches\` - Danh sách trận đấu gần đây
-
-💰 *Tiền sân:*
-• \`/tiensan\` - Xem/đặt tiền sân
-• \`/chiatien\` - Chia tiền
-
-🗳 *Vote:*
+• \`/match dd/mm/yyyy DELETE\` - Xóa trận theo ngày (admin)
+• \`/matches\` - Xem các trận gần đây
+• \`/san\` - Xem hoặc lưu sân
+• \`/clearsan\` - Xóa sân hiện tại (admin)
+• \`/tiensan\` - Xem hoặc cập nhật tiền sân
+• \`/chiatien\` - Chia tiền sân
 • \`/taovote\` - Tạo vote
 • \`/demvote\` - Xem kết quả vote
 • \`/sync\` - Đồng bộ người vote vào bench (admin)
-• \`/clearvote\` - Xóa tất cả vote (admin)
+• \`/clearvote\` - Xóa vote hiện tại (admin)
 
-👥 *Cầu thủ:*
-• \`/players\` - Danh sách cầu thủ & thống kê
+*CẦU THỦ*
+• \`/register\` - Đăng ký cầu thủ
+• \`/me\` - Xem thông tin của bạn
+• \`/players\` - Xem danh sách cầu thủ
 • \`/player\` - Xem thông số chi tiết
 
-💡 Dùng sai cú pháp = ngu!`,
+*ADMIN*
+• \`/edit-stats\` - Chỉnh thống kê cầu thủ
+• \`/reset\` - Reset toàn bộ dữ liệu bot
+
+💡 Dùng \`/start\` bất cứ lúc nào để xem lại hướng dẫn.`,
 };
 
 const MATCH = {

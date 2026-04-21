@@ -1,6 +1,6 @@
-const { COMMANDS } = require('./constants');
+const { REGISTERED_COMMANDS } = require('../commands/manifest');
 
-const SUPPORTED_COMMANDS = new Set(COMMANDS);
+const SUPPORTED_COMMANDS = new Set(REGISTERED_COMMANDS);
 
 function getCommandToken(text) {
   if (typeof text !== 'string') return null;

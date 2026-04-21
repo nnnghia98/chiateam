@@ -10,7 +10,7 @@ services:
       ]
     restart: unless-stopped
     env_file:
-      - .env.local
+      - .env
     environment:
       NODE_ENV: development
       API_PORT: 8787
@@ -46,7 +46,7 @@ services:
       ]
     restart: unless-stopped
     env_file:
-      - .env.local
+      - .env
     environment:
       NODE_ENV: development
       BOT_API_BASE_URL: http://api:8787

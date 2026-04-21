@@ -4,7 +4,7 @@ Use Docker locally for `api` + `bot` parity checks, while keeping native `yarn d
 
 ## Required Setup
 
-1. Create `.env.local` from `.env.local.example`.
+1. Create `.env` from `.env.example`.
 2. Keep `DATABASE_URL` pointing to your external DB.
 
 ## Start Local Dev Stack
@@ -49,8 +49,8 @@ So `.runtime/bot/storage.json` persists between container restarts.
 
 ## Troubleshooting
 
-- **Compose fails reading `.env.local`**
-  - Ensure `.env.local` uses standard `KEY=value` lines.
+- **Compose fails reading `.env`**
+  - Ensure `.env` uses standard `KEY=value` lines.
   - Remove invalid inline syntax such as `//` comment lines.
 - **Bot cannot reach API in Docker**
   - Keep `BOT_API_BASE_URL=http://api:8787` for container-to-container calls.
