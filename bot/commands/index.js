@@ -19,6 +19,7 @@ const meCommand = require('./player/me');
 const matchCommand = require('./match/match');
 const matchesCommand = require('./match/matches');
 const resetCommand = require('./management/reset');
+const { REGISTERED_COMMANDS } = require('./manifest');
 
 module.exports = {
   startCommand,
@@ -42,4 +43,5 @@ module.exports = {
   matchCommand,
   matchesCommand,
   resetCommand,
+  REGISTERED_COMMANDS,
 };
