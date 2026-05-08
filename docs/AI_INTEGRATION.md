@@ -6,7 +6,7 @@ Your Google AI (Gemini) has been successfully integrated into the Chiateam Bot!
 
 ### 🔑 API Key Configuration
 
-- **Status**: Configured ✅
+- **Status**: Required (set in `.env`)
 - **API Key**: `your_google_ai_studio_key`
 - **Location**: `.env` file
 - **Model**: `gemini-2.5-flash` (latest and fast)

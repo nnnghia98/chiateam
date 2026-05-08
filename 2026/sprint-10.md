@@ -205,6 +205,8 @@ AI can execute database queries via function calling to answer:
 GEMINI_API_KEY=your_google_ai_studio_key
 ```
 
+**Security Note**: Use placeholder values in docs/changelogs only. Rotate/revoke any key that was previously committed and never commit real secrets.
+
 **Model**: Gemini 2.5 Flash
 
 - Fast response times
