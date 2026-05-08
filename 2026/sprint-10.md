@@ -202,7 +202,7 @@ AI can execute database queries via function calling to answer:
 **Environment Variables**:
 
 ```bash
-GEMINI_API_KEY=REDACTED_GOOGLE_API_KEY
+GEMINI_API_KEY=your_google_ai_studio_key
 ```
 
 **Model**: Gemini 2.5 Flash
