@@ -60,6 +60,17 @@ const CLEAR_BENCH = {
   removeError: '❌ Có lỗi xảy ra khi xóa người chơi. Vui lòng thử lại.',
 };
 
+const EDIT_BENCH = {
+  emptyBench: '⚠️ Bench trống.',
+  instruction:
+    '📋 *Bench hiện tại:*\n\n{numberedList}\n\n💡 *Cách sử dụng:*\n• `/editbench [số] [tên mới]` - Đổi tên member theo thứ tự trong bench\n\nVí dụ: `/editbench 2 Minh`',
+  invalidSelection:
+    '⚠️ Số thứ tự không hợp lệ. Dùng `/editbench` để xem danh sách và chọn lại.',
+  invalidName: '⚠️ Tên mới không hợp lệ.',
+  duplicateName: '⚠️ Tên `{name}` đã tồn tại trong bench.',
+  success: '✅ Đã đổi tên: `{oldName}` → `{newName}`',
+};
+
 const CLEAR_TEAM = {
   emptyTeam: '⚠️ Chưa chia team.',
   success: '✅ Đã xóa toàn bộ team.',
@@ -240,6 +251,7 @@ const START = {
 • \`/addme\` - Tự vào bench
 • \`/add\` - Thêm người vào bench
 • \`/bench\` - Xem bench hiện tại
+• \`/editbench\` - Đổi tên người trong bench (admin)
 • \`/clearbench\` - Xóa người khỏi bench
 
 *TEAM*
@@ -762,6 +774,7 @@ module.exports = {
   CLEAR_BENCH,
   CLEAR_TEAM,
   CLEAR_TEAM_INDIVIDUAL,
+  EDIT_BENCH,
   EDIT_STATS,
   LEADERBOARD,
   MATCH,
