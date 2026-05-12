@@ -2,6 +2,7 @@ const startCommand = require('./common/start');
 const addMeCommand = require('./add/add-me');
 const addCommand = require('./add/add');
 const benchCommand = require('./bench/bench');
+const editBenchCommand = require('./bench/edit-bench');
 const chiateamCommand = require('./team/chia-team');
 const teamCommand = require('./team/team');
 const clearBenchCommand = require('./bench/clear-bench');
@@ -26,6 +27,7 @@ module.exports = {
   addMeCommand,
   addCommand,
   benchCommand,
+  editBenchCommand,
   chiateamCommand,
   teamCommand,
   clearBenchCommand,

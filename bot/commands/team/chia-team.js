@@ -7,17 +7,46 @@ const { escapeMarkdown } = require('../../utils/format');
 
 const bot = require('../../telegram-client');
 
+function normalizeName(name) {
+  return String(name || '')
+    .trim()
+    .toLowerCase();
+}
+
+function getMemberIdentity(member) {
+  if (member && typeof member === 'object') {
+    if (member.userId != null) return `tele:${member.userId}`;
+    if (member.memberId) return `member:${member.memberId}`;
+    if (member.name) return `name:${normalizeName(member.name)}`;
+  }
+
+  return `name:${normalizeName(getDisplayName(member))}`;
+}
+
+function collectAssignedIdentities(teamMaps) {
+  const assigned = new Set();
+  teamMaps.forEach(map => {
+    Array.from(map.values()).forEach(member => {
+      assigned.add(getMemberIdentity(member));
+    });
+  });
+  return assigned;
+}
+
 const splitCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
   // Split into 2 teams (HOME / AWAY). Uses teamA/teamB. Bench is NOT cleared.
   bot.onText(/^\/chiateam$/, msg => {
-    // Get members who are NOT already in any team
-    const existingTeamMembers = new Set([
-      ...Array.from(teamA.values()),
-      ...Array.from(teamB.values()),
+    // Get members who are NOT already assigned in any 2-team or 3-team slot.
+    const assignedIdentities = collectAssignedIdentities([
+      teamA,
+      teamB,
+      team3A,
+      team3B,
+      team3C,
     ]);
 
     const unassignedMembers = Array.from(members.values()).filter(
-      member => !existingTeamMembers.has(member)
+      member => !assignedIdentities.has(getMemberIdentity(member))
     );
 
     if (unassignedMembers.length === 0) {
@@ -84,13 +113,17 @@ const splitCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
         memberIndex + team.needed
       );
 
-      // Get existing members in this team to check for duplicates
-      const existingInTeam = new Set(Array.from(team.map.values()));
+      // Get existing member identities in this team to check for duplicates.
+      const existingInTeam = new Set(
+        Array.from(team.map.values()).map(getMemberIdentity)
+      );
 
       membersToAdd.forEach((entry, idx) => {
         // Only add if not already in this team
-        if (!existingInTeam.has(entry)) {
+        const identity = getMemberIdentity(entry);
+        if (!existingInTeam.has(identity)) {
           team.map.set(Date.now() + Math.random() + memberIndex + idx, entry);
+          existingInTeam.add(identity);
         } else {
           console.warn(
             `[chiateam] Skipped duplicate: ${getDisplayName(entry)} already in ${team.name}`
@@ -115,15 +148,17 @@ const splitCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
   bot.onText(/^\/chiateam 3$/, msg => {
     if (!requireAdmin(msg)) return;
 
-    // Get members who are NOT already in any 3-team
-    const existingTeamMembers = new Set([
-      ...Array.from(team3A.values()),
-      ...Array.from(team3B.values()),
-      ...Array.from(team3C.values()),
+    // Get members who are NOT already assigned in any 2-team or 3-team slot.
+    const assignedIdentities = collectAssignedIdentities([
+      teamA,
+      teamB,
+      team3A,
+      team3B,
+      team3C,
     ]);
 
     const unassignedMembers = Array.from(members.values()).filter(
-      member => !existingTeamMembers.has(member)
+      member => !assignedIdentities.has(getMemberIdentity(member))
     );
 
     if (unassignedMembers.length === 0) {
@@ -210,13 +245,17 @@ const splitCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
         memberIndex + team.needed
       );
 
-      // Get existing members in this team to check for duplicates
-      const existingInTeam = new Set(Array.from(team.map.values()));
+      // Get existing member identities in this team to check for duplicates.
+      const existingInTeam = new Set(
+        Array.from(team.map.values()).map(getMemberIdentity)
+      );
 
       membersToAdd.forEach((entry, idx) => {
         // Only add if not already in this team
-        if (!existingInTeam.has(entry)) {
+        const identity = getMemberIdentity(entry);
+        if (!existingInTeam.has(identity)) {
           team.map.set(Date.now() + Math.random() + memberIndex + idx, entry);
+          existingInTeam.add(identity);
         } else {
           console.warn(
             `[chiateam 3] Skipped duplicate: ${getDisplayName(entry)} already in ${team.name}`

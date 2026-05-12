@@ -2,6 +2,7 @@ const REGISTERED_COMMANDS = Object.freeze([
   '/start',
   '/addme',
   '/add',
+  '/editbench',
   '/bench',
   '/chiateam',
   '/team',

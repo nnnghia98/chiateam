@@ -5,6 +5,7 @@ const {
   addMeCommand,
   addCommand,
   benchCommand,
+  editBenchCommand,
   chiateamCommand,
   teamCommand,
   clearBenchCommand,
@@ -107,6 +108,7 @@ async function bootstrapBot() {
   addMeCommand({ members });
   chiateamCommand({ members, teamA, teamB, team3A, team3B, team3C });
   benchCommand({ members, refreshFromSource });
+  editBenchCommand({ members });
   clearBenchCommand({ members });
   addCommand({ members });
   teamCommand({ teamA, teamB, team3A, team3B, team3C });
