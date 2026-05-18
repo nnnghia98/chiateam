@@ -17,43 +17,33 @@ const clearTeamCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
       // mode === 2 (default)
       if (teamType === 'HOME') return teamA;
       if (teamType === 'AWAY') return teamB;
-      if (teamType === 'EXTRA') return team3C;
     }
 
     return null;
   };
 
-  // Clear ALL team maps. Players stay in bench (bench is the persistent roster).
+  // Clear the default 2-team stack. Players stay in bench (bench is the persistent roster).
   bot.onText(/^\/clearteam$/, msg => {
     if (!requireAdmin(msg)) {
       return;
     }
 
-    if (
-      teamA.size === 0 &&
-      teamB.size === 0 &&
-      team3A.size === 0 &&
-      team3B.size === 0 &&
-      team3C.size === 0
-    ) {
+    if (teamA.size === 0 && teamB.size === 0) {
       sendMessage({
         msg,
         type: 'DEFAULT',
-        message: CLEAR_TEAM.emptyTeam,
+        message: CLEAR_TEAM.stack2Empty,
       });
       return;
     }
 
     teamA.clear();
     teamB.clear();
-    team3A.clear();
-    team3B.clear();
-    team3C.clear();
 
     sendMessage({
       msg,
       type: 'DEFAULT',
-      message: CLEAR_TEAM.success,
+      message: CLEAR_TEAM.stack2Success,
     });
   });
 
@@ -114,6 +104,19 @@ const clearTeamCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
     const mode = match[1] ? parseInt(match[1]) : 2; // Default to 2-team mode
     const teamType = match[2];
     const team = getTeam(mode, teamType);
+    if (!team) {
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: CLEAR_TEAM_INDIVIDUAL.invalidSelection.replace(
+          /{teamType}/g,
+          ` ${teamType}`
+        ),
+        options: { parse_mode: 'Markdown' },
+      });
+      return;
+    }
+
     const teamName =
       teamType === 'HOME' ? 'Home' : teamType === 'AWAY' ? 'Away' : 'Extra';
     const teamEntries = Array.from(team.entries());
@@ -156,6 +159,19 @@ const clearTeamCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
     const teamType = match[2];
     const selection = match[3].trim();
     const team = getTeam(mode, teamType);
+    if (!team) {
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: CLEAR_TEAM_INDIVIDUAL.invalidSelection.replace(
+          /{teamType}/g,
+          ` ${teamType}`
+        ),
+        options: { parse_mode: 'Markdown' },
+      });
+      return;
+    }
+
     const teamName =
       teamType === 'HOME' ? 'Home' : teamType === 'AWAY' ? 'Away' : 'Extra';
     const teamEntries = Array.from(team.entries());

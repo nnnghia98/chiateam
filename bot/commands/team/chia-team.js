@@ -33,6 +33,30 @@ function collectAssignedIdentities(teamMaps) {
   return assigned;
 }
 
+function assignMembersToSmallestTeams(membersToAssign, teams, commandLabel) {
+  const existingIdentities = new Set(
+    teams.flatMap(team => Array.from(team.map.values()).map(getMemberIdentity))
+  );
+
+  membersToAssign.forEach((entry, idx) => {
+    const identity = getMemberIdentity(entry);
+    if (existingIdentities.has(identity)) {
+      console.warn(
+        `[${commandLabel}] Skipped duplicate: ${getDisplayName(entry)} already assigned`
+      );
+      return;
+    }
+
+    const minSize = Math.min(...teams.map(team => team.map.size));
+    const smallestTeams = teams.filter(team => team.map.size === minSize);
+    const team =
+      smallestTeams[Math.floor(Math.random() * smallestTeams.length)];
+
+    team.map.set(Date.now() + Math.random() + idx, entry);
+    existingIdentities.add(identity);
+  });
+}
+
 const splitCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
   // Split into 2 teams (HOME / AWAY). Uses teamA/teamB. Bench is NOT cleared.
   bot.onText(/^\/chiateam$/, msg => {
@@ -63,69 +87,18 @@ const splitCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
 
     shuffleArray(unassignedMembers);
 
-    // Smart distribution: balance teams based on current sizes
-    const currentSizes = [teamA.size, teamB.size];
-    const totalMembers =
-      currentSizes[0] + currentSizes[1] + unassignedMembers.length;
-    const idealPerTeam = Math.floor(totalMembers / 2);
-    const remainder = totalMembers % 2;
-
-    // Calculate how many members each team needs
     const teams = [
       {
-        current: currentSizes[0],
-        target: idealPerTeam,
         map: teamA,
         name: 'HOME',
       },
       {
-        current: currentSizes[1],
-        target: idealPerTeam,
         map: teamB,
         name: 'AWAY',
       },
     ];
 
-    // Sort teams by current size (smallest first)
-    teams.sort((a, b) => a.current - b.current);
-
-    // Give the extra member to a random team
-    if (remainder > 0) {
-      teams[Math.random() < 0.5 ? 0 : 1].target++;
-    }
-
-    // Calculate needed members for each team
-    teams.forEach(team => {
-      team.needed = Math.max(0, team.target - team.current);
-    });
-
-    // Distribute unassigned members to teams based on need
-    let memberIndex = 0;
-    teams.forEach(team => {
-      const membersToAdd = unassignedMembers.slice(
-        memberIndex,
-        memberIndex + team.needed
-      );
-
-      // Get existing member identities in this team to check for duplicates.
-      const existingInTeam = new Set(
-        Array.from(team.map.values()).map(getMemberIdentity)
-      );
-
-      membersToAdd.forEach((entry, idx) => {
-        // Only add if not already in this team
-        const identity = getMemberIdentity(entry);
-        if (!existingInTeam.has(identity)) {
-          team.map.set(Date.now() + Math.random() + memberIndex + idx, entry);
-          existingInTeam.add(identity);
-        } else {
-          console.warn(
-            `[chiateam] Skipped duplicate: ${getDisplayName(entry)} already in ${team.name}`
-          );
-        }
-      });
-      memberIndex += team.needed;
-    });
+    assignMembersToSmallestTeams(unassignedMembers, teams, 'chiateam');
 
     sendMessage({
       msg,
@@ -173,89 +146,22 @@ const splitCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
 
     shuffleArray(unassignedMembers);
 
-    // Smart distribution: balance teams based on current sizes
-    const currentSizes = [team3A.size, team3B.size, team3C.size];
-    const totalMembers =
-      currentSizes[0] +
-      currentSizes[1] +
-      currentSizes[2] +
-      unassignedMembers.length;
-    const idealPerTeam = Math.floor(totalMembers / 3);
-    const remainder = totalMembers % 3;
-
-    // Calculate how many members each team needs
     const teams = [
       {
-        index: 0,
-        current: currentSizes[0],
-        target: idealPerTeam,
         map: team3A,
         name: 'HOME',
       },
       {
-        index: 1,
-        current: currentSizes[1],
-        target: idealPerTeam,
         map: team3B,
         name: 'AWAY',
       },
       {
-        index: 2,
-        current: currentSizes[2],
-        target: idealPerTeam,
         map: team3C,
         name: 'EXTRA',
       },
     ];
 
-    // Sort teams by current size (smallest first) to prioritize filling smaller teams
-    teams.sort((a, b) => a.current - b.current);
-
-    // Distribute remainder randomly
-    const remainderIndices = [0, 1, 2];
-    for (let i = remainderIndices.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [remainderIndices[i], remainderIndices[j]] = [
-        remainderIndices[j],
-        remainderIndices[i],
-      ];
-    }
-    for (let i = 0; i < remainder; i++) {
-      teams[remainderIndices[i]].target++;
-    }
-
-    // Calculate needed members for each team
-    teams.forEach(team => {
-      team.needed = Math.max(0, team.target - team.current);
-    });
-
-    // Distribute unassigned members to teams based on need
-    let memberIndex = 0;
-    teams.forEach(team => {
-      const membersToAdd = unassignedMembers.slice(
-        memberIndex,
-        memberIndex + team.needed
-      );
-
-      // Get existing member identities in this team to check for duplicates.
-      const existingInTeam = new Set(
-        Array.from(team.map.values()).map(getMemberIdentity)
-      );
-
-      membersToAdd.forEach((entry, idx) => {
-        // Only add if not already in this team
-        const identity = getMemberIdentity(entry);
-        if (!existingInTeam.has(identity)) {
-          team.map.set(Date.now() + Math.random() + memberIndex + idx, entry);
-          existingInTeam.add(identity);
-        } else {
-          console.warn(
-            `[chiateam 3] Skipped duplicate: ${getDisplayName(entry)} already in ${team.name}`
-          );
-        }
-      });
-      memberIndex += team.needed;
-    });
+    assignMembersToSmallestTeams(unassignedMembers, teams, 'chiateam 3');
 
     sendMessage({
       msg,
