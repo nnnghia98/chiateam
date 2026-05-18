@@ -36,14 +36,8 @@ function collectAssignedIdentities(teamMaps) {
 const splitCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
   // Split into 2 teams (HOME / AWAY). Uses teamA/teamB. Bench is NOT cleared.
   bot.onText(/^\/chiateam$/, msg => {
-    // Get members who are NOT already assigned in any 2-team or 3-team slot.
-    const assignedIdentities = collectAssignedIdentities([
-      teamA,
-      teamB,
-      team3A,
-      team3B,
-      team3C,
-    ]);
+    // Get members who are NOT already assigned in the 2-team stack.
+    const assignedIdentities = collectAssignedIdentities([teamA, teamB]);
 
     const unassignedMembers = Array.from(members.values()).filter(
       member => !assignedIdentities.has(getMemberIdentity(member))
@@ -148,10 +142,8 @@ const splitCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
   bot.onText(/^\/chiateam 3$/, msg => {
     if (!requireAdmin(msg)) return;
 
-    // Get members who are NOT already assigned in any 2-team or 3-team slot.
+    // Get members who are NOT already assigned in the 3-team stack.
     const assignedIdentities = collectAssignedIdentities([
-      teamA,
-      teamB,
       team3A,
       team3B,
       team3C,
