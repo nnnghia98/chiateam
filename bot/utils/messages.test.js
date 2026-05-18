@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { START } = require('./messages');
+const { BENCH, CHIA_TEAM, START, TEAM } = require('./messages');
 
 test('/start help is organized into concise sections', () => {
   assert.match(START.help, /\*BẮT ĐẦU NHANH\*/);
@@ -21,4 +21,26 @@ test('/start help highlights the recommended command flow first', () => {
   assert.notEqual(commandListIndex, -1);
   assert.ok(quickStartIndex < commandListIndex);
   assert.match(START.help, /\/addme.+\/bench.+\/chiateam.+\/team/s);
+});
+
+test('bench and team messages include roster counts', () => {
+  assert.equal(
+    BENCH.success.replace('{count}', 3).replace('{names}', 'A\nB\nC'),
+    '👥 Danh sách hiện tại (3):\nA\nB\nC'
+  );
+
+  assert.match(
+    TEAM.buildTwoTeamMessage(['A'], ['B', 'C']),
+    /\*HOME \(1\):\*[\s\S]+\*AWAY \(2\):\*/
+  );
+
+  assert.match(
+    TEAM.buildThreeTeamMessage(['A'], ['B'], ['C', 'D']),
+    /\*HOME \(1\):\*[\s\S]+\*AWAY \(1\):\*[\s\S]+\*EXT \(2\):\*/
+  );
+
+  assert.match(
+    CHIA_TEAM.buildThreeTeamMessage(['A', 'B'], ['C'], ['D']),
+    /\*HOME \(2\):\*[\s\S]+\*AWAY \(1\):\*[\s\S]+\*EXT \(1\):\*/
+  );
 });

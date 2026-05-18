@@ -33,7 +33,9 @@ const benchCommand = ({ members, refreshFromSource }) => {
     sendMessage({
       msg,
       type: 'DEFAULT',
-      message: BENCH.success.replace('{names}', names.join('\n')),
+      message: BENCH.success
+        .replace('{count}', names.length)
+        .replace('{names}', names.join('\n')),
     });
   });
 };

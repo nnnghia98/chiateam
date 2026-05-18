@@ -41,7 +41,7 @@ const ADD_TO_TEAM = {
 
 const BENCH = {
   emptyBench: '⚠️ Bench trống.',
-  success: '👥 Danh sách hiện tại:\n{names}',
+  success: '👥 Danh sách hiện tại ({count}):\n{names}',
   refreshError: '❌ Không thể tải bench hiện tại từ API.',
 };
 
@@ -619,16 +619,16 @@ const TEAM = {
   buildTwoTeamMessage(homeMembers, awayMembers) {
     return (
       '🎲 *Team hiện tại* 🎲\n\n' +
-      `⚪ *HOME:*\n${homeMembers.join('\n')}\n\n` +
-      `⚫ *AWAY:*\n${awayMembers.join('\n')}`
+      `⚪ *HOME (${homeMembers.length}):*\n${homeMembers.join('\n')}\n\n` +
+      `⚫ *AWAY (${awayMembers.length}):*\n${awayMembers.join('\n')}`
     );
   },
   buildThreeTeamMessage(homeMembers, awayMembers, extraMembers) {
     return (
       '🎲 *3 Team hiện tại* 🎲\n\n' +
-      `⚪ *HOME:*\n${homeMembers.join('\n') || '(trống)'}\n\n` +
-      `⚫ *AWAY:*\n${awayMembers.join('\n') || '(trống)'}\n\n` +
-      `🟠 *EXTRA:*\n${extraMembers.join('\n') || '(trống)'}`
+      `⚪ *HOME (${homeMembers.length}):*\n${homeMembers.join('\n') || '(trống)'}\n\n` +
+      `⚫ *AWAY (${awayMembers.length}):*\n${awayMembers.join('\n') || '(trống)'}\n\n` +
+      `🟠 *EXT (${extraMembers.length}):*\n${extraMembers.join('\n') || '(trống)'}`
     );
   },
 };
@@ -642,16 +642,16 @@ const CHIA_TEAM = {
   buildTwoTeamMessage(homeMembers, awayMembers) {
     return (
       '🎲 *Chia team* 🎲\n\n' +
-      `⚪ *HOME:*\n${homeMembers.join('\n')}\n\n` +
-      `⚫ *AWAY:*\n${awayMembers.join('\n')}`
+      `⚪ *HOME (${homeMembers.length}):*\n${homeMembers.join('\n')}\n\n` +
+      `⚫ *AWAY (${awayMembers.length}):*\n${awayMembers.join('\n')}`
     );
   },
   buildThreeTeamMessage(homeMembers, awayMembers, extraMembers) {
     return (
       '🎲 *Chia 3 team* 🎲\n\n' +
-      `⚪ *HOME:*\n${homeMembers.join('\n')}\n\n` +
-      `⚫ *AWAY:*\n${awayMembers.join('\n')}\n\n` +
-      `🟠 *EXTRA:*\n${extraMembers.join('\n')}`
+      `⚪ *HOME (${homeMembers.length}):*\n${homeMembers.join('\n')}\n\n` +
+      `⚫ *AWAY (${awayMembers.length}):*\n${awayMembers.join('\n')}\n\n` +
+      `🟠 *EXT (${extraMembers.length}):*\n${extraMembers.join('\n')}`
     );
   },
 };
