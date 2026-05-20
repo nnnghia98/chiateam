@@ -59,6 +59,16 @@ function maxSizeDiff(teamMaps) {
   return Math.max(...sizes) - Math.min(...sizes);
 }
 
+function getTeamNameForUserId(teamMaps, userId) {
+  const identity = `tele:${userId}`;
+
+  return teamMaps.find(({ team }) =>
+    Array.from(team.values()).some(
+      member => `tele:${member.userId}` === identity
+    )
+  )?.name;
+}
+
 async function withMockedRandom(values, callback) {
   const originalRandom = Math.random;
   const queue = [...values];
@@ -124,7 +134,10 @@ test('/chiateam keeps two-team split within one player', async () => {
     team3C: new Map(),
   });
 
-  await findHandler(handlers, '/chiateam')({
+  await findHandler(
+    handlers,
+    '/chiateam'
+  )({
     from: { id: 123 },
     chat: { id: 456 },
     text: '/chiateam',
@@ -154,7 +167,10 @@ test('/chiateam 3 keeps three-team split within one player', async () => {
     team3C,
   });
 
-  await findHandler(handlers, '/chiateam 3')({
+  await findHandler(
+    handlers,
+    '/chiateam 3'
+  )({
     from: { id: 123 },
     chat: { id: 456 },
     text: '/chiateam 3',
@@ -185,7 +201,10 @@ test('/chiateam adds players to the smaller team before larger teams', async () 
     team3C: new Map(),
   });
 
-  await findHandler(handlers, '/chiateam')({
+  await findHandler(
+    handlers,
+    '/chiateam'
+  )({
     from: { id: 123 },
     chat: { id: 456 },
     text: '/chiateam',
@@ -193,6 +212,89 @@ test('/chiateam adds players to the smaller team before larger teams', async () 
 
   assert.equal(teamA.size, 2);
   assert.equal(teamB.size, 2);
+});
+
+test('/chiateam keeps manifest <3 pair on the same team', async () => {
+  const { bot, handlers } = createMockBot();
+  const chiateamCommand = loadChiaTeamWithMockedBot(bot);
+  const members = memberMap(4);
+  const teamA = new Map();
+  const teamB = new Map();
+
+  chiateamCommand({
+    members,
+    teamA,
+    teamB,
+    team3A: new Map(),
+    team3B: new Map(),
+    team3C: new Map(),
+    getManifest: () => ({
+      relation: 'same',
+      players: [
+        { identity: 'tele:1', name: 'Player 1' },
+        { identity: 'tele:3', name: 'Player 3' },
+      ],
+    }),
+  });
+
+  await findHandler(
+    handlers,
+    '/chiateam'
+  )({
+    from: { id: 123 },
+    chat: { id: 456 },
+    text: '/chiateam',
+  });
+
+  const teams = [
+    { name: 'HOME', team: teamA },
+    { name: 'AWAY', team: teamB },
+  ];
+
+  assert.equal(getTeamNameForUserId(teams, 1), getTeamNameForUserId(teams, 3));
+});
+
+test('/chiateam keeps manifest </3 pair on different teams', async () => {
+  const { bot, handlers } = createMockBot();
+  const chiateamCommand = loadChiaTeamWithMockedBot(bot);
+  const members = memberMap(4);
+  const teamA = new Map();
+  const teamB = new Map();
+
+  chiateamCommand({
+    members,
+    teamA,
+    teamB,
+    team3A: new Map(),
+    team3B: new Map(),
+    team3C: new Map(),
+    getManifest: () => ({
+      relation: 'different',
+      players: [
+        { identity: 'tele:1', name: 'Player 1' },
+        { identity: 'tele:3', name: 'Player 3' },
+      ],
+    }),
+  });
+
+  await findHandler(
+    handlers,
+    '/chiateam'
+  )({
+    from: { id: 123 },
+    chat: { id: 456 },
+    text: '/chiateam',
+  });
+
+  const teams = [
+    { name: 'HOME', team: teamA },
+    { name: 'AWAY', team: teamB },
+  ];
+
+  assert.notEqual(
+    getTeamNameForUserId(teams, 1),
+    getTeamNameForUserId(teams, 3)
+  );
 });
 
 test('/chiateam 3 randomly chooses among equally small teams', async () => {
@@ -216,7 +318,10 @@ test('/chiateam 3 randomly chooses among equally small teams', async () => {
   });
 
   await withMockedRandom([0.99, 0], async () => {
-    await findHandler(handlers, '/chiateam 3')({
+    await findHandler(
+      handlers,
+      '/chiateam 3'
+    )({
       from: { id: 123 },
       chat: { id: 456 },
       text: '/chiateam 3',

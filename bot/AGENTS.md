@@ -7,13 +7,10 @@ The active runtime starts at [index.js](/Users/nnnghia98/Projects/chiateam-bot/b
 ## What Lives Here
 
 - [index.js](/Users/nnnghia98/Projects/chiateam-bot/bot/index.js)
-  Main bot bootstrap. It loads env, creates shared runtime state, registers commands, and starts the local HTTP test server.
+  Main bot bootstrap. It loads env, creates shared runtime state, and registers commands.
 
 - [telegram-client.js](/Users/nnnghia98/Projects/chiateam-bot/bot/telegram-client.js)
   Telegram client creation and polling/webhook error wiring.
-
-- [test-server.js](/Users/nnnghia98/Projects/chiateam-bot/bot/test-server.js)
-  Dev-only HTTP command bridge used for local testing.
 
 - [storage.json.example](/Users/nnnghia98/Projects/chiateam-bot/bot/storage.json.example)
   Example persisted-state shape. Real runtime state lives in `.runtime/bot/storage.json` via `BOT_STATE_FILE`.

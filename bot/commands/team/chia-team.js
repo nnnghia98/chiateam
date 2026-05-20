@@ -33,6 +33,105 @@ function collectAssignedIdentities(teamMaps) {
   return assigned;
 }
 
+function getAssignedTeamByIdentity(teams) {
+  const assigned = new Map();
+
+  teams.forEach(team => {
+    Array.from(team.map.values()).forEach(member => {
+      assigned.set(getMemberIdentity(member), team);
+    });
+  });
+
+  return assigned;
+}
+
+function addMemberToTeam(member, team, existingIdentities, keySalt) {
+  const identity = getMemberIdentity(member);
+
+  if (existingIdentities.has(identity)) {
+    return false;
+  }
+
+  team.map.set(Date.now() + Math.random() + keySalt, member);
+  existingIdentities.add(identity);
+  return true;
+}
+
+function getRandomSmallestTeam(teams, excludedTeam = null) {
+  const candidates = excludedTeam
+    ? teams.filter(team => team !== excludedTeam)
+    : teams;
+
+  if (candidates.length === 0) {
+    return null;
+  }
+
+  const minSize = Math.min(...candidates.map(team => team.map.size));
+  const smallestTeams = candidates.filter(team => team.map.size === minSize);
+  return smallestTeams[Math.floor(Math.random() * smallestTeams.length)];
+}
+
+function assignManifestPair({ membersToAssign, teams, manifest }) {
+  if (
+    !manifest ||
+    !Array.isArray(manifest.players) ||
+    manifest.players.length !== 2
+  ) {
+    return membersToAssign;
+  }
+
+  const manifestIdentities = manifest.players.map(player => player.identity);
+  const manifestMembers = manifestIdentities.map(identity =>
+    membersToAssign.find(member => getMemberIdentity(member) === identity)
+  );
+
+  if (!manifestMembers.some(Boolean)) {
+    return membersToAssign;
+  }
+
+  const existingIdentities = new Set(
+    teams.flatMap(team => Array.from(team.map.values()).map(getMemberIdentity))
+  );
+  const assignedTeams = getAssignedTeamByIdentity(teams);
+  const assignedManifestTeams = manifestIdentities.map((identity, index) =>
+    manifestMembers[index] ? null : assignedTeams.get(identity)
+  );
+
+  if (manifest.relation === 'same') {
+    const targetTeam =
+      assignedManifestTeams.find(Boolean) || getRandomSmallestTeam(teams);
+
+    manifestMembers.forEach((member, index) => {
+      if (member && targetTeam) {
+        addMemberToTeam(member, targetTeam, existingIdentities, index);
+      }
+    });
+  } else {
+    const firstAssignedTeam = manifestMembers[0]
+      ? null
+      : assignedTeams.get(manifestIdentities[0]);
+    const secondAssignedTeam = manifestMembers[1]
+      ? null
+      : assignedTeams.get(manifestIdentities[1]);
+    const firstTeam =
+      firstAssignedTeam || getRandomSmallestTeam(teams, secondAssignedTeam);
+    const secondTeam =
+      secondAssignedTeam || getRandomSmallestTeam(teams, firstTeam);
+
+    if (manifestMembers[0] && firstTeam) {
+      addMemberToTeam(manifestMembers[0], firstTeam, existingIdentities, 0);
+    }
+
+    if (manifestMembers[1] && secondTeam) {
+      addMemberToTeam(manifestMembers[1], secondTeam, existingIdentities, 1);
+    }
+  }
+
+  return membersToAssign.filter(
+    member => !existingIdentities.has(getMemberIdentity(member))
+  );
+}
+
 function assignMembersToSmallestTeams(membersToAssign, teams, commandLabel) {
   const existingIdentities = new Set(
     teams.flatMap(team => Array.from(team.map.values()).map(getMemberIdentity))
@@ -57,7 +156,15 @@ function assignMembersToSmallestTeams(membersToAssign, teams, commandLabel) {
   });
 }
 
-const splitCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
+const splitCommand = ({
+  members,
+  teamA,
+  teamB,
+  team3A,
+  team3B,
+  team3C,
+  getManifest,
+}) => {
   // Split into 2 teams (HOME / AWAY). Uses teamA/teamB. Bench is NOT cleared.
   bot.onText(/^\/chiateam$/, msg => {
     // Get members who are NOT already assigned in the 2-team stack.
@@ -98,7 +205,13 @@ const splitCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
       },
     ];
 
-    assignMembersToSmallestTeams(unassignedMembers, teams, 'chiateam');
+    const remainingMembers = assignManifestPair({
+      membersToAssign: unassignedMembers,
+      teams,
+      manifest: typeof getManifest === 'function' ? getManifest() : null,
+    });
+
+    assignMembersToSmallestTeams(remainingMembers, teams, 'chiateam');
 
     sendMessage({
       msg,
@@ -161,7 +274,13 @@ const splitCommand = ({ members, teamA, teamB, team3A, team3B, team3C }) => {
       },
     ];
 
-    assignMembersToSmallestTeams(unassignedMembers, teams, 'chiateam 3');
+    const remainingMembers = assignManifestPair({
+      membersToAssign: unassignedMembers,
+      teams,
+      manifest: typeof getManifest === 'function' ? getManifest() : null,
+    });
+
+    assignMembersToSmallestTeams(remainingMembers, teams, 'chiateam 3');
 
     sendMessage({
       msg,

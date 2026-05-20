@@ -21,6 +21,7 @@ const REGISTERED_COMMANDS = Object.freeze([
   '/clearsan',
   '/addtoteam',
   '/clearteam',
+  '/manifest',
   '/me',
   '/match',
   '/matches',

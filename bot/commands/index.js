@@ -4,6 +4,7 @@ const addCommand = require('./add/add');
 const benchCommand = require('./bench/bench');
 const editBenchCommand = require('./bench/edit-bench');
 const chiateamCommand = require('./team/chia-team');
+const manifestCommand = require('./team/manifest');
 const teamCommand = require('./team/team');
 const clearBenchCommand = require('./bench/clear-bench');
 const tiensanCommand = require('./management/tien-san');
@@ -29,6 +30,7 @@ module.exports = {
   benchCommand,
   editBenchCommand,
   chiateamCommand,
+  manifestCommand,
   teamCommand,
   clearBenchCommand,
   tiensanCommand,

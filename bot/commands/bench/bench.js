@@ -28,7 +28,9 @@ const benchCommand = ({ members, refreshFromSource }) => {
       });
       return;
     }
-    const names = Array.from(members.values()).map(getDisplayName);
+    const names = Array.from(members.values()).map(
+      (member, index) => `${index + 1}. ${getDisplayName(member)}`
+    );
 
     sendMessage({
       msg,

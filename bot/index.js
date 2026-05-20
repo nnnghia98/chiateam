@@ -7,6 +7,7 @@ const {
   benchCommand,
   editBenchCommand,
   chiateamCommand,
+  manifestCommand,
   teamCommand,
   clearBenchCommand,
   tiensanCommand,
@@ -28,7 +29,6 @@ const {
 const maintenanceMessage = require('./commands/maintainance');
 const bot = require('./telegram-client');
 const { logCommandUsage } = require('./utils/command-logger');
-const { startTestServer } = require('./test-server');
 const { initializeStorage } = require('./utils/storage');
 const {
   isMaintenanceModeEnabled,
@@ -100,13 +100,24 @@ async function bootstrapBot() {
   const getTeamThua = storage.getTeamThua;
   const getActiveVote = storage.getActiveVote;
   const setActiveVote = storage.setActiveVote;
+  const getManifest = storage.getManifest;
+  const setManifest = storage.setManifest;
   const refreshFromSource = storage.refreshFromSource;
   const resetAll = storage.resetAll;
 
   startCommand();
 
   addMeCommand({ members });
-  chiateamCommand({ members, teamA, teamB, team3A, team3B, team3C });
+  chiateamCommand({
+    members,
+    teamA,
+    teamB,
+    team3A,
+    team3B,
+    team3C,
+    getManifest,
+  });
+  manifestCommand({ members, getManifest, setManifest });
   benchCommand({ members, refreshFromSource });
   editBenchCommand({ members });
   clearBenchCommand({ members });
@@ -126,9 +137,6 @@ async function bootstrapBot() {
   matchCommand({ getTiensan, teamA, teamB, team3C });
   matchesCommand();
   resetCommand({ resetAll });
-
-  // Start HTTP test server in development mode
-  startTestServer(bot);
 
   console.log('🤖 Bot is running...');
 }

@@ -17,6 +17,7 @@ function createDefaultBotStorage() {
     team3A: [],
     team3B: [],
     team3C: [],
+    manifest: null,
     tiensan: 0,
     tiennuoc: 0,
     teamThua: null,

@@ -41,7 +41,7 @@ const ADD_TO_TEAM = {
 
 const BENCH = {
   emptyBench: '⚠️ Bench trống.',
-  success: '👥 Danh sách hiện tại ({count}):\n{names}',
+  success: '👥 Danh sách hiện tại:\n{names}\n\nTổng: {count} player(s)',
   refreshError: '❌ Không thể tải bench hiện tại từ API.',
 };
 
@@ -78,6 +78,17 @@ const CLEAR_TEAM = {
   stack2Success: '✅ Đã xóa toàn bộ 2-team stack (HOME, AWAY).',
   stack3Empty: '⚠️ 3-team stack đã trống rồi.',
   stack3Success: '✅ Đã xóa toàn bộ 3-team stack (HOME, AWAY, EXTRA).',
+};
+
+const MANIFEST = {
+  emptyBench: '⚠️ Bench trống. Thêm member trước.',
+  noCurrent: 'Chưa có manifest nào.',
+  current: 'Manifest hiện tại: `{first} {symbol} {second}`',
+  instruction:
+    '📋 *Bench hiện tại:*\n\n{numberedList}\n\n{current}\n\n💡 *Cách sử dụng:*\n• `/manifest [số thứ tự] <3 [số thứ tự]` hoặc `❤️` - Cho 2 member cùng team\n• `/manifest [số thứ tự] </3 [số thứ tự]` - Cho 2 member khác team\n\nVí dụ: `/manifest 1 <3 3` hoặc `/manifest 1 ❤️ 3`',
+  invalidSelection:
+    '⚠️ Cú pháp manifest không hợp lệ. Ví dụ: `/manifest 1 <3 3`, `/manifest 1 ❤️ 3` hoặc `/manifest 1 </3 3`',
+  success: '🧞‍♂️ Đã nhận nguyện vọng: `{first} {symbol} {second}`',
 };
 
 const RESET = {
@@ -164,10 +175,7 @@ const TAO_VOTE = {
       resultText += '\n';
     });
 
-    resultText += TAO_VOTE.totalVotersLine.replace(
-      '{count}',
-      totalVoters || 0
-    );
+    resultText += TAO_VOTE.totalVotersLine.replace('{count}', totalVoters || 0);
 
     return resultText;
   },
@@ -185,7 +193,9 @@ const TAO_VOTE = {
 
     if (addedCount > 0) {
       message += `✅ *Đã thêm vào bench (${addedCount}):*\n`;
-      message += addedNames.map((name, index) => `${index + 1}. ${name}`).join('\n');
+      message += addedNames
+        .map((name, index) => `${index + 1}. ${name}`)
+        .join('\n');
       message += '\n\n';
     }
 
@@ -257,6 +267,7 @@ const START = {
 *TEAM*
 • \`/chiateam\` - Chia 2 team HOME / AWAY
 • \`/chiateam 3\` - Chia 3 team HOME / AWAY / EXTRA (admin)
+• \`/manifest\` - Ghép hoặc tách 2 người khi chia team
 • \`/team\` - Xem 2 team hiện tại
 • \`/team 3\` - Xem 3 team hiện tại
 • \`/addtoteam\` - Thêm người vào team
@@ -355,9 +366,11 @@ const MATCH = {
     };
 
     message += '\n⚪ *HOME:*\n';
-    message += (match.homePlayers || []).map(formatPlayerLine).join('\n') || '• (trống)';
+    message +=
+      (match.homePlayers || []).map(formatPlayerLine).join('\n') || '• (trống)';
     message += '\n\n⚫ *AWAY:*\n';
-    message += (match.awayPlayers || []).map(formatPlayerLine).join('\n') || '• (trống)';
+    message +=
+      (match.awayPlayers || []).map(formatPlayerLine).join('\n') || '• (trống)';
 
     if (match.extraPlayers && match.extraPlayers.length > 0) {
       message += '\n\n🟠 *EXTRA:*\n';
@@ -466,9 +479,9 @@ const PLAYER = {
 
     let message = `${rankEmoji} **THÔNG SỐ PLAYER** ${rankEmoji}\n\n`;
     message += `🆔 **Player số áo:** ${playerId}\n`;
-    message += `📅 **Ngày tạo:** ${new Date(playerStats.created_at).toLocaleDateString(
-      'vi-VN'
-    )}\n`;
+    message += `📅 **Ngày tạo:** ${new Date(
+      playerStats.created_at
+    ).toLocaleDateString('vi-VN')}\n`;
     message += `🔄 **Cập nhật lần cuối:** ${new Date(
       playerStats.updated_at
     ).toLocaleDateString('vi-VN')}\n\n`;
@@ -715,7 +728,8 @@ const UPDATE_LEADERBOARD = {
   helpMessage:
     '📝 **Chức năng cập nhật thống kê đã tạm ngưng.**\n\n💡 Dùng `/players` để xem danh sách cầu thủ & thống kê hiện tại.',
   buildSuccessMessage(result, playerIds) {
-    const resultEmoji = result === 'WIN' ? '✅' : result === 'LOSE' ? '❌' : '🤝';
+    const resultEmoji =
+      result === 'WIN' ? '✅' : result === 'LOSE' ? '❌' : '🤝';
     const resultText =
       result === 'WIN' ? 'THẮNG' : result === 'LOSE' ? 'THUA' : 'HÒA';
 
@@ -777,6 +791,7 @@ module.exports = {
   EDIT_BENCH,
   EDIT_STATS,
   LEADERBOARD,
+  MANIFEST,
   MATCH,
   MATCHES,
   ME,

@@ -25,8 +25,8 @@ test('/start help highlights the recommended command flow first', () => {
 
 test('bench and team messages include roster counts', () => {
   assert.equal(
-    BENCH.success.replace('{count}', 3).replace('{names}', 'A\nB\nC'),
-    '👥 Danh sách hiện tại (3):\nA\nB\nC'
+    BENCH.success.replace('{count}', 3).replace('{names}', '1. A\n2. B\n3. C'),
+    '👥 Danh sách hiện tại:\n1. A\n2. B\n3. C\n\nTổng: 3 player(s)'
   );
 
   assert.match(

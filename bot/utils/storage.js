@@ -12,6 +12,7 @@ const DEFAULT_DATA = {
   team3A: [],
   team3B: [],
   team3C: [],
+  manifest: null,
   tiensan: 0,
   tiennuoc: 0,
   teamThua: null,
@@ -39,6 +40,27 @@ function normalizeEntryArray(value) {
   return value.filter(entry => Array.isArray(entry) && entry.length >= 2);
 }
 
+function normalizeManifest(value) {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+
+  const relation = value.relation === 'different' ? 'different' : 'same';
+  const players = Array.isArray(value.players) ? value.players : [];
+
+  if (players.length !== 2 || players.some(player => !player?.identity)) {
+    return null;
+  }
+
+  return {
+    relation,
+    players: players.map(player => ({
+      identity: String(player.identity),
+      name: String(player.name || ''),
+    })),
+  };
+}
+
 function mapToArray(map) {
   return Array.from(map.entries());
 }
@@ -57,6 +79,7 @@ function normalizeStorageData(data = {}) {
     team3A: normalizeEntryArray(data.team3A),
     team3B: normalizeEntryArray(data.team3B),
     team3C: normalizeEntryArray(data.team3C),
+    manifest: normalizeManifest(data.manifest),
     tiensan: data.tiensan ?? 0,
     tiennuoc: data.tiennuoc ?? 0,
     teamThua: data.teamThua ?? null,
@@ -107,6 +130,7 @@ function buildStorageSnapshot(state) {
     team3A: mapToArray(state.team3A),
     team3B: mapToArray(state.team3B),
     team3C: mapToArray(state.team3C),
+    manifest: state.getManifest(),
     tiensan: state.getTiensan(),
     tiennuoc: state.getTiennuoc(),
     teamThua: state.getTeamThua(),
@@ -166,6 +190,7 @@ function createStateFromData(data) {
   const team3B = arrayToMap(data.team3B);
   const team3C = arrayToMap(data.team3C);
 
+  let manifest = normalizeManifest(data.manifest);
   let tiensan = data.tiensan ?? 0;
   let tiennuoc = data.tiennuoc ?? 0;
   let teamThua = data.teamThua ?? null;
@@ -189,6 +214,7 @@ function createStateFromData(data) {
     replaceMapContents(team3A, nextData.team3A);
     replaceMapContents(team3B, nextData.team3B);
     replaceMapContents(team3C, nextData.team3C);
+    manifest = normalizeManifest(nextData.manifest);
     tiensan = nextData.tiensan ?? 0;
     tiennuoc = nextData.tiennuoc ?? 0;
     teamThua = nextData.teamThua ?? null;
@@ -241,6 +267,11 @@ function createStateFromData(data) {
     team3A,
     team3B,
     team3C,
+    getManifest: () => manifest,
+    setManifest: val => {
+      manifest = normalizeManifest(val);
+      return persist();
+    },
     getTiensan: () => tiensan,
     setTiensan: val => {
       tiensan = val;
@@ -285,6 +316,7 @@ function createStateFromData(data) {
       originalTeam3BClear.call(team3B);
       originalTeam3CClear.call(team3C);
 
+      manifest = null;
       tiensan = 0;
       tiennuoc = 0;
       teamThua = null;
