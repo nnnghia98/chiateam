@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS players (
     number INTEGER NOT NULL UNIQUE,
     name TEXT NOT NULL,
     username TEXT,
+    avatar TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );

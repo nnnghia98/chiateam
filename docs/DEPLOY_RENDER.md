@@ -34,6 +34,9 @@ In Render dashboard → your service → **Environment** tab, add all vars:
 | `VIP_THREAD_ID` | `51` |
 | `STATISTICS_THREAD_ID` | `52` |
 | `DATABASE_URL` | Supabase connection string (URL-encode `@`→`%40`, `!`→`%21` in password) |
+| `SUPABASE_URL` | Supabase project URL, e.g. `https://your-project-ref.supabase.co` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key for server-side Storage uploads |
+| `SUPABASE_STORAGE_BUCKET` | Avatar bucket name, e.g. `player-avatars` |
 | `GEMINI_API_KEY` | AI Studio key (optional) |
 | `ADMIN_UI_URL` | Admin app URL (for CORS) |
 | `INTERNAL_API_AUTH_TOKEN` | Shared token for trusted admin proxy calls |

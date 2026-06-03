@@ -297,6 +297,123 @@ test('/chiateam keeps manifest </3 pair on different teams', async () => {
   );
 });
 
+test('/chiateam applies multiple manifests', async () => {
+  const { bot, handlers } = createMockBot();
+  const chiateamCommand = loadChiaTeamWithMockedBot(bot);
+  const members = memberMap(4);
+  const teamA = new Map();
+  const teamB = new Map();
+
+  chiateamCommand({
+    members,
+    teamA,
+    teamB,
+    team3A: new Map(),
+    team3B: new Map(),
+    team3C: new Map(),
+    getManifest: () => [
+      {
+        relation: 'same',
+        players: [
+          { identity: 'tele:1', name: 'Player 1' },
+          { identity: 'tele:2', name: 'Player 2' },
+        ],
+      },
+      {
+        relation: 'different',
+        players: [
+          { identity: 'tele:3', name: 'Player 3' },
+          { identity: 'tele:4', name: 'Player 4' },
+        ],
+      },
+    ],
+  });
+
+  await findHandler(
+    handlers,
+    '/chiateam'
+  )({
+    from: { id: 123 },
+    chat: { id: 456 },
+    text: '/chiateam',
+  });
+
+  const teams = [
+    { name: 'HOME', team: teamA },
+    { name: 'AWAY', team: teamB },
+  ];
+
+  assert.equal(getTeamNameForUserId(teams, 1), getTeamNameForUserId(teams, 2));
+  assert.notEqual(
+    getTeamNameForUserId(teams, 3),
+    getTeamNameForUserId(teams, 4)
+  );
+});
+
+test('/chiateam applies connected manifests as one constraint group', async () => {
+  const { bot, handlers } = createMockBot();
+  const chiateamCommand = loadChiaTeamWithMockedBot(bot);
+  const members = memberMap(4);
+  const teamA = new Map();
+  const teamB = new Map();
+
+  chiateamCommand({
+    members,
+    teamA,
+    teamB,
+    team3A: new Map(),
+    team3B: new Map(),
+    team3C: new Map(),
+    getManifest: () => [
+      {
+        relation: 'different',
+        players: [
+          { identity: 'tele:1', name: 'Player 1' },
+          { identity: 'tele:2', name: 'Player 2' },
+        ],
+      },
+      {
+        relation: 'different',
+        players: [
+          { identity: 'tele:3', name: 'Player 3' },
+          { identity: 'tele:4', name: 'Player 4' },
+        ],
+      },
+      {
+        relation: 'same',
+        players: [
+          { identity: 'tele:2', name: 'Player 2' },
+          { identity: 'tele:3', name: 'Player 3' },
+        ],
+      },
+    ],
+  });
+
+  await findHandler(
+    handlers,
+    '/chiateam'
+  )({
+    from: { id: 123 },
+    chat: { id: 456 },
+    text: '/chiateam',
+  });
+
+  const teams = [
+    { name: 'HOME', team: teamA },
+    { name: 'AWAY', team: teamB },
+  ];
+
+  assert.notEqual(
+    getTeamNameForUserId(teams, 1),
+    getTeamNameForUserId(teams, 2)
+  );
+  assert.equal(getTeamNameForUserId(teams, 2), getTeamNameForUserId(teams, 3));
+  assert.notEqual(
+    getTeamNameForUserId(teams, 3),
+    getTeamNameForUserId(teams, 4)
+  );
+});
+
 test('/chiateam 3 randomly chooses among equally small teams', async () => {
   const originalOwnerId = process.env.BOT_OWNER_ID;
   process.env.BOT_OWNER_ID = '123';

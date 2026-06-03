@@ -63,7 +63,7 @@ Default port resolution order: `API_PORT` → `UI_API_PORT` → `PORT` → `8787
 
 | Table                | Key columns                                                                                                                |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `players`            | `id`, `user_id` (Telegram ID, negative = placeholder), `number` (shirt), `name`, `username`                                |
+| `players`            | `id`, `user_id` (Telegram ID, negative = placeholder), `number` (shirt), `name`, `username`, `avatar`                      |
 | `leaderboard`        | `player_number` (FK → players.number), `total_match`, `total_win`, `total_lose`, `total_draw`, `winrate`, `goal`, `assist` |
 | `matches`            | `id`, `match_date` (unique, YYYY-MM-DD), `san`, `tiensan`, `home_score`, `away_score`, `notes`                             |
 | `match_players`      | `match_id`, `player_id` (nullable for guests), `side` (`HOME`/`AWAY`/`EXTRA`), `display_name`                              |
@@ -101,7 +101,8 @@ Header: `x-admin-role: admin` in addition to auth header above.
 | -------- | -------------------------------- | ------------------------------------------------------------------------------ |
 | `POST`   | `/api/settings`                  | Update `maintenanceMode`, `debugLogging`, `botCommandPrefix`, `allowedChatIds` |
 | `POST`   | `/api/players`                   | Create admin-managed player (no Telegram ID)                                   |
-| `PUT`    | `/api/players/:number`           | Update player `name` or `username` by shirt number                             |
+| `PUT`    | `/api/players/:number`           | Update player `name`, `username`, or `avatar` by shirt number                   |
+| `POST`   | `/api/players/:number/avatar`    | Upload a player avatar image to Supabase Storage and update `players.avatar`    |
 | `DELETE` | `/api/players/:number`           | Delete player and their leaderboard row                                        |
 | `POST`   | `/api/matches`                   | Create a new match                                                             |
 | `PUT`    | `/api/matches/:date`             | Update match fields (`san`, `tiensan`, scores, `notes`)                        |

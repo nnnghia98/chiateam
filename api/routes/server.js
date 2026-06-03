@@ -15,6 +15,10 @@ const {
   resetBotStorage,
   syncBotStorageFromVote,
 } = require('../services/bot-storage-service');
+const {
+  MAX_AVATAR_BYTES,
+  uploadPlayerAvatar,
+} = require('../services/avatar-storage-service');
 const { getMultiplePlayerStats } = require('../services/leaderboard-service');
 const {
   createMatch,
@@ -49,12 +53,12 @@ function logRequest(req, res) {
   });
 }
 
-function readJson(req) {
+function readJson(req, { maxBytes = 1_000_000 } = {}) {
   return new Promise((resolve, reject) => {
     let body = '';
     req.on('data', chunk => {
       body += chunk;
-      if (body.length > 1_000_000) {
+      if (body.length > maxBytes) {
         reject(new Error('Payload too large'));
         req.destroy();
       }
@@ -87,6 +91,19 @@ function sendText(res, statusCode, text, extraHeaders = {}) {
     ...extraHeaders,
   });
   res.end(text);
+}
+
+function normalizeNullableText(value) {
+  if (value == null || value === '') {
+    return null;
+  }
+
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed === '' ? null : trimmed;
 }
 
 function isMaintenanceBypassRoute(path, method) {
@@ -381,8 +398,17 @@ function createUiApiServer({ getStatus }) {
         const payload = (await readJson(req)) || {};
         const name = typeof payload.name === 'string' ? payload.name : '';
         const number = Number(payload.number);
+        const avatar = normalizeNullableText(payload.avatar);
 
-        const result = await registerPlayerForAnother({ name, number });
+        if (avatar === undefined) {
+          return sendJson(res, 400, { error: 'INVALID_AVATAR' }, headers);
+        }
+
+        const result = await registerPlayerForAnother({
+          name,
+          number,
+          avatar,
+        });
         if (!result.ok) {
           if (
             result.code === 'INVALID_NAME' ||
@@ -436,6 +462,94 @@ function createUiApiServer({ getStatus }) {
       }
     }
 
+    if (
+      path.startsWith('/api/players/') &&
+      path.endsWith('/avatar') &&
+      req.method === 'POST'
+    ) {
+      if (!requireAdmin(req, res, headers)) return;
+
+      const numStr = path
+        .slice('/api/players/'.length)
+        .replace(/\/avatar$/, '');
+      const number = Number(numStr);
+
+      if (!Number.isInteger(number) || number <= 0) {
+        return sendJson(res, 400, { error: 'INVALID_NUMBER' }, headers);
+      }
+
+      try {
+        const existingPlayer = await getPlayerByNumber(number);
+        if (!existingPlayer) {
+          return sendJson(res, 404, { error: 'NOT_FOUND' }, headers);
+        }
+
+        const payload = (await readJson(req, {
+          maxBytes: Math.ceil(MAX_AVATAR_BYTES * 1.5) + 1024,
+        })) || {};
+        const upload = await uploadPlayerAvatar({
+          playerNumber: number,
+          dataBase64: payload.dataBase64,
+          contentType: payload.contentType,
+        });
+        const player = await updatePlayerByNumber(number, {
+          avatar: upload.avatar,
+        });
+
+        return sendJson(
+          res,
+          200,
+          {
+            player,
+            avatar: upload.avatar,
+            bucket: upload.bucket,
+            path: upload.path,
+            contentType: upload.contentType,
+            size: upload.size,
+          },
+          headers
+        );
+      } catch (e) {
+        if (e.message === 'Payload too large' || e.code === 'AVATAR_TOO_LARGE') {
+          return sendJson(res, 413, { error: 'AVATAR_TOO_LARGE' }, headers);
+        }
+        if (
+          e.code === 'INVALID_AVATAR_DATA' ||
+          e.code === 'INVALID_AVATAR_TYPE'
+        ) {
+          return sendJson(res, 400, { error: e.code }, headers);
+        }
+        if (e.code === 'STORAGE_NOT_CONFIGURED') {
+          return sendJson(
+            res,
+            500,
+            {
+              error: e.code,
+              message:
+                'Set SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and SUPABASE_STORAGE_BUCKET',
+            },
+            headers
+          );
+        }
+        if (e.code === 'AVATAR_UPLOAD_FAILED') {
+          return sendJson(
+            res,
+            e.statusCode && e.statusCode < 500 ? 400 : 502,
+            { error: e.code },
+            headers
+          );
+        }
+
+        console.error('Error uploading player avatar via UI API:', e);
+        return sendJson(
+          res,
+          500,
+          { error: 'Failed to upload player avatar' },
+          headers
+        );
+      }
+    }
+
     if (path.startsWith('/api/players/') && req.method === 'PUT') {
       if (!requireAdmin(req, res, headers)) return;
 
@@ -461,6 +575,13 @@ function createUiApiServer({ getStatus }) {
             payload.username == null || payload.username === ''
               ? null
               : String(payload.username);
+        }
+        if (Object.prototype.hasOwnProperty.call(payload, 'avatar')) {
+          const avatar = normalizeNullableText(payload.avatar);
+          if (avatar === undefined) {
+            return sendJson(res, 400, { error: 'INVALID_AVATAR' }, headers);
+          }
+          updates.avatar = avatar;
         }
 
         const player = await updatePlayerByNumber(number, updates);

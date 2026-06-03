@@ -124,8 +124,10 @@ async function getPlayerByTelegramId(teleId) {
  * Register a player slot for another person (admin only). Uses a placeholder user_id
  * so the slot can be claimed later with /register NUMBER.
  */
-async function registerPlayerForAnother({ name, number }) {
+async function registerPlayerForAnother({ name, number, avatar = null }) {
   const trimmedName = name == null ? '' : String(name).trim();
+  const normalizedAvatar =
+    avatar == null || avatar === '' ? null : String(avatar).trim();
   if (trimmedName === '') {
     return { ok: false, code: 'INVALID_NAME', data: {} };
   }
@@ -141,7 +143,11 @@ async function registerPlayerForAnother({ name, number }) {
     };
   }
   try {
-    const created = await createPlayerWithPlaceholder(trimmedName, number);
+    const created = await createPlayerWithPlaceholder(
+      trimmedName,
+      number,
+      normalizedAvatar || null
+    );
     return { ok: true, player: created };
   } catch (error) {
     // PostgreSQL unique violation code: 23505

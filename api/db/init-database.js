@@ -1,5 +1,13 @@
+require('../../config/load-env').loadEnv();
+
 const { db } = require('./config');
 const { ensureCurrentMatchTable } = require('../services/bot-storage-service');
+
+async function ensurePlayersAvatarColumn() {
+  await db.query(
+    'ALTER TABLE IF EXISTS players ADD COLUMN IF NOT EXISTS avatar TEXT'
+  );
+}
 
 /**
  * Verify Supabase connection.
@@ -8,8 +16,10 @@ const { ensureCurrentMatchTable } = require('../services/bot-storage-service');
 async function initDatabase() {
   try {
     const result = await db.query('SELECT NOW() AS now');
+    await ensurePlayersAvatarColumn();
     await ensureCurrentMatchTable();
     console.log('✅ Supabase connection successful. Server time:', result.rows[0].now);
+    console.log('✅ Ensured players.avatar column exists');
     console.log('✅ Ensured current_match table exists');
   } catch (err) {
     console.error('❌ Failed to connect to Supabase:', err);
@@ -26,4 +36,4 @@ if (require.main === module) {
     .catch(() => process.exit(1));
 }
 
-module.exports = { initDatabase };
+module.exports = { initDatabase, ensurePlayersAvatarColumn };

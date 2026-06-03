@@ -40,7 +40,7 @@ function normalizeEntryArray(value) {
   return value.filter(entry => Array.isArray(entry) && entry.length >= 2);
 }
 
-function normalizeManifest(value) {
+function normalizeManifestItem(value) {
   if (!value || typeof value !== 'object') {
     return null;
   }
@@ -59,6 +59,39 @@ function normalizeManifest(value) {
       name: String(player.name || ''),
     })),
   };
+}
+
+function getManifestPairKey(manifest) {
+  return manifest.players
+    .map(player => player.identity)
+    .sort()
+    .join('|');
+}
+
+function normalizeManifest(value) {
+  if (!value) {
+    return null;
+  }
+
+  const values = Array.isArray(value) ? value : [value];
+  const normalized = [];
+
+  values.forEach(item => {
+    const manifest = normalizeManifestItem(item);
+    if (!manifest) return;
+
+    const existingIndex = normalized.findIndex(
+      current => getManifestPairKey(current) === getManifestPairKey(manifest)
+    );
+
+    if (existingIndex === -1) {
+      normalized.push(manifest);
+    } else {
+      normalized[existingIndex] = manifest;
+    }
+  });
+
+  return normalized.length > 0 ? normalized : null;
 }
 
 function mapToArray(map) {
