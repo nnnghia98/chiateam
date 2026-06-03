@@ -6,7 +6,7 @@ const {
   normalizeCommandToken,
   isSupportedCommandText,
 } = require('./command-filter');
-const { REGISTERED_COMMANDS } = require('../commands/manifest');
+const { REGISTERED_COMMANDS } = require('../commands/command-registry');
 
 test('supported commands mirror the commands registered by the bot', () => {
   assert.deepEqual([...SUPPORTED_COMMANDS].sort(), [...REGISTERED_COMMANDS].sort());
