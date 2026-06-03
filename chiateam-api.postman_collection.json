@@ -126,7 +126,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Nghia\",\n  \"number\": 7\n}"
+              "raw": "{\n  \"name\": \"Nghia\",\n  \"number\": 7,\n  \"avatar\": \"https://example.com/avatar.png\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/players",
@@ -146,12 +146,32 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Nghia Updated\",\n  \"username\": \"nghia98\"\n}"
+              "raw": "{\n  \"name\": \"Nghia Updated\",\n  \"username\": \"nghia98\",\n  \"avatar\": \"https://example.com/avatar-updated.png\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/players/{{playerNumber}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "players", "{{playerNumber}}"]
+            }
+          }
+        },
+        {
+          "name": "Upload Player Avatar",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-internal-api-auth", "value": "{{authToken}}" },
+              { "key": "x-admin-role", "value": "admin" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contentType\": \"image/png\",\n  \"dataBase64\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/players/{{playerNumber}}/avatar",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "players", "{{playerNumber}}", "avatar"]
             }
           }
         },

@@ -81,7 +81,7 @@ CREATE TABLE leaderboard (
 
 CREATE TABLE players (
   id SERIAL PRIMARY KEY, user_id BIGINT NOT NULL UNIQUE,
-  number INTEGER NOT NULL, name TEXT NOT NULL, username TEXT,
+  number INTEGER NOT NULL, name TEXT NOT NULL, username TEXT, avatar TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 

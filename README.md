@@ -32,6 +32,7 @@ Root services read env from the repo root:
 Important root variables:
 
 - `DATABASE_URL`
+- `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_BUCKET` for player avatar uploads
 - `API_PORT`
 - `BOT_STATE_FILE`
 - `BOT_API_BASE_URL` when the bot runs separately from the API

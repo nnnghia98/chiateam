@@ -11,6 +11,7 @@ const { db } = require('../db/config');
  *   number     INTEGER NOT NULL,
  *   name       TEXT NOT NULL,
  *   username   TEXT,
+ *   avatar     TEXT,
  *   created_at TIMESTAMPTZ DEFAULT NOW(),
  *   updated_at TIMESTAMPTZ DEFAULT NOW()
  * );
@@ -29,9 +30,15 @@ async function getNextPlaceholderUserId() {
 /**
  * Create a player slot with a placeholder user_id (admin register for another).
  */
-async function createPlayerWithPlaceholder(name, number) {
+async function createPlayerWithPlaceholder(name, number, avatar = null) {
   const placeholderId = await getNextPlaceholderUserId();
-  return createPlayer({ userId: placeholderId, name, number, username: null });
+  return createPlayer({
+    userId: placeholderId,
+    name,
+    number,
+    username: null,
+    avatar,
+  });
 }
 
 /**
@@ -53,6 +60,10 @@ async function updatePlayerByNumber(number, updates) {
   if (Object.prototype.hasOwnProperty.call(updates, 'username')) {
     setClauses.push(`username = $${idx++}`);
     values.push(updates.username);
+  }
+  if (Object.prototype.hasOwnProperty.call(updates, 'avatar')) {
+    setClauses.push(`avatar = $${idx++}`);
+    values.push(updates.avatar);
   }
 
   if (setClauses.length === 0) throw new Error('No valid fields to update');
@@ -78,13 +89,25 @@ async function deletePlayerByNumber(number) {
 /**
  * Insert a new player row.
  */
-async function createPlayer({ userId, name, number, username = null }) {
+async function createPlayer({
+  userId,
+  name,
+  number,
+  username = null,
+  avatar = null,
+}) {
   const sql = `
-    INSERT INTO players (user_id, name, number, username)
-    VALUES ($1, $2, $3, $4)
+    INSERT INTO players (user_id, name, number, username, avatar)
+    VALUES ($1, $2, $3, $4, $5)
     RETURNING *
   `;
-  const { rows } = await db.query(sql, [userId, name, number, username]);
+  const { rows } = await db.query(sql, [
+    userId,
+    name,
+    number,
+    username,
+    avatar,
+  ]);
   return rows[0];
 }
 
@@ -116,7 +139,7 @@ async function getAllPlayers() {
  * Update player information by user_id.
  */
 async function updatePlayer(userId, updates) {
-  const allowedFields = ['name', 'number', 'username'];
+  const allowedFields = ['name', 'number', 'username', 'avatar'];
   const updateFields = [];
   const values = [];
   let idx = 1;
