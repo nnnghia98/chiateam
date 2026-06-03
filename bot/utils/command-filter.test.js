@@ -15,12 +15,16 @@ test('supported commands mirror the commands registered by the bot', () => {
 test('registered commands are accepted, including Telegram @mentions', () => {
   assert.equal(isSupportedCommandText('/start'), true);
   assert.equal(isSupportedCommandText('/start@chia_team_bot'), true);
+  assert.equal(isSupportedCommandText('/mf'), true);
+  assert.equal(isSupportedCommandText('/removemanifest'), true);
+  assert.equal(isSupportedCommandText('/clearmanifests'), true);
   assert.equal(isSupportedCommandText('/match 42'), true);
 });
 
 test('unknown slash commands are ignored by the filter', () => {
   assert.equal(isSupportedCommandText('/unknown'), false);
   assert.equal(isSupportedCommandText('/leaderboard'), false);
+  assert.equal(isSupportedCommandText('/clearmf'), false);
   assert.equal(isSupportedCommandText('hello team'), false);
 });
 

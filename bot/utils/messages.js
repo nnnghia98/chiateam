@@ -83,12 +83,23 @@ const CLEAR_TEAM = {
 const MANIFEST = {
   emptyBench: '⚠️ Bench trống. Thêm member trước.',
   noCurrent: 'Chưa có manifest nào.',
-  current: 'Manifest hiện tại: `{first} {symbol} {second}`',
+  current: 'Manifest hiện tại:\n{manifestList}',
+  list: '📋 *Danh sách manifest:*\n\n{manifestList}',
   instruction:
-    '📋 *Bench hiện tại:*\n\n{numberedList}\n\n{current}\n\n💡 *Cách sử dụng:*\n• `/manifest [số thứ tự] <3 [số thứ tự]` hoặc `❤️` - Cho 2 member cùng team\n• `/manifest [số thứ tự] </3 [số thứ tự]` - Cho 2 member khác team\n\nVí dụ: `/manifest 1 <3 3` hoặc `/manifest 1 ❤️ 3`',
+    '📋 *Bench hiện tại:*\n\n{numberedList}\n\n{current}\n\n💡 *Cách sử dụng:*\n• `/manifest [số thứ tự] <3 [số thứ tự]` hoặc `❤️` - Cho 2 member cùng team\n• `/manifest [số thứ tự] </3 [số thứ tự]` hoặc `💔` - Cho 2 member khác team\n• `/mf` - Xem manifest nhanh\n• `/removemanifest [số thứ tự]` - Xóa 1 manifest\n• `/clearmanifests` - Xóa tất cả manifest\n\nVí dụ: `/manifest 1 <3 3`, `/manifest 1 ❤️ 3` hoặc `/manifest 1 💔 3`',
   invalidSelection:
-    '⚠️ Cú pháp manifest không hợp lệ. Ví dụ: `/manifest 1 <3 3`, `/manifest 1 ❤️ 3` hoặc `/manifest 1 </3 3`',
+    '⚠️ Cú pháp manifest không hợp lệ. Ví dụ: `/manifest 1 <3 3`, `/manifest 1 ❤️ 3`, `/manifest 1 </3 3` hoặc `/manifest 1 💔 3`',
   success: '🧞‍♂️ Đã nhận nguyện vọng: `{first} {symbol} {second}`',
+  replaceSuccess:
+    '♻️ Đã cập nhật nguyện vọng: `{first} {symbol} {second}`',
+  conflict:
+    '⚠️ Manifest này mâu thuẫn với danh sách hiện tại. Dùng `/mf` để xem hoặc `/removemanifest [số thứ tự]` để xóa manifest cũ.',
+  removeInstruction:
+    '⚠️ Cú pháp: `/removemanifest [số thứ tự]`. Dùng `/mf` để xem danh sách manifest.',
+  invalidRemoveSelection:
+    '⚠️ Số thứ tự manifest không hợp lệ. Dùng `/mf` để xem danh sách manifest.',
+  removeSuccess: '✅ Đã xóa manifest: {manifest}',
+  clearSuccess: '✅ Đã xóa tất cả manifest.',
 };
 
 const RESET = {
@@ -268,6 +279,9 @@ const START = {
 • \`/chiateam\` - Chia 2 team HOME / AWAY
 • \`/chiateam 3\` - Chia 3 team HOME / AWAY / EXTRA (admin)
 • \`/manifest\` - Ghép hoặc tách 2 người khi chia team
+• \`/mf\` - Xem manifest nhanh
+• \`/removemanifest\` - Xóa 1 manifest
+• \`/clearmanifests\` - Xóa tất cả manifest
 • \`/team\` - Xem 2 team hiện tại
 • \`/team 3\` - Xem 3 team hiện tại
 • \`/addtoteam\` - Thêm người vào team
