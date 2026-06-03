@@ -1,4 +1,4 @@
-const { REGISTERED_COMMANDS } = require('../commands/manifest');
+const { REGISTERED_COMMANDS } = require('../commands/command-registry');
 
 const SUPPORTED_COMMANDS = new Set(REGISTERED_COMMANDS);
 

@@ -32,6 +32,14 @@ BOT_STATE_FILE=.runtime/bot/storage.json
 DATABASE_URL=postgresql://postgres.pgpdacbrwyzvwxraqwcb:chamhet@123!@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres
 ```
 
+### Supabase Storage (Player Avatars)
+
+```
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here
+SUPABASE_STORAGE_BUCKET=player-avatars
+```
+
 ### Optional Variables
 
 ```

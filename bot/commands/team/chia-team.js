@@ -71,61 +71,168 @@ function getRandomSmallestTeam(teams, excludedTeam = null) {
   return smallestTeams[Math.floor(Math.random() * smallestTeams.length)];
 }
 
-function assignManifestPair({ membersToAssign, teams, manifest }) {
-  if (
-    !manifest ||
-    !Array.isArray(manifest.players) ||
-    manifest.players.length !== 2
-  ) {
+function getManifestList(manifest) {
+  if (!manifest) {
+    return [];
+  }
+
+  return Array.isArray(manifest) ? manifest : [manifest];
+}
+
+function buildManifestColorMap(manifests) {
+  const graph = new Map();
+  const colors = new Map();
+
+  manifests.forEach(currentManifest => {
+    if (
+      !currentManifest ||
+      !Array.isArray(currentManifest.players) ||
+      currentManifest.players.length !== 2
+    ) {
+      return;
+    }
+
+    const [first, second] = currentManifest.players.map(
+      player => player.identity
+    );
+    const relationValue = currentManifest.relation === 'same' ? 0 : 1;
+
+    if (!graph.has(first)) graph.set(first, []);
+    if (!graph.has(second)) graph.set(second, []);
+
+    graph.get(first).push([second, relationValue]);
+    graph.get(second).push([first, relationValue]);
+  });
+
+  for (const start of graph.keys()) {
+    if (colors.has(start)) continue;
+
+    colors.set(start, 0);
+    const queue = [start];
+
+    while (queue.length > 0) {
+      const current = queue.shift();
+      const currentColor = colors.get(current);
+
+      for (const [next, relationValue] of graph.get(current)) {
+        const nextColor = currentColor ^ relationValue;
+
+        if (!colors.has(next)) {
+          colors.set(next, nextColor);
+          queue.push(next);
+        } else if (colors.get(next) !== nextColor) {
+          return null;
+        }
+      }
+    }
+  }
+
+  return colors;
+}
+
+function groupManifestComponents(colorMap, manifests) {
+  const parent = new Map();
+
+  const find = identity => {
+    if (!parent.has(identity)) parent.set(identity, identity);
+    const currentParent = parent.get(identity);
+    if (currentParent === identity) return identity;
+    const root = find(currentParent);
+    parent.set(identity, root);
+    return root;
+  };
+
+  const union = (first, second) => {
+    parent.set(find(first), find(second));
+  };
+
+  manifests.forEach(currentManifest => {
+    if (
+      !currentManifest ||
+      !Array.isArray(currentManifest.players) ||
+      currentManifest.players.length !== 2
+    ) {
+      return;
+    }
+
+    const [first, second] = currentManifest.players.map(
+      player => player.identity
+    );
+    union(first, second);
+  });
+
+  const components = new Map();
+
+  for (const [identity, color] of colorMap.entries()) {
+    const root = find(identity);
+    if (!components.has(root)) {
+      components.set(root, []);
+    }
+    components.get(root).push([identity, color]);
+  }
+
+  return Array.from(components.values());
+}
+
+function assignManifestPairs({ membersToAssign, teams, manifest }) {
+  const manifests = getManifestList(manifest);
+
+  if (manifests.length === 0) {
     return membersToAssign;
   }
 
-  const manifestIdentities = manifest.players.map(player => player.identity);
-  const manifestMembers = manifestIdentities.map(identity =>
-    membersToAssign.find(member => getMemberIdentity(member) === identity)
+  const colorMap = buildManifestColorMap(manifests);
+  if (!colorMap) {
+    return membersToAssign;
+  }
+
+  const identityToMember = new Map(
+    membersToAssign.map(member => [getMemberIdentity(member), member])
   );
-
-  if (!manifestMembers.some(Boolean)) {
-    return membersToAssign;
-  }
-
   const existingIdentities = new Set(
     teams.flatMap(team => Array.from(team.map.values()).map(getMemberIdentity))
   );
   const assignedTeams = getAssignedTeamByIdentity(teams);
-  const assignedManifestTeams = manifestIdentities.map((identity, index) =>
-    manifestMembers[index] ? null : assignedTeams.get(identity)
-  );
 
-  if (manifest.relation === 'same') {
-    const targetTeam =
-      assignedManifestTeams.find(Boolean) || getRandomSmallestTeam(teams);
+  groupManifestComponents(colorMap, manifests).forEach(component => {
+    const colorTeams = [null, null];
+    const presentColors = new Set(component.map(([, color]) => color));
 
-    manifestMembers.forEach((member, index) => {
-      if (member && targetTeam) {
-        addMemberToTeam(member, targetTeam, existingIdentities, index);
+    component.forEach(([identity, color]) => {
+      const assignedTeam = assignedTeams.get(identity);
+      if (assignedTeam && !colorTeams[color]) {
+        colorTeams[color] = assignedTeam;
       }
     });
-  } else {
-    const firstAssignedTeam = manifestMembers[0]
-      ? null
-      : assignedTeams.get(manifestIdentities[0]);
-    const secondAssignedTeam = manifestMembers[1]
-      ? null
-      : assignedTeams.get(manifestIdentities[1]);
-    const firstTeam =
-      firstAssignedTeam || getRandomSmallestTeam(teams, secondAssignedTeam);
-    const secondTeam =
-      secondAssignedTeam || getRandomSmallestTeam(teams, firstTeam);
 
-    if (manifestMembers[0] && firstTeam) {
-      addMemberToTeam(manifestMembers[0], firstTeam, existingIdentities, 0);
+    if (presentColors.size > 1) {
+      if (colorTeams[0] && colorTeams[1] && colorTeams[0] === colorTeams[1]) {
+        return;
+      }
+
+      if (!colorTeams[0] && !colorTeams[1]) {
+        colorTeams[0] = getRandomSmallestTeam(teams);
+        colorTeams[1] = getRandomSmallestTeam(teams, colorTeams[0]);
+      } else if (!colorTeams[0]) {
+        colorTeams[0] = getRandomSmallestTeam(teams, colorTeams[1]);
+      } else if (!colorTeams[1]) {
+        colorTeams[1] = getRandomSmallestTeam(teams, colorTeams[0]);
+      }
+    } else {
+      const [onlyColor] = presentColors;
+      colorTeams[onlyColor] =
+        colorTeams[onlyColor] || getRandomSmallestTeam(teams);
     }
 
-    if (manifestMembers[1] && secondTeam) {
-      addMemberToTeam(manifestMembers[1], secondTeam, existingIdentities, 1);
-    }
-  }
+    component.forEach(([identity, color]) => {
+      const member = identityToMember.get(identity);
+      const team = colorTeams[color];
+
+      if (member && team) {
+        addMemberToTeam(member, team, existingIdentities, color);
+      }
+    });
+  });
 
   return membersToAssign.filter(
     member => !existingIdentities.has(getMemberIdentity(member))
@@ -205,7 +312,7 @@ const splitCommand = ({
       },
     ];
 
-    const remainingMembers = assignManifestPair({
+    const remainingMembers = assignManifestPairs({
       membersToAssign: unassignedMembers,
       teams,
       manifest: typeof getManifest === 'function' ? getManifest() : null,
@@ -274,7 +381,7 @@ const splitCommand = ({
       },
     ];
 
-    const remainingMembers = assignManifestPair({
+    const remainingMembers = assignManifestPairs({
       membersToAssign: unassignedMembers,
       teams,
       manifest: typeof getManifest === 'function' ? getManifest() : null,
