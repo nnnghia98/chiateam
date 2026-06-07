@@ -10,7 +10,7 @@ const ADD = {
 
 Ví dụ: \`/add Nghia, Nghia 1, Nghia 2\``,
   warning:
-    '⚠️ Nhập tên member để thêm vào bench. Ví dụ:\n\`/add Nghia, Nghia 1, Nghia 2\`',
+    '⚠️ Nhập tên member để thêm vào bench. Ví dụ:\n`/add Nghia, Nghia 1, Nghia 2`',
   invalidNames: '⚠️ Các tên không hợp lệ (bị bỏ qua): ',
   success: '✅ Đã thêm ${addedCount} member(s) vào /bench',
   noNewMembers:
@@ -123,6 +123,11 @@ const UNKNOWN = {
   buildWarning(userName) {
     return `${userName}: ${UNKNOWN.warning}`;
   },
+};
+
+const CALLBACK_QUERY = {
+  unsupported:
+    '⚠️ Nút này hiện không còn được hỗ trợ. Dùng /start để xem lệnh hiện có.',
 };
 
 const CHIA_TIEN = {
@@ -797,6 +802,7 @@ module.exports = {
   ADD_TO_TEAM,
   AI,
   BENCH,
+  CALLBACK_QUERY,
   CHIA_TEAM,
   CHIA_TIEN,
   CLEAR_BENCH,

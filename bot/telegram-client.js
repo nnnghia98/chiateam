@@ -1,10 +1,15 @@
 const TelegramBot = require('node-telegram-bot-api');
+const { logEvent } = require('./utils/logger');
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 
 if (!token) {
-  console.error('❌ TELEGRAM_BOT_TOKEN is not set in environment variables');
-  console.error('Please configure TELEGRAM_BOT_TOKEN before starting the bot.');
+  logEvent(
+    'telegram.client',
+    'missing bot token',
+    { env: 'TELEGRAM_BOT_TOKEN' },
+    'error'
+  );
   process.exit(1);
 }
 
@@ -22,19 +27,31 @@ try {
   });
 
   bot.on('polling_error', error => {
-    console.error('❌ Telegram Bot polling error:', error.message);
-    console.error('Error details:', error);
+    logEvent(
+      'telegram.client',
+      'polling error',
+      { error: error.message },
+      'error'
+    );
   });
 
   bot.on('webhook_error', error => {
-    console.error('❌ Telegram Bot webhook error:', error.message);
-    console.error('Error details:', error);
+    logEvent(
+      'telegram.client',
+      'webhook error',
+      { error: error.message },
+      'error'
+    );
   });
 
-  console.log('✅ Telegram Bot initialized successfully');
+  logEvent('telegram.client', 'initialized', {}, 'success');
 } catch (error) {
-  console.error('❌ Failed to initialize Telegram Bot:', error.message);
-  console.error('Error details:', error);
+  logEvent(
+    'telegram.client',
+    'initialization failed',
+    { error: error.message },
+    'error'
+  );
   bot = null;
 }
 

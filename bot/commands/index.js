@@ -1,4 +1,5 @@
 const startCommand = require('./common/start');
+const callbackQueryCommand = require('./common/callback-query');
 const addMeCommand = require('./add/add-me');
 const addCommand = require('./add/add');
 const benchCommand = require('./bench/bench');
@@ -25,6 +26,7 @@ const { REGISTERED_COMMANDS } = require('./command-registry');
 
 module.exports = {
   startCommand,
+  callbackQueryCommand,
   addMeCommand,
   addCommand,
   benchCommand,

@@ -2,6 +2,7 @@ require('../config/load-env').loadEnv();
 
 const {
   startCommand,
+  callbackQueryCommand,
   addMeCommand,
   addCommand,
   benchCommand,
@@ -29,6 +30,7 @@ const {
 const maintenanceMessage = require('./commands/maintainance');
 const bot = require('./telegram-client');
 const { logCommandUsage } = require('./utils/command-logger');
+const { logEvent } = require('./utils/logger');
 const { initializeStorage } = require('./utils/storage');
 const {
   isMaintenanceModeEnabled,
@@ -57,9 +59,9 @@ function installProcessCrashLogging() {
 
 installProcessCrashLogging();
 
-// Log environment information
-console.log('🚀 Starting ChiaTeam Bot...');
-console.log('');
+logEvent('bot', 'starting ChiaTeam bot');
+
+callbackQueryCommand();
 
 // Maintenance mode check
 const isMaintenanceMode = isMaintenanceModeEnabled();
@@ -80,7 +82,7 @@ if (isMaintenanceMode) {
     }
   });
 
-  console.log(`🔧 Bot is in maintenance mode until ${maintenanceUntil}`);
+  logEvent('bot', 'maintenance mode enabled', { until: maintenanceUntil }, 'warn');
   return;
 }
 
@@ -138,10 +140,15 @@ async function bootstrapBot() {
   matchesCommand();
   resetCommand({ resetAll });
 
-  console.log('🤖 Bot is running...');
+  logEvent('bot', 'running', {}, 'success');
 }
 
 bootstrapBot().catch(error => {
-  console.error('❌ Failed to initialize bot storage:', error);
+  logEvent(
+    'bot',
+    'failed to initialize storage',
+    { error: error.message },
+    'error'
+  );
   process.exit(1);
 });

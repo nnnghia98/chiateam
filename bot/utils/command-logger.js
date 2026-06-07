@@ -3,6 +3,7 @@ const {
   isSupportedCommandText,
   normalizeCommandToken,
 } = require('./command-filter');
+const { logEvent } = require('./logger');
 
 function getTelegramDisplayName(from) {
   if (!from) return 'Unknown User';
@@ -40,20 +41,12 @@ function logCommandUsage(msg) {
     timeZoneName: 'short',
   }).format(usedAt);
 
-  // Human-friendly multi-line log (easy to visually scan).
-  // Keep it consistent and grep-able via the prefix.
-  console.log(
-    [
-      '[telegram_command]',
-      `time       : ${vnTime}`,
-      `timezone   : ${VN_TIME_ZONE} (GMT+7)`,
-      'location   : Vietnam (Ho Chi Minh City)',
-      `tele_id    : ${tele_id}`,
-      `tele_name  : ${tele_name}`,
-      `command    : ${command}`,
-      `exact      : ${command_exact}`,
-    ].join('\n')
-  );
+  logEvent('telegram.command', command, {
+    user: `${tele_name} (${tele_id})`,
+    exact: command_exact,
+    time: vnTime,
+    timezone: `${VN_TIME_ZONE} (GMT+7)`,
+  });
 }
 
 module.exports = {
