@@ -4,6 +4,7 @@ const {
   writeBotStorage,
   resetBotStorage,
 } = require('./api-client');
+const { logEvent } = require('./logger');
 
 const DEFAULT_DATA = {
   bench: [],
@@ -126,12 +127,22 @@ async function loadData() {
     const data = await readBotStorage();
     const normalized = normalizeStorageData(data);
 
-    console.log('✅ Loaded bot storage from API:', getApiBaseUrl());
+    logEvent(
+      'storage',
+      'loaded bot storage',
+      { source: getApiBaseUrl() },
+      'success'
+    );
 
     return normalized;
   } catch (error) {
-    console.error('❌ Error loading bot storage from API:', error);
-    console.warn('📝 Falling back to default bot storage state');
+    logEvent(
+      'storage',
+      'failed to load bot storage',
+      { source: getApiBaseUrl(), error: error.message },
+      'error'
+    );
+    logEvent('storage', 'using default in-memory state', {}, 'warn');
     return cloneDefaultData();
   }
 }
@@ -175,10 +186,15 @@ function buildStorageSnapshot(state) {
 async function saveData(state) {
   try {
     const saved = await writeBotStorage(buildStorageSnapshot(state));
-    console.log('💾 Bot storage saved via API');
+    logEvent('storage', 'saved bot storage', { target: getApiBaseUrl() });
     return saved;
   } catch (error) {
-    console.error('❌ Error saving bot storage via API:', error);
+    logEvent(
+      'storage',
+      'failed to save bot storage',
+      { target: getApiBaseUrl(), error: error.message },
+      'error'
+    );
     return null;
   }
 }
@@ -191,7 +207,12 @@ function createPersistentMap(map, saveCallback) {
   map.set = function (...args) {
     const result = originalSet(...args);
     void Promise.resolve(saveCallback()).catch(error => {
-      console.error('❌ Error persisting bot storage map change:', error);
+      logEvent(
+        'storage',
+        'failed to persist map change',
+        { error: error.message },
+        'error'
+      );
     });
     return result;
   };
@@ -199,7 +220,12 @@ function createPersistentMap(map, saveCallback) {
   map.delete = function (...args) {
     const result = originalDelete(...args);
     void Promise.resolve(saveCallback()).catch(error => {
-      console.error('❌ Error persisting bot storage map change:', error);
+      logEvent(
+        'storage',
+        'failed to persist map change',
+        { error: error.message },
+        'error'
+      );
     });
     return result;
   };
@@ -207,7 +233,12 @@ function createPersistentMap(map, saveCallback) {
   map.clear = function (...args) {
     const result = originalClear(...args);
     void Promise.resolve(saveCallback()).catch(error => {
-      console.error('❌ Error persisting bot storage map change:', error);
+      logEvent(
+        'storage',
+        'failed to persist map change',
+        { error: error.message },
+        'error'
+      );
     });
     return result;
   };
@@ -264,7 +295,12 @@ function createStateFromData(data) {
         }
       })
       .catch(error => {
-        console.error('❌ Error persisting bot storage state:', error);
+        logEvent(
+          'storage',
+          'failed to persist state',
+          { error: error.message },
+          'error'
+        );
       });
 
     return saveQueue;
@@ -281,16 +317,22 @@ function createStateFromData(data) {
         }
       })
       .catch(error => {
-        console.error('❌ Error persisting bot storage reset:', error);
+        logEvent(
+          'storage',
+          'failed to persist reset',
+          { error: error.message },
+          'error'
+        );
       });
 
     return saveQueue;
   };
 
   if (activeVote) {
-    console.log(
-      `📊 [storage] Loaded active vote: "${activeVote.question}" (${activeVote.totalVoters || 0} voters)`
-    );
+    logEvent('storage', 'active vote loaded', {
+      question: activeVote.question,
+      voters: activeVote.totalVoters || 0,
+    });
   }
 
   state = {
@@ -355,7 +397,7 @@ function createStateFromData(data) {
       teamThua = null;
       activeVote = null;
 
-      console.log('🔄 [storage] Reset all data to defaults');
+      logEvent('storage', 'reset all data to defaults', {}, 'warn');
       return resetPersist();
     },
     save: () => persist(),
