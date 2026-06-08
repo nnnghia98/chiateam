@@ -1,6 +1,6 @@
 const { getDisplayName } = require('../../utils/team-member');
 const { ADD_TO_TEAM, VALIDATION } = require('../../utils/messages');
-const { sendMessage } = require('../../utils/chat');
+const { sendMessage: sendBaseMessage } = require('../../utils/chat');
 const { requireAdmin } = require('../../utils/permissions');
 const { escapeMarkdown } = require('../../utils/format');
 const { isAdmin } = require('../../utils/validate');
@@ -11,6 +11,11 @@ const bot = require('../../telegram-client');
 
 const ADD_TO_TEAM_ADD_PREFIX = 'addteam:add:';
 const ADD_TO_TEAM_PAGE_PREFIX = 'addteam:page:';
+const sendMessage = payload =>
+  sendBaseMessage({
+    ...payload,
+    options: { ...(payload.options || {}), useSourceChat: true },
+  });
 
 const addToTeamCommand = ({
   members,
@@ -159,7 +164,7 @@ const addToTeamCommand = ({
   });
 
   bot.onText(/^\/addtoteam$/, msg => {
-    if (!requireAdmin(msg)) {
+    if (!requireAdmin(msg, { useSourceChat: true })) {
       return;
     }
 
@@ -173,7 +178,7 @@ const addToTeamCommand = ({
 
   // /addtoteam [2|3] HOME|AWAY|EXTRA - show instruction
   bot.onText(/^\/addtoteam (2|3)?\s*(HOME|AWAY|EXTRA)$/, (msg, match) => {
-    if (!requireAdmin(msg)) {
+    if (!requireAdmin(msg, { useSourceChat: true })) {
       return;
     }
 
@@ -207,7 +212,7 @@ const addToTeamCommand = ({
 
   // /addtoteam [2|3] HOME|AWAY|EXTRA selection - add members to team
   bot.onText(/^\/addtoteam (2|3)?\s*(HOME|AWAY|EXTRA) (.+)$/, (msg, match) => {
-    if (!requireAdmin(msg)) {
+    if (!requireAdmin(msg, { useSourceChat: true })) {
       return;
     }
 

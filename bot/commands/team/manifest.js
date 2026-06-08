@@ -1,6 +1,6 @@
 const { getDisplayName } = require('../../utils/team-member');
 const { MANIFEST, VALIDATION } = require('../../utils/messages');
-const { sendMessage } = require('../../utils/chat');
+const { sendMessage: sendBaseMessage } = require('../../utils/chat');
 const { requireAdmin } = require('../../utils/permissions');
 const { isAdmin } = require('../../utils/validate');
 const { escapeMarkdown } = require('../../utils/format');
@@ -16,6 +16,11 @@ const MANIFEST_SECOND_PREFIX = 'manifest:second:';
 const MANIFEST_SECOND_PAGE_PREFIX = 'manifest:secondpage:';
 const REMOVE_MANIFEST_PREFIX = 'manifestremove:remove:';
 const REMOVE_MANIFEST_PAGE_PREFIX = 'manifestremove:page:';
+const sendMessage = payload =>
+  sendBaseMessage({
+    ...payload,
+    options: { ...(payload.options || {}), useSourceChat: true },
+  });
 
 function normalizeName(name) {
   return String(name || '')
@@ -512,7 +517,7 @@ const manifestCommand = ({ members, getManifest, setManifest }) => {
   });
 
   bot.onText(/^\/clearmanifests$/, async msg => {
-    if (!requireAdmin(msg)) {
+    if (!requireAdmin(msg, { useSourceChat: true })) {
       return;
     }
 
@@ -540,7 +545,7 @@ const manifestCommand = ({ members, getManifest, setManifest }) => {
   });
 
   bot.onText(/^\/removemanifest\s+(\d+)$/, async (msg, match) => {
-    if (!requireAdmin(msg)) {
+    if (!requireAdmin(msg, { useSourceChat: true })) {
       return;
     }
 
@@ -593,7 +598,7 @@ const manifestCommand = ({ members, getManifest, setManifest }) => {
   });
 
   bot.onText(/^\/manifest$/, msg => {
-    if (!requireAdmin(msg)) {
+    if (!requireAdmin(msg, { useSourceChat: true })) {
       return;
     }
 
@@ -637,7 +642,7 @@ const manifestCommand = ({ members, getManifest, setManifest }) => {
   });
 
   bot.onText(/^\/manifest\s+(\d+)\s+(<3|❤️|❤|<\/3|💔)\s+(\d+)$/, (msg, match) => {
-    if (!requireAdmin(msg)) {
+    if (!requireAdmin(msg, { useSourceChat: true })) {
       return;
     }
 
@@ -654,7 +659,7 @@ const manifestCommand = ({ members, getManifest, setManifest }) => {
   });
 
   bot.onText(/^\/removemanifest(?:\s+(?!\d+$).+)?$/, msg => {
-    if (!requireAdmin(msg)) {
+    if (!requireAdmin(msg, { useSourceChat: true })) {
       return;
     }
 
@@ -684,7 +689,7 @@ const manifestCommand = ({ members, getManifest, setManifest }) => {
   });
 
   bot.onText(/^\/manifest\s+(?!\d+\s+(?:<3|❤️|❤|<\/3|💔)\s+\d+$).+$/, msg => {
-    if (!requireAdmin(msg)) {
+    if (!requireAdmin(msg, { useSourceChat: true })) {
       return;
     }
 

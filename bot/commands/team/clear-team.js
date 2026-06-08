@@ -4,7 +4,7 @@ const {
   VALIDATION,
 } = require('../../utils/messages');
 const { getDisplayName } = require('../../utils/team-member');
-const { sendMessage } = require('../../utils/chat');
+const { sendMessage: sendBaseMessage } = require('../../utils/chat');
 const { requireAdmin } = require('../../utils/permissions');
 const { isAdmin } = require('../../utils/validate');
 const { escapeMarkdown } = require('../../utils/format');
@@ -15,6 +15,11 @@ const bot = require('../../telegram-client');
 
 const CLEAR_TEAM_REMOVE_PREFIX = 'clearteam:remove:';
 const CLEAR_TEAM_PAGE_PREFIX = 'clearteam:page:';
+const sendMessage = payload =>
+  sendBaseMessage({
+    ...payload,
+    options: { ...(payload.options || {}), useSourceChat: true },
+  });
 
 const clearTeamCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
   // Helper: Get the correct team based on mode (2 or 3) and team type
@@ -128,7 +133,7 @@ const clearTeamCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
 
   // Show instruction. Explicit stack clearing uses /clearteam 2 or /clearteam 3.
   bot.onText(/^\/clearteam$/, msg => {
-    if (!requireAdmin(msg)) {
+    if (!requireAdmin(msg, { useSourceChat: true })) {
       return;
     }
 
@@ -142,7 +147,7 @@ const clearTeamCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
 
   // Clear specific team stack (2-team or 3-team)
   bot.onText(/^\/clearteam (2|3)$/, msg => {
-    if (!requireAdmin(msg)) {
+    if (!requireAdmin(msg, { useSourceChat: true })) {
       return;
     }
 
@@ -190,7 +195,7 @@ const clearTeamCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
 
   // Show team roster for selective clear (HOME / AWAY / EXTRA)
   bot.onText(/^\/clearteam (2|3)?\s*(HOME|AWAY|EXTRA)$/, (msg, match) => {
-    if (!requireAdmin(msg)) {
+    if (!requireAdmin(msg, { useSourceChat: true })) {
       return;
     }
 
@@ -241,7 +246,7 @@ const clearTeamCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
 
   // Clear specific members from a team (HOME / AWAY / EXTRA)
   bot.onText(/^\/clearteam (2|3)?\s*(HOME|AWAY|EXTRA) (.+)$/, (msg, match) => {
-    if (!requireAdmin(msg)) {
+    if (!requireAdmin(msg, { useSourceChat: true })) {
       return;
     }
 

@@ -5,7 +5,7 @@ const {
 } = require('../../utils/validate');
 const { EDIT_BENCH, VALIDATION } = require('../../utils/messages');
 const { getDisplayName } = require('../../utils/team-member');
-const { sendMessage } = require('../../utils/chat');
+const { sendMessage: sendBaseMessage } = require('../../utils/chat');
 const { requireAdmin } = require('../../utils/permissions');
 const { escapeMarkdown } = require('../../utils/format');
 const { PATTERNS } = require('../../utils/constants');
@@ -17,6 +17,11 @@ const bot = require('../../telegram-client');
 const EDIT_BENCH_SELECT_PREFIX = 'editbench:select:';
 const EDIT_BENCH_PAGE_PREFIX = 'editbench:page:';
 const pendingEditBench = new Map();
+const sendMessage = payload =>
+  sendBaseMessage({
+    ...payload,
+    options: { ...(payload.options || {}), useSourceChat: true },
+  });
 
 function getIdentity(entry, key) {
   if (entry && typeof entry === 'object' && entry.userId != null) {
@@ -236,7 +241,7 @@ const editBenchCommand = ({ members }) => {
   });
 
   bot.onText(PATTERNS.edit_bench, msg => {
-    if (!requireAdmin(msg)) {
+    if (!requireAdmin(msg, { useSourceChat: true })) {
       return;
     }
 
@@ -264,7 +269,7 @@ const editBenchCommand = ({ members }) => {
   });
 
   bot.onText(PATTERNS.edit_bench_update, (msg, match) => {
-    if (!requireAdmin(msg)) {
+    if (!requireAdmin(msg, { useSourceChat: true })) {
       return;
     }
 
