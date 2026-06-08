@@ -21,9 +21,9 @@ logEvent('telegram.config', 'threads loaded', {
 });
 
 const sendMessage = async ({ msg, type, message, options = {} }) => {
-  const chatId = CHAT_ID ?? msg.chat.id;
-  const threadId = THREAD_TYPES[type];
-  const baseOptions = { ...options };
+  const { useSourceChat = false, ...baseOptions } = options;
+  const chatId = useSourceChat ? msg.chat.id : CHAT_ID ?? msg.chat.id;
+  const threadId = useSourceChat ? msg.message_thread_id : THREAD_TYPES[type];
 
   const sendOptions =
     threadId != null
@@ -33,7 +33,7 @@ const sendMessage = async ({ msg, type, message, options = {} }) => {
         }
       : baseOptions;
 
-  if (type && threadId == null) {
+  if (!useSourceChat && type && threadId == null) {
     logEvent(
       'telegram.send',
       'unknown thread type',
@@ -70,7 +70,7 @@ const sendMessage = async ({ msg, type, message, options = {} }) => {
         'warn'
       );
       try {
-        return await bot.sendMessage(chatId, message, { ...options });
+        return await bot.sendMessage(chatId, message, { ...baseOptions });
       } catch (fallbackError) {
         logEvent(
           'telegram.send',

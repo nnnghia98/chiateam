@@ -1,6 +1,6 @@
 const { getDisplayName } = require('../../utils/team-member');
 const { CLEAR_BENCH, VALIDATION } = require('../../utils/messages');
-const { sendMessage } = require('../../utils/chat');
+const { sendMessage: sendBaseMessage } = require('../../utils/chat');
 const { requireAdmin } = require('../../utils/permissions');
 const { isAdmin } = require('../../utils/validate');
 const { escapeMarkdown } = require('../../utils/format');
@@ -11,6 +11,11 @@ const bot = require('../../telegram-client');
 const CLEAR_BENCH_CALLBACK_PREFIX = 'clearbench:remove:';
 const CLEAR_BENCH_PAGE_CALLBACK_PREFIX = 'clearbench:page:';
 const CLEAR_BENCH_PAGE_SIZE = 10;
+const sendMessage = payload =>
+  sendBaseMessage({
+    ...payload,
+    options: { ...(payload.options || {}), useSourceChat: true },
+  });
 
 function normalizePage(page, totalEntries) {
   const maxPage = Math.max(
@@ -156,7 +161,7 @@ const clearBenchCommand = ({ members }) => {
   );
 
   bot.onText(/^\/clearbench$/, msg => {
-    if (!requireAdmin(msg)) {
+    if (!requireAdmin(msg, { useSourceChat: true })) {
       return;
     }
 
@@ -193,7 +198,7 @@ const clearBenchCommand = ({ members }) => {
   });
 
   bot.onText(/^\/clearbench (.+)$/, (msg, match) => {
-    if (!requireAdmin(msg)) {
+    if (!requireAdmin(msg, { useSourceChat: true })) {
       return;
     }
 
