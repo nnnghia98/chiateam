@@ -28,8 +28,13 @@ const ADD_ME = {
 
 const ADD_TO_TEAM = {
   emptyBench: '⚠️ Bench trống. Thêm member trước.',
-  instruction:
-    '📋 *Bench hiện tại:*\n\n{numberedList}\n\n💡 *Cách sử dụng:*\n• `/addtoteam [2|3] {team} 1,3,5` - Chọn member số 1, 3, 5\n• `/addtoteam [2|3] {team} 1-3` - Chọn member từ 1 đến 3\n• `/addtoteam [2|3] {team} all` - Chọn tất cả\n\n_Mode: 2 (2 teams) | 3 (3 teams) - mặc định: 2_\n_Team: HOME | AWAY | EXTRA_',
+  usage:
+    '📋 *Cách sử dụng /addtoteam:*\n' +
+    '• `/addtoteam HOME` - Chọn member thêm vào Home\n' +
+    '• `/addtoteam AWAY` - Chọn member thêm vào Away\n' +
+    '• `/addtoteam 3 EXTRA` - Chọn member thêm vào Extra\n' +
+    '• `/addtoteam [2|3] HOME|AWAY|EXTRA all` - Thêm tất cả',
+  instruction: '📋 Chọn member để thêm vào {team}:',
   invalidSelection:
     '⚠️ Không có lựa chọn hợp lệ. Ví dụ:\n`/addtoteam HOME 1,3,5` hoặc `/addtoteam 3 HOME 1-3` hoặc `/addtoteam HOME all`',
   success:
@@ -49,11 +54,12 @@ const REMOVE = {};
 
 const CLEAR_BENCH = {
   emptyBench: '⚠️ Bench trống.',
-  instruction:
-    '📋 *Bench hiện tại:*\n\n{numberedList}\n\n💡 *Cách sử dụng:*\n• `/clearbench 1,3,5` - Xóa member số 1, 3, 5\n• `/clearbench 1-3` - Xóa member từ 1 đến 3\n• `/clearbench all` - Xóa tất cả (Admin only)',
+  instruction: '📋 Chọn member cần xóa khỏi bench:',
   invalidSelection:
     '⚠️ Không có lựa chọn hợp lệ. Ví dụ:\n`/clearbench 1,3,5` hoặc `/clearbench 1-3` hoặc `/clearbench all`',
   success: '✅ Đã xóa {count} member(s):\n{removedNames}',
+  singleSuccess: '✅ Đã xóa {name} khỏi bench.',
+  staleButton: '⚠️ Lựa chọn này không còn hợp lệ. Dùng /clearbench để tải lại danh sách.',
   clearAllSuccess: '✅ Đã xóa toàn bộ member khỏi bench.',
   noRemovedMembers: '⚠️ Không có member nào bị xóa.',
   listError: '❌ Có lỗi xảy ra. Vui lòng thử lại.',
@@ -62,8 +68,8 @@ const CLEAR_BENCH = {
 
 const EDIT_BENCH = {
   emptyBench: '⚠️ Bench trống.',
-  instruction:
-    '📋 *Bench hiện tại:*\n\n{numberedList}\n\n💡 *Cách sử dụng:*\n• `/editbench [số] [tên mới]` - Đổi tên member theo thứ tự trong bench\n\nVí dụ: `/editbench 2 Minh`',
+  instruction: '📋 Chọn member cần đổi tên:',
+  namePrompt: '✏️ Nhập tên mới cho {name}:',
   invalidSelection:
     '⚠️ Số thứ tự không hợp lệ. Dùng `/editbench` để xem danh sách và chọn lại.',
   invalidName: '⚠️ Tên mới không hợp lệ.',
@@ -73,6 +79,13 @@ const EDIT_BENCH = {
 
 const CLEAR_TEAM = {
   emptyTeam: '⚠️ Chưa chia team.',
+  instruction:
+    '📋 *Cách sử dụng /clearteam:*\n' +
+    '• `/clearteam 2` - Xóa toàn bộ 2-team stack\n' +
+    '• `/clearteam 3` - Xóa toàn bộ 3-team stack\n' +
+    '• `/clearteam HOME` - Chọn member để xóa khỏi Home\n' +
+    '• `/clearteam AWAY` - Chọn member để xóa khỏi Away\n' +
+    '• `/clearteam 3 EXTRA` - Chọn member để xóa khỏi Extra',
   success: '✅ Đã xóa toàn bộ team.',
   stack2Empty: '⚠️ 2-team stack đã trống rồi.',
   stack2Success: '✅ Đã xóa toàn bộ 2-team stack (HOME, AWAY).',
@@ -85,8 +98,9 @@ const MANIFEST = {
   noCurrent: 'Chưa có manifest nào.',
   current: 'Manifest hiện tại:\n{manifestList}',
   list: '📋 *Danh sách manifest:*\n\n{manifestList}',
-  instruction:
-    '📋 *Bench hiện tại:*\n\n{numberedList}\n\n{current}\n\n💡 *Cách sử dụng:*\n• `/manifest [số thứ tự] <3 [số thứ tự]` hoặc `❤️` - Cho 2 member cùng team\n• `/manifest [số thứ tự] </3 [số thứ tự]` hoặc `💔` - Cho 2 member khác team\n• `/mf` - Xem manifest nhanh\n• `/removemanifest [số thứ tự]` - Xóa 1 manifest\n• `/clearmanifests` - Xóa tất cả manifest\n\nVí dụ: `/manifest 1 <3 3`, `/manifest 1 ❤️ 3` hoặc `/manifest 1 💔 3`',
+  instruction: '📋 Chọn member đầu tiên cho manifest:\n\n{current}',
+  relationPrompt: 'Chọn quan hệ cho `{first}`:',
+  secondPlayerPrompt: 'Chọn member thứ hai cho `{first}` {symbol}:',
   invalidSelection:
     '⚠️ Cú pháp manifest không hợp lệ. Ví dụ: `/manifest 1 <3 3`, `/manifest 1 ❤️ 3`, `/manifest 1 </3 3` hoặc `/manifest 1 💔 3`',
   success: '🧞‍♂️ Đã nhận nguyện vọng: `{first} {symbol} {second}`',
@@ -95,7 +109,7 @@ const MANIFEST = {
   conflict:
     '⚠️ Manifest này mâu thuẫn với danh sách hiện tại. Dùng `/mf` để xem hoặc `/removemanifest [số thứ tự]` để xóa manifest cũ.',
   removeInstruction:
-    '⚠️ Cú pháp: `/removemanifest [số thứ tự]`. Dùng `/mf` để xem danh sách manifest.',
+    '📋 Chọn manifest cần xóa:',
   invalidRemoveSelection:
     '⚠️ Số thứ tự manifest không hợp lệ. Dùng `/mf` để xem danh sách manifest.',
   removeSuccess: '✅ Đã xóa manifest: {manifest}',
@@ -109,8 +123,7 @@ const RESET = {
 
 const CLEAR_TEAM_INDIVIDUAL = {
   emptyTeam: '⚠️ {team} trống.',
-  instruction:
-    '👤 *{team} hiện tại:*\n\n{numberedList}\n\n💡 *Cách sử dụng:*\n• `/clearteam` - Xóa tất cả team\n• `/clearteam 2` - Xóa 2-team stack (HOME, AWAY)\n• `/clearteam 3` - Xóa 3-team stack (HOME, AWAY, EXTRA)\n• `/clearteam [2|3]{teamType} 1,3,5` - Xóa member số 1, 3, 5 khỏi team\n• `/clearteam [2|3]{teamType} 1-3` - Xóa member từ 1 đến 3 khỏi team\n• `/clearteam [2|3]{teamType} all` - Xóa tất cả member khỏi team\n• `/clearteam [2|3]{teamType} "John"` - Xóa member theo tên\n\n_Mode: 2 (2 teams) | 3 (3 teams) - mặc định: 2_',
+  instruction: '👤 Chọn member cần xóa khỏi {team}:',
   invalidSelection:
     '⚠️ Không có lựa chọn hợp lệ. Ví dụ:\n`/clearteam HOME 1,3,5` hoặc `/clearteam 3 HOME 1-3` hoặc `/clearteam HOME all`',
   noResetMembers: '⚠️ Không có member nào được xóa.',
@@ -174,12 +187,17 @@ const TAO_VOTE = {
   clearSuccess: '🗑️ Đã xoá vote.',
   noVoterLine: '*Ai vote?* Chưa có ai vote',
   totalVotersLine: '*Số người vote:* {count}',
-  buildVoteResult({ question, options, votes, totalVoters }) {
+  buildVoteResult({ question, options, votes }) {
     let resultText = `${TAO_VOTE.result.replace('${question}', question)}\n\n`;
+    const allVotes = Object.values(votes || {});
+    const totalVoters = allVotes.reduce((total, vote) => {
+      const selectedOption = vote.options?.[0];
+      return Number.isInteger(selectedOption) ? total + selectedOption : total;
+    }, 0);
 
     options.forEach((option, idx) => {
-      const voters = Object.values(votes)
-        .filter(vote => vote.options.includes(idx))
+      const voters = allVotes
+        .filter(vote => vote.options?.includes(idx))
         .map(vote => vote.name);
 
       resultText += `*${option}* (${voters.length})\n`;

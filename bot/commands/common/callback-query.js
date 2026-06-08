@@ -2,6 +2,12 @@ const bot = require('../../telegram-client');
 const { logEvent } = require('../../utils/logger');
 const { CALLBACK_QUERY } = require('../../utils/messages');
 
+const callbackQueryHandlers = [];
+
+function registerCallbackQueryHandler(handler) {
+  callbackQueryHandlers.push(handler);
+}
+
 function logUnsupportedCallback(query) {
   logEvent('telegram.callback', 'unsupported inline button', {
     data: query.data,
@@ -22,16 +28,26 @@ function handleUnsupportedCallback(query) {
 }
 
 function callbackQueryCommand() {
-  bot.on('callback_query', query => {
-    handleUnsupportedCallback(query).catch(error => {
+  bot.on('callback_query', async query => {
+    try {
+      for (const handler of callbackQueryHandlers) {
+        const handled = await handler(query);
+        if (handled) {
+          return;
+        }
+      }
+
+      await handleUnsupportedCallback(query);
+    } catch (error) {
       logEvent('telegram.callback', 'failed to answer callback', {
         error: error.message,
         callback: query.id,
         data: query.data,
       }, 'error');
-    });
+    }
   });
 }
 
 module.exports = callbackQueryCommand;
 module.exports.handleUnsupportedCallback = handleUnsupportedCallback;
+module.exports.registerCallbackQueryHandler = registerCallbackQueryHandler;

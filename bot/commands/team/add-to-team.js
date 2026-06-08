@@ -1,9 +1,16 @@
 const { getDisplayName } = require('../../utils/team-member');
-const { ADD_TO_TEAM } = require('../../utils/messages');
+const { ADD_TO_TEAM, VALIDATION } = require('../../utils/messages');
 const { sendMessage } = require('../../utils/chat');
+const { requireAdmin } = require('../../utils/permissions');
 const { escapeMarkdown } = require('../../utils/format');
+const { isAdmin } = require('../../utils/validate');
+const { buildPaginatedKeyboard } = require('../../utils/inline-keyboard');
+const { registerCallbackQueryHandler } = require('../common/callback-query');
 
 const bot = require('../../telegram-client');
+
+const ADD_TO_TEAM_ADD_PREFIX = 'addteam:add:';
+const ADD_TO_TEAM_PAGE_PREFIX = 'addteam:page:';
 
 const addToTeamCommand = ({
   members,
@@ -29,16 +36,153 @@ const addToTeamCommand = ({
     return null;
   };
 
+  const getTeamName = teamType =>
+    teamType === 'HOME' ? 'Home' : teamType === 'AWAY' ? 'Away' : 'Extra';
+
+  const buildKeyboard = ({ mode, teamType, page = 0 }) => {
+    const allEntries = Array.from(members.entries());
+
+    return buildPaginatedKeyboard({
+      entries: allEntries,
+      page,
+      pageCallbackPrefix: `${ADD_TO_TEAM_PAGE_PREFIX}${mode}:${teamType}:`,
+      itemToButton: (([, entry], index) => ({
+        text: `${index + 1}. ${getDisplayName(entry)}`,
+        callback_data: `${ADD_TO_TEAM_ADD_PREFIX}${mode}:${teamType}:${index}`,
+      })),
+    });
+  };
+
+  const addEntryToTeam = ({ entry, team, teamName, msg }) => {
+    const existingInTeam = new Set(Array.from(team.values()));
+
+    if (existingInTeam.has(entry)) {
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: ADD_TO_TEAM.allDuplicates
+          .replace('{count}', 1)
+          .replace('{team}', teamName),
+      });
+      return false;
+    }
+
+    team.set(Date.now() + Math.random(), entry);
+
+    const selectedName = getDisplayName(entry);
+    const teamMemberDisplays = Array.from(team.values()).map(getDisplayName);
+    const message = ADD_TO_TEAM.success
+      .replace('{count}', 1)
+      .replaceAll('{team}', teamName)
+      .replace('{selectedNames}', escapeMarkdown(selectedName))
+      .replace(
+        '{teamMembers}',
+        teamMemberDisplays.map(name => escapeMarkdown(name)).join('\n')
+      );
+
+    sendMessage({
+      msg,
+      type: 'DEFAULT',
+      message,
+      options: { parse_mode: 'Markdown' },
+    });
+    return true;
+  };
+
+  registerCallbackQueryHandler(async query => {
+    const data = query.data || '';
+    const isAdd = data.startsWith(ADD_TO_TEAM_ADD_PREFIX);
+    const isPage = data.startsWith(ADD_TO_TEAM_PAGE_PREFIX);
+
+    if (!isAdd && !isPage) {
+      return false;
+    }
+
+    if (!isAdmin(query.from?.id)) {
+      await bot.answerCallbackQuery(query.id, {
+        text: VALIDATION.onlyAdmin,
+        show_alert: false,
+      });
+      return true;
+    }
+
+    if (isPage) {
+      const [, modeRaw, teamType, pageRaw] = data.match(
+        /^addteam:page:(\d):(HOME|AWAY|EXTRA):(\d+)$/
+      ) || [null, null, null, null];
+
+      await bot.editMessageReplyMarkup(
+        {
+          inline_keyboard: buildKeyboard({
+            mode: parseInt(modeRaw, 10) || 2,
+            teamType,
+            page: parseInt(pageRaw, 10) || 0,
+          }),
+        },
+        {
+          chat_id: query.message.chat.id,
+          message_id: query.message.message_id,
+        }
+      );
+      await bot.answerCallbackQuery(query.id, { text: '', show_alert: false });
+      return true;
+    }
+
+    const [, modeRaw, teamType, indexRaw] = data.match(
+      /^addteam:add:(\d):(HOME|AWAY|EXTRA):(\d+)$/
+    ) || [null, null, null, null];
+    const mode = parseInt(modeRaw, 10) || 2;
+    const index = parseInt(indexRaw, 10);
+    const team = getTeam(mode, teamType);
+    const allEntries = Array.from(members.entries());
+    const selectedEntry = Number.isInteger(index) ? allEntries[index] : null;
+
+    if (!team || !selectedEntry) {
+      await bot.answerCallbackQuery(query.id, {
+        text: ADD_TO_TEAM.invalidSelection,
+        show_alert: false,
+      });
+      return true;
+    }
+
+    addEntryToTeam({
+      entry: selectedEntry[1],
+      team,
+      teamName: getTeamName(teamType),
+      msg: query.message,
+    });
+    await bot.answerCallbackQuery(query.id, {
+      text: `Đã thêm ${getDisplayName(selectedEntry[1])}`,
+      show_alert: false,
+    });
+    return true;
+  });
+
+  bot.onText(/^\/addtoteam$/, msg => {
+    if (!requireAdmin(msg)) {
+      return;
+    }
+
+    sendMessage({
+      msg,
+      type: 'DEFAULT',
+      message: ADD_TO_TEAM.usage,
+      options: { parse_mode: 'Markdown' },
+    });
+  });
+
   // /addtoteam [2|3] HOME|AWAY|EXTRA - show instruction
   bot.onText(/^\/addtoteam (2|3)?\s*(HOME|AWAY|EXTRA)$/, (msg, match) => {
+    if (!requireAdmin(msg)) {
+      return;
+    }
+
     const mode = match[1] ? parseInt(match[1]) : 2; // Default to 2-team mode
     const teamType = match[2];
-    const teamName =
-      teamType === 'HOME' ? 'Home' : teamType === 'AWAY' ? 'Away' : 'Extra';
+    const teamName = getTeamName(teamType);
     const allEntries = Array.from(members.entries());
-    const allNames = allEntries.map(([, v]) => getDisplayName(v));
 
-    if (allNames.length === 0) {
+    if (allEntries.length === 0) {
       sendMessage({
         msg,
         type: 'DEFAULT',
@@ -47,32 +191,31 @@ const addToTeamCommand = ({
       return;
     }
 
-    const numberedList = allNames
-      .map((name, index) => `${index + 1}. ${escapeMarkdown(name)}`)
-      .join('\n');
-
-    const message = ADD_TO_TEAM.instruction
-      .replace('{numberedList}', numberedList)
-      .replace(/{team}/g, teamName);
+    const message = ADD_TO_TEAM.instruction.replace(/{team}/g, teamName);
 
     sendMessage({
       msg,
       type: 'MAIN',
       message,
       options: {
-        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: buildKeyboard({ mode, teamType }),
+        },
       },
     });
   });
 
   // /addtoteam [2|3] HOME|AWAY|EXTRA selection - add members to team
   bot.onText(/^\/addtoteam (2|3)?\s*(HOME|AWAY|EXTRA) (.+)$/, (msg, match) => {
+    if (!requireAdmin(msg)) {
+      return;
+    }
+
     const mode = match[1] ? parseInt(match[1]) : 2; // Default to 2-team mode
     const teamType = match[2];
     const selection = match[3].trim();
     const team = getTeam(mode, teamType);
-    const teamName =
-      teamType === 'HOME' ? 'Home' : teamType === 'AWAY' ? 'Away' : 'Extra';
+    const teamName = getTeamName(teamType);
     const allEntries = Array.from(members.entries());
     const allNames = allEntries.map(([, v]) => getDisplayName(v));
 

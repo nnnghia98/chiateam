@@ -1,6 +1,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
+process.env.BOT_OWNER_ID = '123';
+
 function loadManifestWithMockedBot(mockBot) {
   const commandPath = require.resolve('./manifest');
   const chatPath = require.resolve('../../utils/chat');
@@ -45,6 +47,7 @@ async function invokeCommand(handlers, command) {
 
   return handler.handler(
     {
+      from: { id: 123 },
       chat: { id: 456 },
       text: command,
     },
@@ -100,6 +103,57 @@ test('/manifests shows an empty state when no manifest exists', async () => {
 
   assert.equal(sentMessages.length, 1);
   assert.equal(sentMessages[0].message, 'Chưa có manifest nào.');
+});
+
+test('/manifest shows inline buttons instead of bench list', async () => {
+  const { bot, handlers, sentMessages } = createMockBot();
+  const manifestCommand = loadManifestWithMockedBot(bot);
+
+  manifestCommand({
+    members: new Map([
+      [1, { name: 'Alice', userId: 1 }],
+      [2, { name: 'Bob', userId: 2 }],
+    ]),
+    getManifest: () => null,
+    setManifest: () => {},
+  });
+
+  await invokeCommand(handlers, '/manifest');
+
+  assert.equal(sentMessages.length, 1);
+  assert.match(sentMessages[0].message, /Chọn member đầu tiên/);
+  assert.doesNotMatch(sentMessages[0].message, /1\. Alice/);
+  assert.deepEqual(sentMessages[0].options.reply_markup.inline_keyboard, [
+    [{ text: '1. Alice', callback_data: 'manifest:first:0' }],
+    [{ text: '2. Bob', callback_data: 'manifest:first:1' }],
+  ]);
+});
+
+test('/removemanifest shows inline buttons for existing manifests', async () => {
+  const { bot, handlers, sentMessages } = createMockBot();
+  const manifestCommand = loadManifestWithMockedBot(bot);
+
+  manifestCommand({
+    members: new Map(),
+    getManifest: () => [
+      {
+        relation: 'same',
+        players: [
+          { identity: 'tele:1', name: 'Alice' },
+          { identity: 'tele:2', name: 'Bob' },
+        ],
+      },
+    ],
+    setManifest: () => {},
+  });
+
+  await invokeCommand(handlers, '/removemanifest');
+
+  assert.equal(sentMessages.length, 1);
+  assert.equal(sentMessages[0].message, '📋 Chọn manifest cần xóa:');
+  assert.deepEqual(sentMessages[0].options.reply_markup.inline_keyboard, [
+    [{ text: '1. Alice <3 Bob', callback_data: 'manifestremove:remove:0' }],
+  ]);
 });
 
 test('/manifest accepts 💔 as a different-team relation', async () => {

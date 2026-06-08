@@ -83,5 +83,6 @@ Use these folders as the first place to look:
 - Check [index.js](/Users/nnnghia98/Projects/chiateam-bot/bot/index.js) to see how that command receives state and shared dependencies.
 - If a change touches bench/team/vote/cost state, inspect [utils/storage.js](/Users/nnnghia98/Projects/chiateam-bot/bot/utils/storage.js) before editing command code.
 - Reuse helpers from `utils/` instead of duplicating formatting, validation, or permission logic.
+- For Telegram inline keyboards that list players or members, show at most 10 player/member buttons per page by default and add pagination controls when there are more.
 - Do not add runtime writes to tracked files inside `bot/`. Persisted state belongs in `BOT_STATE_FILE`.
 - Do not move next-match data out of `.runtime/bot/storage.json` unless the user explicitly approves that storage change.
