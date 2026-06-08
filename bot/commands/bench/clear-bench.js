@@ -2,17 +2,168 @@ const { getDisplayName } = require('../../utils/team-member');
 const { CLEAR_BENCH, VALIDATION } = require('../../utils/messages');
 const { sendMessage } = require('../../utils/chat');
 const { requireAdmin } = require('../../utils/permissions');
+const { isAdmin } = require('../../utils/validate');
 const { escapeMarkdown } = require('../../utils/format');
+const { registerCallbackQueryHandler } = require('../common/callback-query');
 
 const bot = require('../../telegram-client');
 
+const CLEAR_BENCH_CALLBACK_PREFIX = 'clearbench:remove:';
+const CLEAR_BENCH_PAGE_CALLBACK_PREFIX = 'clearbench:page:';
+const CLEAR_BENCH_PAGE_SIZE = 10;
+
+function normalizePage(page, totalEntries) {
+  const maxPage = Math.max(
+    0,
+    Math.ceil(totalEntries / CLEAR_BENCH_PAGE_SIZE) - 1
+  );
+  return Math.min(Math.max(page, 0), maxPage);
+}
+
+function buildClearBenchKeyboard(allEntries, page = 0) {
+  const currentPage = normalizePage(page, allEntries.length);
+  const startIndex = currentPage * CLEAR_BENCH_PAGE_SIZE;
+  const pageEntries = allEntries.slice(
+    startIndex,
+    startIndex + CLEAR_BENCH_PAGE_SIZE
+  );
+  const keyboard = pageEntries.map(([, entry], offset) => {
+    const index = startIndex + offset;
+
+    return [
+      {
+        text: `${index + 1}. ${getDisplayName(entry)}`,
+        callback_data: `${CLEAR_BENCH_CALLBACK_PREFIX}${index}`,
+      },
+    ];
+  });
+
+  if (allEntries.length > CLEAR_BENCH_PAGE_SIZE) {
+    const navRow = [];
+
+    if (currentPage > 0) {
+      navRow.push({
+        text: '⬅️ Trước',
+        callback_data: `${CLEAR_BENCH_PAGE_CALLBACK_PREFIX}${currentPage - 1}`,
+      });
+    }
+
+    const totalPages = Math.ceil(allEntries.length / CLEAR_BENCH_PAGE_SIZE);
+    navRow.push({
+      text: `${currentPage + 1}/${totalPages}`,
+      callback_data: `${CLEAR_BENCH_PAGE_CALLBACK_PREFIX}${currentPage}`,
+    });
+
+    if ((currentPage + 1) * CLEAR_BENCH_PAGE_SIZE < allEntries.length) {
+      navRow.push({
+        text: 'Tiếp ➡️',
+        callback_data: `${CLEAR_BENCH_PAGE_CALLBACK_PREFIX}${currentPage + 1}`,
+      });
+    }
+
+    keyboard.push(navRow);
+  }
+
+  return keyboard;
+}
+
+async function handleClearBenchCallback(query, members) {
+  if (
+    !query.data?.startsWith(CLEAR_BENCH_CALLBACK_PREFIX) &&
+    !query.data?.startsWith(CLEAR_BENCH_PAGE_CALLBACK_PREFIX)
+  ) {
+    return false;
+  }
+
+  if (!isAdmin(query.from?.id)) {
+    await bot.answerCallbackQuery(query.id, {
+      text: VALIDATION.onlyAdmin,
+      show_alert: false,
+    });
+    return true;
+  }
+
+  if (query.data.startsWith(CLEAR_BENCH_PAGE_CALLBACK_PREFIX)) {
+    const page = Number(
+      query.data.slice(CLEAR_BENCH_PAGE_CALLBACK_PREFIX.length)
+    );
+    const allEntries = Array.from(members.entries());
+
+    if (allEntries.length === 0) {
+      await bot.answerCallbackQuery(query.id, {
+        text: CLEAR_BENCH.emptyBench,
+        show_alert: false,
+      });
+      return true;
+    }
+
+    await bot.editMessageReplyMarkup(
+      {
+        inline_keyboard: buildClearBenchKeyboard(
+          allEntries,
+          Number.isInteger(page) ? page : 0
+        ),
+      },
+      {
+        chat_id: query.message.chat.id,
+        message_id: query.message.message_id,
+      }
+    );
+    await bot.answerCallbackQuery(query.id, {
+      text: '',
+      show_alert: false,
+    });
+    return true;
+  }
+
+  const index = Number(query.data.slice(CLEAR_BENCH_CALLBACK_PREFIX.length));
+  const allEntries = Array.from(members.entries());
+  const selectedEntry = Number.isInteger(index) ? allEntries[index] : null;
+
+  if (!selectedEntry) {
+    await bot.answerCallbackQuery(query.id, {
+      text: CLEAR_BENCH.staleButton,
+      show_alert: false,
+    });
+    return true;
+  }
+
+  const [key, member] = selectedEntry;
+  const name = getDisplayName(member);
+  members.delete(key);
+
+  await bot.answerCallbackQuery(query.id, {
+    text: CLEAR_BENCH.singleSuccess.replace('{name}', name),
+    show_alert: false,
+  });
+
+  await sendMessage({
+    msg: query.message,
+    type: 'DEFAULT',
+    message: CLEAR_BENCH.singleSuccess.replace(
+      '{name}',
+      escapeMarkdown(name)
+    ),
+    options: { parse_mode: 'Markdown' },
+  });
+
+  return true;
+}
+
 const clearBenchCommand = ({ members }) => {
+  registerCallbackQueryHandler(query =>
+    handleClearBenchCallback(query, members)
+  );
+
   bot.onText(/^\/clearbench$/, msg => {
+    if (!requireAdmin(msg)) {
+      return;
+    }
+
     try {
       const allEntries = Array.from(members.entries());
-      const allNames = allEntries.map(([, v]) => getDisplayName(v));
 
-      if (allNames.length === 0) {
+      if (allEntries.length === 0) {
         sendMessage({
           msg,
           type: 'DEFAULT',
@@ -21,20 +172,14 @@ const clearBenchCommand = ({ members }) => {
         return;
       }
 
-      const numberedList = allNames
-        .map((name, index) => `${index + 1}. ${escapeMarkdown(name)}`)
-        .join('\n');
-
-      const message = CLEAR_BENCH.instruction.replace(
-        '{numberedList}',
-        numberedList
-      );
       sendMessage({
         msg,
         type: 'DEFAULT',
-        message,
+        message: CLEAR_BENCH.instruction,
         options: {
-          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: buildClearBenchKeyboard(allEntries),
+          },
         },
       });
     } catch (error) {

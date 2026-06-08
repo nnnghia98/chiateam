@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { BENCH, CHIA_TEAM, START, TEAM } = require('./messages');
+const { BENCH, CHIA_TEAM, START, TAO_VOTE, TEAM } = require('./messages');
 
 test('/start help is organized into concise sections', () => {
   assert.match(START.help, /\*BẮT ĐẦU NHANH\*/);
@@ -43,4 +43,19 @@ test('bench and team messages include roster counts', () => {
     CHIA_TEAM.buildThreeTeamMessage(['A', 'B'], ['C'], ['D']),
     /\*HOME \(2\):\*[\s\S]+\*AWAY \(1\):\*[\s\S]+\*EXT \(1\):\*/
   );
+});
+
+test('/demvote total counts selected vote values', () => {
+  const result = TAO_VOTE.buildVoteResult({
+    question: 'Tonight?',
+    options: ['0', '+1', '+2', '+3', '+4'],
+    totalVoters: 2,
+    votes: {
+      1: { id: 1, name: 'Nghia', options: [4] },
+      2: { id: 2, name: 'Minh', options: [4] },
+    },
+  });
+
+  assert.match(result, /\*Số người vote:\* 8/);
+  assert.match(result, /\*\+4\* \(2\)/);
 });

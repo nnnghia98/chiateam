@@ -58,7 +58,33 @@ async function runHandler(handlers, command) {
   await handler.handler(msg(command), handler.pattern.exec(command));
 }
 
-test('/clearteam clears only the two-team stack', async () => {
+test('/clearteam shows instruction instead of clearing by default', async () => {
+  const originalOwnerId = process.env.BOT_OWNER_ID;
+  process.env.BOT_OWNER_ID = '123';
+
+  const { bot, handlers, sentMessages } = createMockBot();
+  const clearTeamCommand = loadClearTeamWithMockedBot(bot);
+  const teamA = new Map([[1, 'A']]);
+  const teamB = new Map([[2, 'B']]);
+
+  clearTeamCommand({
+    teamA,
+    teamB,
+    team3A: new Map(),
+    team3B: new Map(),
+    team3C: new Map(),
+  });
+
+  await runHandler(handlers, '/clearteam');
+
+  assert.equal(teamA.size, 1);
+  assert.equal(teamB.size, 1);
+  assert.match(sentMessages[0].message, /Cách sử dụng \/clearteam/);
+
+  process.env.BOT_OWNER_ID = originalOwnerId;
+});
+
+test('/clearteam 2 clears only the two-team stack', async () => {
   const originalOwnerId = process.env.BOT_OWNER_ID;
   process.env.BOT_OWNER_ID = '123';
 
@@ -72,7 +98,7 @@ test('/clearteam clears only the two-team stack', async () => {
 
   clearTeamCommand({ teamA, teamB, team3A, team3B, team3C });
 
-  await runHandler(handlers, '/clearteam');
+  await runHandler(handlers, '/clearteam 2');
 
   assert.equal(teamA.size, 0);
   assert.equal(teamB.size, 0);

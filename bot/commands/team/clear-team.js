@@ -1,10 +1,20 @@
-const { CLEAR_TEAM, CLEAR_TEAM_INDIVIDUAL } = require('../../utils/messages');
+const {
+  CLEAR_TEAM,
+  CLEAR_TEAM_INDIVIDUAL,
+  VALIDATION,
+} = require('../../utils/messages');
 const { getDisplayName } = require('../../utils/team-member');
 const { sendMessage } = require('../../utils/chat');
 const { requireAdmin } = require('../../utils/permissions');
+const { isAdmin } = require('../../utils/validate');
 const { escapeMarkdown } = require('../../utils/format');
+const { buildPaginatedKeyboard } = require('../../utils/inline-keyboard');
+const { registerCallbackQueryHandler } = require('../common/callback-query');
 
 const bot = require('../../telegram-client');
+
+const CLEAR_TEAM_REMOVE_PREFIX = 'clearteam:remove:';
+const CLEAR_TEAM_PAGE_PREFIX = 'clearteam:page:';
 
 const clearTeamCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
   // Helper: Get the correct team based on mode (2 or 3) and team type
@@ -22,28 +32,111 @@ const clearTeamCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
     return null;
   };
 
-  // Clear the default 2-team stack. Players stay in bench (bench is the persistent roster).
+  const getTeamName = teamType =>
+    teamType === 'HOME' ? 'Home' : teamType === 'AWAY' ? 'Away' : 'Extra';
+
+  const buildKeyboard = ({ mode, teamType, page = 0 }) => {
+    const team = getTeam(mode, teamType);
+    const teamEntries = team ? Array.from(team.entries()) : [];
+
+    return buildPaginatedKeyboard({
+      entries: teamEntries,
+      page,
+      pageCallbackPrefix: `${CLEAR_TEAM_PAGE_PREFIX}${mode}:${teamType}:`,
+      itemToButton: (([, entry], index) => ({
+        text: `${index + 1}. ${getDisplayName(entry)}`,
+        callback_data: `${CLEAR_TEAM_REMOVE_PREFIX}${mode}:${teamType}:${index}`,
+      })),
+    });
+  };
+
+  registerCallbackQueryHandler(async query => {
+    const data = query.data || '';
+    const isRemove = data.startsWith(CLEAR_TEAM_REMOVE_PREFIX);
+    const isPage = data.startsWith(CLEAR_TEAM_PAGE_PREFIX);
+
+    if (!isRemove && !isPage) {
+      return false;
+    }
+
+    if (!isAdmin(query.from?.id)) {
+      await bot.answerCallbackQuery(query.id, {
+        text: VALIDATION.onlyAdmin,
+        show_alert: false,
+      });
+      return true;
+    }
+
+    if (isPage) {
+      const [, modeRaw, teamType, pageRaw] = data.match(
+        /^clearteam:page:(\d):(HOME|AWAY|EXTRA):(\d+)$/
+      ) || [null, null, null, null];
+
+      await bot.editMessageReplyMarkup(
+        {
+          inline_keyboard: buildKeyboard({
+            mode: parseInt(modeRaw, 10) || 2,
+            teamType,
+            page: parseInt(pageRaw, 10) || 0,
+          }),
+        },
+        {
+          chat_id: query.message.chat.id,
+          message_id: query.message.message_id,
+        }
+      );
+      await bot.answerCallbackQuery(query.id, { text: '', show_alert: false });
+      return true;
+    }
+
+    const [, modeRaw, teamType, indexRaw] = data.match(
+      /^clearteam:remove:(\d):(HOME|AWAY|EXTRA):(\d+)$/
+    ) || [null, null, null, null];
+    const mode = parseInt(modeRaw, 10) || 2;
+    const index = parseInt(indexRaw, 10);
+    const team = getTeam(mode, teamType);
+    const teamEntries = team ? Array.from(team.entries()) : [];
+    const selectedEntry = Number.isInteger(index) ? teamEntries[index] : null;
+
+    if (!team || !selectedEntry) {
+      await bot.answerCallbackQuery(query.id, {
+        text: CLEAR_TEAM_INDIVIDUAL.invalidSelection,
+        show_alert: false,
+      });
+      return true;
+    }
+
+    const [key, member] = selectedEntry;
+    const name = getDisplayName(member);
+    team.delete(key);
+
+    await bot.answerCallbackQuery(query.id, {
+      text: `Đã xóa ${name}`,
+      show_alert: false,
+    });
+    await sendMessage({
+      msg: query.message,
+      type: 'DEFAULT',
+      message: CLEAR_TEAM_INDIVIDUAL.success
+        .replace('{count}', 1)
+        .replace('{team}', getTeamName(teamType))
+        .replace('{resetNames}', escapeMarkdown(name)),
+      options: { parse_mode: 'Markdown' },
+    });
+    return true;
+  });
+
+  // Show instruction. Explicit stack clearing uses /clearteam 2 or /clearteam 3.
   bot.onText(/^\/clearteam$/, msg => {
     if (!requireAdmin(msg)) {
       return;
     }
 
-    if (teamA.size === 0 && teamB.size === 0) {
-      sendMessage({
-        msg,
-        type: 'DEFAULT',
-        message: CLEAR_TEAM.stack2Empty,
-      });
-      return;
-    }
-
-    teamA.clear();
-    teamB.clear();
-
     sendMessage({
       msg,
       type: 'DEFAULT',
-      message: CLEAR_TEAM.stack2Success,
+      message: CLEAR_TEAM.instruction,
+      options: { parse_mode: 'Markdown' },
     });
   });
 
@@ -117,12 +210,10 @@ const clearTeamCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
       return;
     }
 
-    const teamName =
-      teamType === 'HOME' ? 'Home' : teamType === 'AWAY' ? 'Away' : 'Extra';
+    const teamName = getTeamName(teamType);
     const teamEntries = Array.from(team.entries());
-    const teamNames = teamEntries.map(([, v]) => getDisplayName(v));
 
-    if (teamNames.length === 0) {
+    if (teamEntries.length === 0) {
       sendMessage({
         msg,
         type: 'DEFAULT',
@@ -132,20 +223,19 @@ const clearTeamCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
       return;
     }
 
-    const numberedList = teamNames
-      .map((name, index) => `${index + 1}. ${escapeMarkdown(name)}`)
-      .join('\n');
-
     const message = CLEAR_TEAM_INDIVIDUAL.instruction
       .replace('{team}', teamName)
-      .replace(/{teamType}/g, ` ${teamType}`)
-      .replace('{numberedList}', numberedList);
+      .replace(/{teamType}/g, ` ${teamType}`);
 
     sendMessage({
       msg,
       type: 'DEFAULT',
       message,
-      options: { parse_mode: 'Markdown' },
+      options: {
+        reply_markup: {
+          inline_keyboard: buildKeyboard({ mode, teamType }),
+        },
+      },
     });
   });
 
@@ -172,8 +262,7 @@ const clearTeamCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
       return;
     }
 
-    const teamName =
-      teamType === 'HOME' ? 'Home' : teamType === 'AWAY' ? 'Away' : 'Extra';
+    const teamName = getTeamName(teamType);
     const teamEntries = Array.from(team.entries());
     const teamNames = teamEntries.map(([, v]) => getDisplayName(v));
 

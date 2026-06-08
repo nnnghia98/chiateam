@@ -46,3 +46,37 @@ test('unsupported inline callbacks are answered', async () => {
     },
   ]);
 });
+
+test('registered callback handlers prevent unsupported response', async () => {
+  const calls = [];
+  const registered = [];
+  const mockBot = {
+    on(event, handler) {
+      registered.push({ event, handler });
+    },
+    async answerCallbackQuery(id, options) {
+      calls.push({ id, options });
+      return { ok: true };
+    },
+  };
+
+  const callbackQueryCommand = loadCallbackQueryWithMockedBot(mockBot);
+  const { registerCallbackQueryHandler } = callbackQueryCommand;
+
+  registerCallbackQueryHandler(async query => query.data === 'handled-action');
+  callbackQueryCommand();
+
+  const callbackListener = registered.find(
+    call => call.event === 'callback_query'
+  );
+  assert.ok(callbackListener);
+
+  await callbackListener.handler({
+    id: 'callback-2',
+    data: 'handled-action',
+    from: { id: 123, first_name: 'Nghia' },
+    message: { chat: { id: -100 }, message_id: 456 },
+  });
+
+  assert.deepEqual(calls, []);
+});
