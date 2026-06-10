@@ -58,6 +58,21 @@ There are older handler files for standalone AI and leaderboard commands, but
 `bot/index.js` does not currently register them. Keep README command docs tied
 to the runtime wiring, not just files present under `bot/commands/`.
 
+Interactive commands that use inline keyboards:
+
+- `/clearbench`
+- `/editbench`
+- `/addtoteam`
+- `/clearteam`
+- `/manifest`
+- `/removemanifest`
+
+These commands are admin-only when they show or handle inline keyboard actions.
+Inline keyboards show at most 10 players or manifest entries per page. Their
+prompt and follow-up messages are sent back to the chat where the command or
+button was used, including the same Telegram topic when available, instead of
+using the configured `CHAT_ID`.
+
 ### API
 
 The API uses Node's built-in `http` module and PostgreSQL via `pg`.
