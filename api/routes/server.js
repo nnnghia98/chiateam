@@ -32,6 +32,26 @@ const {
   isMaintenanceModeEnabled,
   getMaintenanceUntil,
 } = require('../../config/maintenance');
+const {
+  STATUS_LOCKED,
+  STATUS_OPEN,
+  addMatch,
+  deleteMatch,
+  getLeaderboardRows,
+  getMemberPredictionBoard,
+  getPredictionRowsForMatch,
+  isValidMatchId,
+  listMemberKeys,
+  normalizeMatchId,
+  normalizeOutcome,
+  normalizePredictionState,
+  regenerateMemberKey,
+  revokeMemberKey,
+  setMatchResult,
+  setMatchStatus,
+  setMemberPrediction,
+  upsertMemberKey,
+} = require('../services/world-cup-predictions-service');
 
 const DEFAULT_PORT = Number(
   process.env.API_PORT || process.env.UI_API_PORT || process.env.PORT || 8787
@@ -205,6 +225,164 @@ function requireAdmin(req, res, headers) {
     return false;
   }
   return true;
+}
+
+function getPredictionStateFromStorage(storage) {
+  return normalizePredictionState(storage.worldCupPredictions);
+}
+
+function buildPredictionStorage(storage, predictionState) {
+  return {
+    ...storage,
+    worldCupPredictions: normalizePredictionState(predictionState),
+  };
+}
+
+function sendPredictionResult(res, headers, result, successStatus, bodyBuilder) {
+  if (result.ok) {
+    return sendJson(res, successStatus, bodyBuilder(result), headers);
+  }
+
+  if (result.code === 'MATCH_NOT_FOUND') {
+    return sendJson(res, 404, { error: result.code }, headers);
+  }
+
+  if (result.code === 'MATCH_EXISTS' || result.code === 'MATCH_SETTLED') {
+    return sendJson(res, 409, { error: result.code }, headers);
+  }
+
+  return sendJson(res, 400, { error: result.code || 'INVALID_REQUEST' }, headers);
+}
+
+function getAdminActorId(req) {
+  const rawValue =
+    req.headers['x-admin-user-id'] ||
+    req.headers['x-admin-email'] ||
+    req.headers['x-admin-name'];
+  return rawValue == null ? null : String(rawValue);
+}
+
+function validateMatchIdParam(rawMatchId) {
+  const matchId = normalizeMatchId(decodeURIComponent(rawMatchId || ''));
+  return isValidMatchId(matchId) ? matchId : null;
+}
+
+function validateCreatePredictionMatchPayload(payload) {
+  const id = normalizeMatchId(payload?.id ?? payload?.matchNumber);
+  const homeTeam =
+    typeof payload?.homeTeam === 'string' ? payload.homeTeam.trim() : '';
+  const awayTeam =
+    typeof payload?.awayTeam === 'string' ? payload.awayTeam.trim() : '';
+  const date = typeof payload?.date === 'string' ? payload.date.trim() : '';
+  const time = typeof payload?.time === 'string' ? payload.time.trim() : '';
+  const kickoff =
+    typeof payload?.kickoff === 'string'
+      ? payload.kickoff.trim()
+      : date && time
+        ? `${date} ${time}`
+        : '';
+
+  if (!id || !isValidMatchId(id)) {
+    return { ok: false, error: 'INVALID_MATCH_ID' };
+  }
+  if (!homeTeam) {
+    return { ok: false, error: 'INVALID_HOME_TEAM' };
+  }
+  if (!awayTeam) {
+    return { ok: false, error: 'INVALID_AWAY_TEAM' };
+  }
+  if (!kickoff) {
+    return { ok: false, error: 'INVALID_KICKOFF' };
+  }
+
+  return {
+    ok: true,
+    match: {
+      id,
+      matchNumber:
+        payload?.matchNumber == null ? undefined : Number(payload.matchNumber),
+      date,
+      time,
+      homeTeam,
+      awayTeam,
+      kickoff,
+    },
+  };
+}
+
+function validateUpdatePredictionMatchPayload(payload) {
+  const updates = {};
+
+  if (Object.prototype.hasOwnProperty.call(payload, 'homeTeam')) {
+    if (typeof payload.homeTeam !== 'string' || !payload.homeTeam.trim()) {
+      return { ok: false, error: 'INVALID_HOME_TEAM' };
+    }
+    updates.homeTeam = payload.homeTeam.trim();
+  }
+
+  if (Object.prototype.hasOwnProperty.call(payload, 'awayTeam')) {
+    if (typeof payload.awayTeam !== 'string' || !payload.awayTeam.trim()) {
+      return { ok: false, error: 'INVALID_AWAY_TEAM' };
+    }
+    updates.awayTeam = payload.awayTeam.trim();
+  }
+
+  if (Object.prototype.hasOwnProperty.call(payload, 'date')) {
+    if (typeof payload.date !== 'string' || !payload.date.trim()) {
+      return { ok: false, error: 'INVALID_DATE' };
+    }
+    updates.date = payload.date.trim();
+  }
+
+  if (Object.prototype.hasOwnProperty.call(payload, 'time')) {
+    if (typeof payload.time !== 'string' || !payload.time.trim()) {
+      return { ok: false, error: 'INVALID_TIME' };
+    }
+    updates.time = payload.time.trim();
+  }
+
+  if (Object.prototype.hasOwnProperty.call(payload, 'kickoff')) {
+    if (typeof payload.kickoff !== 'string' || !payload.kickoff.trim()) {
+      return { ok: false, error: 'INVALID_KICKOFF' };
+    }
+    updates.kickoff = payload.kickoff.trim();
+  } else if (updates.date || updates.time) {
+    const date = updates.date || payload.date;
+    const time = updates.time || payload.time;
+    if (date && time) updates.kickoff = `${date} ${time}`;
+  }
+
+  return { ok: true, updates };
+}
+
+function updatePredictionMatch(state, matchId, updates) {
+  const next = normalizePredictionState(state);
+  const id = normalizeMatchId(matchId);
+  const match = next.matches[id];
+
+  if (!match) {
+    return { ok: false, code: 'MATCH_NOT_FOUND', state: next };
+  }
+
+  Object.assign(match, updates, { updatedAt: new Date().toISOString() });
+  return { ok: true, state: next, match };
+}
+
+function listPredictionMatches(state) {
+  const current = normalizePredictionState(state);
+  return Object.values(current.matches)
+    .map(match => ({
+      ...match,
+      predictionCount: Object.keys(current.entries[match.id] || {}).length,
+    }))
+    .sort((left, right) => {
+      const byKickoff = String(left.kickoff || '').localeCompare(
+        String(right.kickoff || ''),
+        'vi'
+      );
+      if (byKickoff !== 0) return byKickoff;
+      return left.id.localeCompare(right.id, 'vi');
+    });
 }
 
 function createUiApiServer({ getStatus }) {
@@ -630,6 +808,456 @@ function createUiApiServer({ getStatus }) {
       }
     }
 
+    // World Cup Predictions API
+    if (path === '/api/world-cup-predictions' && req.method === 'GET') {
+      if (!requireAuthenticated(req, res, headers)) return;
+
+      try {
+        const storage = await readBotStorage();
+        const state = getPredictionStateFromStorage(storage);
+        return sendJson(res, 200, state, headers);
+      } catch (e) {
+        console.error('Error reading World Cup predictions:', e);
+        return sendJson(
+          res,
+          500,
+          { error: 'Failed to read World Cup predictions' },
+          headers
+        );
+      }
+    }
+
+    if (
+      path === '/api/world-cup-predictions/matches' &&
+      req.method === 'GET'
+    ) {
+      if (!requireAuthenticated(req, res, headers)) return;
+
+      try {
+        const storage = await readBotStorage();
+        const state = getPredictionStateFromStorage(storage);
+        return sendJson(res, 200, listPredictionMatches(state), headers);
+      } catch (e) {
+        console.error('Error reading World Cup prediction matches:', e);
+        return sendJson(
+          res,
+          500,
+          { error: 'Failed to read World Cup prediction matches' },
+          headers
+        );
+      }
+    }
+
+    if (
+      path === '/api/world-cup-predictions/leaderboard' &&
+      req.method === 'GET'
+    ) {
+      if (!requireAuthenticated(req, res, headers)) return;
+
+      try {
+        const storage = await readBotStorage();
+        const state = getPredictionStateFromStorage(storage);
+        return sendJson(
+          res,
+          200,
+          { rows: getLeaderboardRows(state) },
+          headers
+        );
+      } catch (e) {
+        console.error('Error reading World Cup prediction leaderboard:', e);
+        return sendJson(
+          res,
+          500,
+          { error: 'Failed to read World Cup prediction leaderboard' },
+          headers
+        );
+      }
+    }
+
+    if (
+      path === '/api/world-cup-predictions/member-keys' &&
+      req.method === 'GET'
+    ) {
+      if (!requireAuthenticated(req, res, headers)) return;
+
+      try {
+        const storage = await readBotStorage();
+        const state = getPredictionStateFromStorage(storage);
+        return sendJson(res, 200, listMemberKeys(state), headers);
+      } catch (e) {
+        console.error('Error reading World Cup prediction member keys:', e);
+        return sendJson(
+          res,
+          500,
+          { error: 'Failed to read World Cup prediction member keys' },
+          headers
+        );
+      }
+    }
+
+    if (
+      path === '/api/world-cup-predictions/member-keys' &&
+      req.method === 'POST'
+    ) {
+      if (!requireAdmin(req, res, headers)) return;
+
+      try {
+        const payload = (await readJson(req)) || {};
+        const storage = await readBotStorage();
+        const state = getPredictionStateFromStorage(storage);
+        const result = upsertMemberKey(state, payload);
+
+        if (!result.ok) {
+          return sendPredictionResult(res, headers, result, 201, () => ({}));
+        }
+
+        await writeBotStorage(buildPredictionStorage(storage, result.state));
+        return sendJson(res, 201, result.memberKey, headers);
+      } catch (e) {
+        console.error('Error creating World Cup prediction member key:', e);
+        return sendJson(
+          res,
+          500,
+          { error: 'Failed to create World Cup prediction member key' },
+          headers
+        );
+      }
+    }
+
+    const worldCupMemberKeysPrefix =
+      '/api/world-cup-predictions/member-keys/';
+    if (path.startsWith(worldCupMemberKeysPrefix)) {
+      const suffix = path.slice(worldCupMemberKeysPrefix.length);
+      const parts = suffix.split('/').filter(Boolean);
+      const memberId = decodeURIComponent(parts[0] || '');
+
+      if (!memberId || parts.length < 1 || parts.length > 2) {
+        return sendJson(res, 400, { error: 'INVALID_MEMBER_ID' }, headers);
+      }
+
+      if (parts.length === 2 && parts[1] === 'regenerate' && req.method === 'POST') {
+        if (!requireAdmin(req, res, headers)) return;
+
+        try {
+          const storage = await readBotStorage();
+          const state = getPredictionStateFromStorage(storage);
+          const result = regenerateMemberKey(state, memberId);
+
+          if (!result.ok) {
+            return sendPredictionResult(res, headers, result, 200, () => ({}));
+          }
+
+          await writeBotStorage(buildPredictionStorage(storage, result.state));
+          return sendJson(res, 200, result.memberKey, headers);
+        } catch (e) {
+          console.error('Error regenerating World Cup prediction member key:', e);
+          return sendJson(
+            res,
+            500,
+            { error: 'Failed to regenerate World Cup prediction member key' },
+            headers
+          );
+        }
+      }
+
+      if (parts.length === 1 && req.method === 'DELETE') {
+        if (!requireAdmin(req, res, headers)) return;
+
+        try {
+          const storage = await readBotStorage();
+          const state = getPredictionStateFromStorage(storage);
+          const result = revokeMemberKey(state, memberId);
+
+          if (!result.ok) {
+            return sendPredictionResult(res, headers, result, 200, () => ({}));
+          }
+
+          await writeBotStorage(buildPredictionStorage(storage, result.state));
+          return sendJson(res, 200, { ok: true }, headers);
+        } catch (e) {
+          console.error('Error deleting World Cup prediction member key:', e);
+          return sendJson(
+            res,
+            500,
+            { error: 'Failed to delete World Cup prediction member key' },
+            headers
+          );
+        }
+      }
+    }
+
+    const worldCupMemberPrefix = '/api/world-cup-predictions/member/';
+    if (path.startsWith(worldCupMemberPrefix)) {
+      const suffix = path.slice(worldCupMemberPrefix.length);
+      const parts = suffix.split('/').filter(Boolean);
+      const key = decodeURIComponent(parts[0] || '');
+
+      if (!key) {
+        return sendJson(res, 401, { error: 'INVALID_MEMBER_KEY' }, headers);
+      }
+
+      if (parts.length === 1 && req.method === 'GET') {
+        try {
+          const storage = await readBotStorage();
+          const state = getPredictionStateFromStorage(storage);
+          const result = getMemberPredictionBoard(state, key);
+
+          if (!result.ok) {
+            return sendJson(res, 401, { error: result.code }, headers);
+          }
+
+          return sendJson(
+            res,
+            200,
+            {
+              member: result.member,
+              matches: result.matches,
+              predictions: result.predictions,
+            },
+            headers
+          );
+        } catch (e) {
+          console.error('Error reading World Cup member predictions:', e);
+          return sendJson(
+            res,
+            500,
+            { error: 'Failed to read World Cup member predictions' },
+            headers
+          );
+        }
+      }
+
+      if (
+        parts.length === 3 &&
+        parts[1] === 'predictions' &&
+        req.method === 'PUT'
+      ) {
+        try {
+          const payload = (await readJson(req)) || {};
+          const storage = await readBotStorage();
+          const state = getPredictionStateFromStorage(storage);
+          const result = setMemberPrediction(
+            state,
+            key,
+            parts[2],
+            payload.prediction
+          );
+
+          if (!result.ok) {
+            const status =
+              result.code === 'INVALID_MEMBER_KEY'
+                ? 401
+                : result.code === 'MATCH_NOT_FOUND'
+                  ? 404
+                  : result.code === 'MATCH_CLOSED'
+                    ? 409
+                    : 400;
+            return sendJson(res, status, { error: result.code }, headers);
+          }
+
+          await writeBotStorage(buildPredictionStorage(storage, result.state));
+          return sendJson(
+            res,
+            200,
+            {
+              member: result.member,
+              matches: result.matches,
+              predictions: result.predictions,
+            },
+            headers
+          );
+        } catch (e) {
+          console.error('Error saving World Cup member prediction:', e);
+          return sendJson(
+            res,
+            500,
+            { error: 'Failed to save World Cup member prediction' },
+            headers
+          );
+        }
+      }
+    }
+
+    if (
+      path === '/api/world-cup-predictions/matches' &&
+      req.method === 'POST'
+    ) {
+      if (!requireAdmin(req, res, headers)) return;
+
+      try {
+        const payload = (await readJson(req)) || {};
+        const validation = validateCreatePredictionMatchPayload(payload);
+        if (!validation.ok) {
+          return sendJson(res, 400, { error: validation.error }, headers);
+        }
+
+        const storage = await readBotStorage();
+        const state = getPredictionStateFromStorage(storage);
+        const result = addMatch(
+          state,
+          validation.match,
+          getAdminActorId(req)
+        );
+
+        if (!result.ok) {
+          return sendPredictionResult(res, headers, result, 201, () => ({}));
+        }
+
+        await writeBotStorage(buildPredictionStorage(storage, result.state));
+        return sendJson(res, 201, result.match, headers);
+      } catch (e) {
+        console.error('Error creating World Cup prediction match:', e);
+        return sendJson(
+          res,
+          500,
+          { error: 'Failed to create World Cup prediction match' },
+          headers
+        );
+      }
+    }
+
+    const worldCupPredictionMatchPrefix =
+      '/api/world-cup-predictions/matches/';
+    if (path.startsWith(worldCupPredictionMatchPrefix)) {
+      const suffix = path.slice(worldCupPredictionMatchPrefix.length);
+      const parts = suffix.split('/').filter(Boolean);
+      const matchId = validateMatchIdParam(parts[0]);
+
+      if (!matchId || parts.length < 1 || parts.length > 2) {
+        return sendJson(res, 400, { error: 'INVALID_MATCH_ID' }, headers);
+      }
+
+      if (parts.length === 1 && req.method === 'GET') {
+        if (!requireAuthenticated(req, res, headers)) return;
+
+        try {
+          const storage = await readBotStorage();
+          const state = getPredictionStateFromStorage(storage);
+          const detail = getPredictionRowsForMatch(state, matchId);
+
+          if (!detail.match) {
+            return sendJson(res, 404, { error: 'MATCH_NOT_FOUND' }, headers);
+          }
+
+          return sendJson(
+            res,
+            200,
+            { match: detail.match, entries: detail.rows },
+            headers
+          );
+        } catch (e) {
+          console.error('Error reading World Cup prediction match:', e);
+          return sendJson(
+            res,
+            500,
+            { error: 'Failed to read World Cup prediction match' },
+            headers
+          );
+        }
+      }
+
+      if (parts.length === 1 && req.method === 'PUT') {
+        if (!requireAdmin(req, res, headers)) return;
+
+        try {
+          const payload = (await readJson(req)) || {};
+          const validation = validateUpdatePredictionMatchPayload(payload);
+          if (!validation.ok) {
+            return sendJson(res, 400, { error: validation.error }, headers);
+          }
+
+          const storage = await readBotStorage();
+          const state = getPredictionStateFromStorage(storage);
+          const result = updatePredictionMatch(
+            state,
+            matchId,
+            validation.updates
+          );
+
+          if (!result.ok) {
+            return sendPredictionResult(res, headers, result, 200, () => ({}));
+          }
+
+          await writeBotStorage(buildPredictionStorage(storage, result.state));
+          return sendJson(res, 200, result.match, headers);
+        } catch (e) {
+          console.error('Error updating World Cup prediction match:', e);
+          return sendJson(
+            res,
+            500,
+            { error: 'Failed to update World Cup prediction match' },
+            headers
+          );
+        }
+      }
+
+      if (parts.length === 1 && req.method === 'DELETE') {
+        if (!requireAdmin(req, res, headers)) return;
+
+        try {
+          const storage = await readBotStorage();
+          const state = getPredictionStateFromStorage(storage);
+          const result = deleteMatch(state, matchId);
+
+          if (!result.ok) {
+            return sendPredictionResult(res, headers, result, 200, () => ({}));
+          }
+
+          await writeBotStorage(buildPredictionStorage(storage, result.state));
+          return sendJson(res, 200, { ok: true }, headers);
+        } catch (e) {
+          console.error('Error deleting World Cup prediction match:', e);
+          return sendJson(
+            res,
+            500,
+            { error: 'Failed to delete World Cup prediction match' },
+            headers
+          );
+        }
+      }
+
+      if (parts.length === 2 && req.method === 'POST') {
+        if (!requireAdmin(req, res, headers)) return;
+
+        try {
+          const action = parts[1];
+          const storage = await readBotStorage();
+          const state = getPredictionStateFromStorage(storage);
+          let result;
+
+          if (action === 'open') {
+            result = setMatchStatus(state, matchId, STATUS_OPEN);
+          } else if (action === 'lock') {
+            result = setMatchStatus(state, matchId, STATUS_LOCKED);
+          } else if (action === 'result') {
+            const payload = (await readJson(req)) || {};
+            const outcome = normalizeOutcome(payload.result);
+            if (outcome === null && typeof payload.score !== 'string') {
+              return sendJson(res, 400, { error: 'INVALID_RESULT' }, headers);
+            }
+            result = setMatchResult(state, matchId, outcome ?? payload.score);
+          } else {
+            return sendJson(res, 404, { error: 'Not found' }, headers);
+          }
+
+          if (!result.ok) {
+            return sendPredictionResult(res, headers, result, 200, () => ({}));
+          }
+
+          await writeBotStorage(buildPredictionStorage(storage, result.state));
+          return sendJson(res, 200, result.match, headers);
+        } catch (e) {
+          console.error('Error changing World Cup prediction match:', e);
+          return sendJson(
+            res,
+            500,
+            { error: 'Failed to change World Cup prediction match' },
+            headers
+          );
+        }
+      }
+    }
+
     // Matches API
     if (path === '/api/matches' && req.method === 'GET') {
       try {
@@ -868,7 +1496,7 @@ function createUiApiServer({ getStatus }) {
     return sendJson(res, 404, { error: 'Not found' }, headers);
   });
 
-  function start(port = DEFAULT_PORT) {
+  function start(port = DEFAULT_PORT, host) {
     return new Promise((resolve, reject) => {
       const onError = err => {
         server.removeListener('listening', onListening);
@@ -877,16 +1505,36 @@ function createUiApiServer({ getStatus }) {
 
       const onListening = () => {
         server.removeListener('error', onError);
-        resolve({ port });
+        resolve({ port: server.address().port });
       };
 
       server.once('error', onError);
       server.once('listening', onListening);
-      server.listen(port);
+      if (host) {
+        server.listen(port, host);
+      } else {
+        server.listen(port);
+      }
     });
   }
 
-  return { start };
+  function stop() {
+    return new Promise((resolve, reject) => {
+      if (!server.listening) {
+        resolve();
+        return;
+      }
+      server.close(err => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve();
+      });
+    });
+  }
+
+  return { start, stop };
 }
 
 module.exports = { createUiApiServer };
