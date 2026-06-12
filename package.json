@@ -18,6 +18,7 @@
     "docker:prod:up": "docker compose --env-file .env.production -f docker-compose.yml up -d",
     "docker:prod:down": "docker compose --env-file .env.production -f docker-compose.yml down",
     "init-db": "node api/db/init-database.js",
+    "import:worldcup": "node api/db/import-worldcup-matches.js",
     "drop-db": "node api/db/drop-database.js"
   },
   "dependencies": {

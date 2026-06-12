@@ -1,21 +1,57 @@
+const crypto = require('crypto');
+const { db } = require('../db/config');
+
 const STATUS_OPEN = 'OPEN';
 const STATUS_LOCKED = 'LOCKED';
 const STATUS_SETTLED = 'SETTLED';
 
 const VALID_STATUSES = new Set([STATUS_OPEN, STATUS_LOCKED, STATUS_SETTLED]);
 
-function createEmptyPredictionState() {
-  return {
-    scoringMode: 'OUTCOME',
-    matches: {},
-    members: {},
-    memberKeys: {},
-    entries: {},
-  };
-}
+let tablesReady = false;
 
-function nowIso() {
-  return new Date().toISOString();
+async function ensureWorldCupPredictionTables() {
+  if (tablesReady) return;
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS world_cup_prediction_matches (
+      id TEXT PRIMARY KEY,
+      match_number INTEGER UNIQUE,
+      match_date DATE NOT NULL,
+      match_time TIME NOT NULL,
+      home_team TEXT NOT NULL,
+      away_team TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'OPEN',
+      result SMALLINT CHECK (result IN (0, 1, 2)),
+      created_by TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS world_cup_prediction_members (
+      member_id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      username TEXT,
+      access_key CHAR(6) NOT NULL UNIQUE,
+      revoked_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS world_cup_predictions (
+      match_id TEXT NOT NULL REFERENCES world_cup_prediction_matches(id) ON DELETE CASCADE,
+      member_id TEXT NOT NULL REFERENCES world_cup_prediction_members(member_id) ON DELETE CASCADE,
+      prediction SMALLINT NOT NULL CHECK (prediction IN (0, 1, 2)),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (match_id, member_id)
+    )
+  `);
+
+  tablesReady = true;
 }
 
 function normalizeMatchId(rawValue) {
@@ -25,32 +61,19 @@ function normalizeMatchId(rawValue) {
 }
 
 function isValidMatchId(matchId) {
-  return /^[A-Z0-9][A-Z0-9_-]{1,31}$/.test(matchId);
+  return /^[A-Z0-9][A-Z0-9_-]{0,31}$/.test(matchId);
 }
 
-function parseScore(rawValue) {
-  const match = String(rawValue || '')
+function normalizeMemberId(rawValue) {
+  return String(rawValue || '')
     .trim()
-    .match(/^(\d{1,2})-(\d{1,2})$/);
-
-  if (!match) {
-    return null;
-  }
-
-  const homeScore = Number(match[1]);
-  const awayScore = Number(match[2]);
-
-  if (!Number.isInteger(homeScore) || !Number.isInteger(awayScore)) {
-    return null;
-  }
-
-  return { homeScore, awayScore };
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9_-]/g, '');
 }
 
-function inferWinner(homeScore, awayScore) {
-  if (homeScore > awayScore) return 'HOME';
-  if (awayScore > homeScore) return 'AWAY';
-  return 'DRAW';
+function isValidMemberId(memberId) {
+  return /^[a-z0-9][a-z0-9_-]{0,63}$/.test(memberId);
 }
 
 function normalizeOutcome(rawValue) {
@@ -63,662 +86,596 @@ function normalizeOutcome(rawValue) {
   return value === 0 || value === 1 || value === 2 ? value : null;
 }
 
-function outcomeToWinner(value) {
-  if (value === 1) return 'HOME';
-  if (value === 2) return 'AWAY';
-  if (value === 0) return 'DRAW';
-  return null;
+function inferOutcomeFromScore(score) {
+  const match = String(score || '')
+    .trim()
+    .match(/^(\d{1,2})-(\d{1,2})$/);
+  if (!match) return null;
+  const home = Number(match[1]);
+  const away = Number(match[2]);
+  if (home > away) return 1;
+  if (away > home) return 2;
+  return 0;
 }
 
-function winnerToOutcome(winner) {
-  if (winner === 'HOME') return 1;
-  if (winner === 'AWAY') return 2;
-  if (winner === 'DRAW') return 0;
-  return null;
+function formatDate(value) {
+  if (!value) return '';
+  if (typeof value === 'string') return value.slice(0, 10);
+  return value.toISOString().slice(0, 10);
 }
 
-function normalizeMemberId(rawValue) {
-  return String(rawValue || '').trim().toLowerCase();
+function formatTime(value) {
+  if (!value) return '';
+  return String(value).slice(0, 5);
 }
 
-function isValidMemberId(memberId) {
-  return /^[a-z0-9][a-z0-9_-]{0,63}$/.test(memberId);
-}
-
-function normalizeMemberEntry(key, member) {
-  if (!member || typeof member !== 'object') return null;
-  const id = normalizeMemberId(member.memberId || member.id || key);
-  if (!isValidMemberId(id)) return null;
-  return [
-    id,
-    {
-      id,
-      memberId: id,
-      name: String(member.name || id).trim() || id,
-      username: member.username ? String(member.username) : null,
-      createdAt: member.createdAt || nowIso(),
-      updatedAt: member.updatedAt || member.createdAt || nowIso(),
-    },
-  ];
-}
-
-function normalizeMemberKeyEntry(key, memberKey) {
-  if (!memberKey || typeof memberKey !== 'object') return null;
-  const memberId = normalizeMemberId(memberKey.memberId || memberKey.id || key);
-  const keyValue = String(memberKey.key || memberKey.displayKey || '').trim();
-  if (!isValidMemberId(memberId) || !/^\d{6}$/.test(keyValue)) return null;
-  return [
-    memberId,
-    {
-      memberId,
-      name: String(memberKey.name || memberId).trim() || memberId,
-      key: keyValue,
-      displayKey: keyValue,
-      createdAt: memberKey.createdAt || nowIso(),
-      updatedAt: memberKey.updatedAt || memberKey.createdAt || nowIso(),
-      revokedAt: memberKey.revokedAt || null,
-    },
-  ];
-}
-
-function generateMemberKey(existingKeys) {
-  for (let index = 0; index < 1000; index += 1) {
-    const key = String(Math.floor(Math.random() * 1_000_000)).padStart(6, '0');
-    if (!existingKeys.has(key)) return key;
-  }
-  return String(Date.now()).slice(-6);
-}
-
-function formatScore(score) {
-  if (!score) {
-    return '-';
-  }
-
-  return `${score.homeScore}-${score.awayScore}`;
-}
-
-function normalizePredictionState(value) {
-  if (!value || typeof value !== 'object') {
-    return createEmptyPredictionState();
-  }
-
-  const matches =
-    value.matches &&
-    typeof value.matches === 'object' &&
-    !Array.isArray(value.matches)
-      ? value.matches
-      : {};
-  const entries =
-    value.entries &&
-    typeof value.entries === 'object' &&
-    !Array.isArray(value.entries)
-      ? value.entries
-      : {};
-
-  const members =
-    value.members &&
-    typeof value.members === 'object' &&
-    !Array.isArray(value.members)
-      ? value.members
-      : {};
-  const memberKeys =
-    value.memberKeys &&
-    typeof value.memberKeys === 'object' &&
-    !Array.isArray(value.memberKeys)
-      ? value.memberKeys
-      : {};
-
-  return {
-    scoringMode: 'OUTCOME',
-    matches: Object.fromEntries(
-      Object.entries(matches)
-        .map(([key, match]) => normalizeMatchEntry(key, match))
-        .filter(Boolean)
-    ),
-    members: Object.fromEntries(
-      Object.entries(members)
-        .map(([key, member]) => normalizeMemberEntry(key, member))
-        .filter(Boolean)
-    ),
-    memberKeys: Object.fromEntries(
-      Object.entries(memberKeys)
-        .map(([key, memberKey]) => normalizeMemberKeyEntry(key, memberKey))
-        .filter(Boolean)
-    ),
-    entries: Object.fromEntries(
-      Object.entries(entries)
-        .map(([key, matchEntries]) => normalizeMatchEntries(key, matchEntries))
-        .filter(Boolean)
-    ),
-  };
-}
-
-function normalizeMatchEntry(key, match) {
-  if (!match || typeof match !== 'object') {
-    return null;
-  }
-
-  const id = normalizeMatchId(match.id || key);
-  if (!isValidMatchId(id)) {
-    return null;
-  }
-
-  const status = VALID_STATUSES.has(match.status) ? match.status : STATUS_OPEN;
-  const resultOutcome = normalizeOutcome(match.result);
-  const resultScore = resultOutcome === null ? parseScore(formatScore(match.result)) : null;
-  const result =
-    resultOutcome !== null
-      ? resultOutcome
-      : resultScore
-        ? {
-            ...resultScore,
-            winner: inferWinner(resultScore.homeScore, resultScore.awayScore),
-          }
-        : null;
-
-  return [
-    id,
-    {
-      id,
-      homeTeam: String(match.homeTeam || '').trim(),
-      awayTeam: String(match.awayTeam || '').trim(),
-      kickoff: String(match.kickoff || '').trim(),
-      status,
-      result,
-      createdBy: match.createdBy ?? null,
-      createdAt: match.createdAt || nowIso(),
-      updatedAt: match.updatedAt || match.createdAt || nowIso(),
-    },
-  ];
-}
-
-function normalizeMatchEntries(key, matchEntries) {
-  const id = normalizeMatchId(key);
-  if (
-    !isValidMatchId(id) ||
-    !matchEntries ||
-    typeof matchEntries !== 'object'
-  ) {
-    return null;
-  }
-
-  const normalized = Object.fromEntries(
-    Object.entries(matchEntries)
-      .map(([userId, entry]) => normalizePredictionEntry(userId, entry))
-      .filter(Boolean)
-  );
-
-  return [id, normalized];
-}
-
-function normalizePredictionEntry(userId, entry) {
-  if (!entry || typeof entry !== 'object') return null;
-  const id = normalizeMemberId(entry.memberId || entry.userId || userId);
-  if (!id) return null;
-
-  const explicitValue = normalizeOutcome(entry.value ?? entry.prediction);
-  const value = explicitValue ?? winnerToOutcome(entry.winner);
-  if (value !== null) {
-    return [
-      id,
-      {
-        userId: id,
-        memberId: id,
-        matchId: entry.matchId ? String(entry.matchId) : undefined,
-        name: String(entry.name || id).trim() || id,
-        username: entry.username ? String(entry.username) : null,
-        value,
-        winner: outcomeToWinner(value),
-        updatedAt: entry.updatedAt || nowIso(),
-      },
-    ];
-  }
-
-  const parsedScore = parseScore(formatScore(entry));
-  if (!parsedScore) return null;
-  const winner = inferWinner(parsedScore.homeScore, parsedScore.awayScore);
-  return [
-    id,
-    {
-      userId: id,
-      memberId: id,
-      name: String(entry.name || 'Unknown').trim() || 'Unknown',
-      username: entry.username ? String(entry.username) : null,
-      homeScore: parsedScore.homeScore,
-      awayScore: parsedScore.awayScore,
-      winner,
-      value: winnerToOutcome(winner),
-      updatedAt: entry.updatedAt || nowIso(),
-    },
-  ];
-}
-
-function addMatch(state, matchInput, actorId) {
-  const next = normalizePredictionState(state);
-  const id = normalizeMatchId(matchInput.id);
-
-  if (next.matches[id]) {
-    return { ok: false, code: 'MATCH_EXISTS', state: next };
-  }
-
-  const timestamp = nowIso();
-  next.matches[id] = {
-    id,
-    homeTeam: matchInput.homeTeam,
-    awayTeam: matchInput.awayTeam,
-    kickoff: matchInput.kickoff || '',
-    status: STATUS_OPEN,
-    result: null,
-    createdBy: actorId ?? null,
-    createdAt: timestamp,
-    updatedAt: timestamp,
-  };
-  next.entries[id] = {};
-
-  return { ok: true, state: next, match: next.matches[id] };
-}
-
-function setMatchStatus(state, matchId, status) {
-  const next = normalizePredictionState(state);
-  const id = normalizeMatchId(matchId);
-  const match = next.matches[id];
-
-  if (!match) {
-    return { ok: false, code: 'MATCH_NOT_FOUND', state: next };
-  }
-
-  if (!VALID_STATUSES.has(status)) {
-    return { ok: false, code: 'INVALID_STATUS', state: next };
-  }
-
-  if (match.status === STATUS_SETTLED && status !== STATUS_SETTLED) {
-    return { ok: false, code: 'MATCH_SETTLED', state: next, match };
-  }
-
-  match.status = status;
-  match.updatedAt = nowIso();
-
-  return { ok: true, state: next, match };
-}
-
-function deleteMatch(state, matchId) {
-  const next = normalizePredictionState(state);
-  const id = normalizeMatchId(matchId);
-
-  if (!next.matches[id]) {
-    return { ok: false, code: 'MATCH_NOT_FOUND', state: next };
-  }
-
-  delete next.matches[id];
-  delete next.entries[id];
-
-  return { ok: true, state: next, matchId: id };
-}
-
-function setMatchResult(state, matchId, resultInput) {
-  const next = normalizePredictionState(state);
-  const id = normalizeMatchId(matchId);
-  const match = next.matches[id];
-
-  if (!match) {
-    return { ok: false, code: 'MATCH_NOT_FOUND', state: next };
-  }
-
-  const outcome = normalizeOutcome(resultInput);
-  if (outcome !== null) {
-    match.status = STATUS_SETTLED;
-    match.result = outcome;
-    match.updatedAt = nowIso();
-    return { ok: true, state: next, match };
-  }
-
-  const parsedScore =
-    typeof resultInput === 'string'
-      ? parseScore(resultInput)
-      : parseScore(formatScore(resultInput));
-  if (!parsedScore) {
-    return { ok: false, code: 'INVALID_RESULT', state: next, match };
-  }
-
-  match.status = STATUS_SETTLED;
-  match.result = winnerToOutcome(
-    inferWinner(parsedScore.homeScore, parsedScore.awayScore)
-  );
-  match.updatedAt = nowIso();
-
-  return { ok: true, state: next, match };
-}
-
-function calculatePredictionPoints(entry, result) {
-  if (!entry || !result) {
-    return {
-      points: 0,
-      exactScore: false,
-      correctWinner: false,
-    };
-  }
-
-  const resultValue = normalizeOutcome(result) ?? winnerToOutcome(result.winner);
-  const entryValue =
-    normalizeOutcome(entry.value ?? entry.prediction) ?? winnerToOutcome(entry.winner);
-  const correctWinner =
-    resultValue !== null && entryValue !== null && resultValue === entryValue;
-
-  return {
-    points: correctWinner ? 1 : 0,
-    exactScore: false,
-    correctWinner,
-  };
-}
-
-function getPredictionRowsForMatch(state, matchId) {
-  const current = normalizePredictionState(state);
-  const id = normalizeMatchId(matchId);
-  const match = current.matches[id] || null;
-
-  if (!match) {
-    return { match: null, rows: [] };
-  }
-
-  const rows = Object.values(current.entries[id] || {}).map(entry => {
-    const scoring = calculatePredictionPoints(entry, match.result);
-    return {
-      ...entry,
-      scoreText: `${entry.homeScore}-${entry.awayScore}`,
-      ...scoring,
-    };
-  });
-
-  rows.sort((left, right) => {
-    if (right.points !== left.points) return right.points - left.points;
-    return left.name.localeCompare(right.name, 'vi');
-  });
-
-  return { match, rows };
-}
-
-function listMemberKeys(state) {
-  const current = normalizePredictionState(state);
-  return Object.values(current.memberKeys)
-    .filter(memberKey => !memberKey.revokedAt)
-    .map(memberKey => ({
-      ...memberKey,
-      ...(current.members[memberKey.memberId] || {}),
-      key: memberKey.key,
-      displayKey: memberKey.displayKey || memberKey.key,
-    }))
-    .sort((left, right) => left.name.localeCompare(right.name, 'vi'));
-}
-
-function upsertMemberKey(state, payload) {
-  const next = normalizePredictionState(state);
-  const memberId = normalizeMemberId(payload.memberId);
-  const name = String(payload.name || '').trim();
-  const manualKey = payload.key == null ? null : String(payload.key).trim();
-
-  if (!isValidMemberId(memberId)) {
-    return { ok: false, code: 'INVALID_MEMBER_ID', state: next };
-  }
-  if (!name) {
-    return { ok: false, code: 'INVALID_NAME', state: next };
-  }
-  if (manualKey !== null && !/^\d{6}$/.test(manualKey)) {
-    return { ok: false, code: 'INVALID_MEMBER_KEY', state: next };
-  }
-
-  const existingKeys = new Set(
-    Object.values(next.memberKeys)
-      .filter(memberKey => !memberKey.revokedAt && memberKey.memberId !== memberId)
-      .map(memberKey => memberKey.key)
-  );
-  const key = manualKey || generateMemberKey(existingKeys);
-  if (existingKeys.has(key)) {
-    return { ok: false, code: 'MEMBER_KEY_EXISTS', state: next };
-  }
-
-  const timestamp = nowIso();
-  const existingMember = next.members[memberId];
-  next.members[memberId] = {
-    id: memberId,
-    memberId,
-    name,
-    username: existingMember?.username || null,
-    createdAt: existingMember?.createdAt || timestamp,
-    updatedAt: timestamp,
-  };
-  next.memberKeys[memberId] = {
-    memberId,
-    name,
-    key,
-    displayKey: key,
-    createdAt: next.memberKeys[memberId]?.createdAt || timestamp,
-    updatedAt: timestamp,
-    revokedAt: null,
-  };
-
-  return {
-    ok: true,
-    state: next,
-    member: next.members[memberId],
-    memberKey: next.memberKeys[memberId],
-  };
-}
-
-function regenerateMemberKey(state, memberIdInput) {
-  const next = normalizePredictionState(state);
-  const memberId = normalizeMemberId(memberIdInput);
-  const memberKey = next.memberKeys[memberId];
-  if (!memberKey || memberKey.revokedAt) {
-    return { ok: false, code: 'MEMBER_NOT_FOUND', state: next };
-  }
-
-  const existingKeys = new Set(
-    Object.values(next.memberKeys)
-      .filter(key => !key.revokedAt && key.memberId !== memberId)
-      .map(key => key.key)
-  );
-  const timestamp = nowIso();
-  memberKey.key = generateMemberKey(existingKeys);
-  memberKey.displayKey = memberKey.key;
-  memberKey.updatedAt = timestamp;
-  memberKey.revokedAt = null;
-  return { ok: true, state: next, memberKey };
-}
-
-function revokeMemberKey(state, memberIdInput) {
-  const next = normalizePredictionState(state);
-  const memberId = normalizeMemberId(memberIdInput);
-  const memberKey = next.memberKeys[memberId];
-  if (!memberKey || memberKey.revokedAt) {
-    return { ok: false, code: 'MEMBER_NOT_FOUND', state: next };
-  }
-
-  memberKey.revokedAt = nowIso();
-  memberKey.updatedAt = memberKey.revokedAt;
-  return { ok: true, state: next, memberKey };
-}
-
-function findMemberByKey(state, rawKey) {
-  const current = normalizePredictionState(state);
-  const key = String(rawKey || '').trim();
-  const memberKey = Object.values(current.memberKeys).find(
-    item => item.key === key && !item.revokedAt
-  );
-  if (!memberKey) return null;
-
-  return {
-    memberKey,
-    member: current.members[memberKey.memberId] || {
-      id: memberKey.memberId,
-      memberId: memberKey.memberId,
-      name: memberKey.name,
-      username: null,
-    },
-  };
-}
-
-function parseMatchStart(match) {
-  if (match.date && match.time) {
-    const parsed = new Date(`${match.date}T${match.time}`);
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
-  }
-
-  const kickoffMatch = String(match.kickoff || '').match(
-    /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})$/
-  );
-  if (!kickoffMatch) return null;
-  const [, day, month, year, hour, minute] = kickoffMatch;
-  const parsed = new Date(
-    Number(year),
-    Number(month) - 1,
-    Number(day),
-    Number(hour),
-    Number(minute)
-  );
+function getMatchStartAt(match) {
+  if (!match?.date || !match?.time) return null;
+  const parsed = new Date(`${match.date}T${match.time}:00+07:00`);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-function isMatchClosed(match) {
+function isPredictionVisible(match, now = new Date()) {
+  const startAt = getMatchStartAt(match);
+  return startAt ? now.getTime() >= startAt.getTime() : false;
+}
+
+function isPredictionClosed(match, now = new Date()) {
   if (!match || match.status !== STATUS_OPEN) return true;
-  const start = parseMatchStart(match);
-  if (!start) return false;
-  return Date.now() >= start.getTime() - 10 * 60 * 1000;
+  const startAt = getMatchStartAt(match);
+  if (!startAt) return false;
+  return now.getTime() >= startAt.getTime() - 10 * 60 * 1000;
 }
 
-function getMemberPredictionBoard(state, rawKey) {
-  const current = normalizePredictionState(state);
-  const found = findMemberByKey(current, rawKey);
-  if (!found) {
-    return { ok: false, code: 'INVALID_MEMBER_KEY', state: current };
+function mapMatch(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    matchNumber: row.match_number,
+    date: formatDate(row.match_date),
+    time: formatTime(row.match_time),
+    homeTeam: row.home_team,
+    awayTeam: row.away_team,
+    status: row.status,
+    result: row.result,
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapMember(row) {
+  if (!row) return null;
+  return {
+    id: row.member_id,
+    memberId: row.member_id,
+    name: row.name,
+    username: row.username,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapMemberKey(row) {
+  if (!row) return null;
+  return {
+    memberId: row.member_id,
+    name: row.name,
+    username: row.username,
+    key: row.access_key,
+    displayKey: row.access_key,
+    revokedAt: row.revoked_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapPrediction(row, match, { censor = true } = {}) {
+  if (!row) return null;
+  const visible = !censor || isPredictionVisible(match);
+  return {
+    memberId: row.member_id,
+    matchId: row.match_id,
+    prediction: visible ? row.prediction : '***',
+    value: visible ? row.prediction : '***',
+    censored: !visible,
+    updatedAt: row.updated_at,
+  };
+}
+
+function generateSixDigitKey(existingKeys) {
+  for (let attempt = 0; attempt < 1000; attempt += 1) {
+    const key = String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
+    if (!existingKeys.has(key)) return key;
   }
 
-  const predictions = {};
-  Object.entries(current.entries).forEach(([matchId, matchEntries]) => {
-    const entry = matchEntries[found.member.memberId];
-    if (entry) predictions[matchId] = entry;
+  throw new Error('Unable to generate unique member key');
+}
+
+async function getExistingKeys(exceptMemberId = null) {
+  await ensureWorldCupPredictionTables();
+  const { rows } = await db.query(
+    `
+      SELECT access_key
+      FROM world_cup_prediction_members
+      WHERE revoked_at IS NULL
+        AND ($1::text IS NULL OR member_id <> $1)
+    `,
+    [exceptMemberId]
+  );
+  return new Set(rows.map(row => row.access_key));
+}
+
+async function listMatches() {
+  await ensureWorldCupPredictionTables();
+  const { rows } = await db.query(`
+    SELECT *, (
+      SELECT COUNT(*)::int
+      FROM world_cup_predictions p
+      WHERE p.match_id = m.id
+    ) AS prediction_count
+    FROM world_cup_prediction_matches m
+    ORDER BY match_number NULLS LAST, match_date, match_time, id
+  `);
+  return rows.map(row => ({
+    ...mapMatch(row),
+    predictionCount: row.prediction_count,
+  }));
+}
+
+async function getMatch(matchId) {
+  await ensureWorldCupPredictionTables();
+  const id = normalizeMatchId(matchId);
+  const { rows } = await db.query(
+    'SELECT * FROM world_cup_prediction_matches WHERE id = $1',
+    [id]
+  );
+  return mapMatch(rows[0]);
+}
+
+async function createMatch(matchInput, actorId) {
+  await ensureWorldCupPredictionTables();
+  const id = normalizeMatchId(matchInput.id || matchInput.matchNumber);
+  if (!isValidMatchId(id)) {
+    return { ok: false, code: 'INVALID_MATCH_ID' };
+  }
+
+  try {
+    const { rows } = await db.query(
+      `
+        INSERT INTO world_cup_prediction_matches
+          (id, match_number, match_date, match_time, home_team, away_team, created_by)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING *
+      `,
+      [
+        id,
+        matchInput.matchNumber,
+        matchInput.date,
+        matchInput.time,
+        matchInput.homeTeam,
+        matchInput.awayTeam,
+        actorId,
+      ]
+    );
+    return { ok: true, match: mapMatch(rows[0]) };
+  } catch (error) {
+    if (error.code === '23505') {
+      return { ok: false, code: 'MATCH_EXISTS' };
+    }
+    throw error;
+  }
+}
+
+async function updateMatch(matchId, updates) {
+  await ensureWorldCupPredictionTables();
+  const id = normalizeMatchId(matchId);
+  const fields = [];
+  const values = [];
+  let index = 1;
+
+  if (Object.prototype.hasOwnProperty.call(updates, 'date')) {
+    fields.push(`match_date = $${index++}`);
+    values.push(updates.date);
+  }
+  if (Object.prototype.hasOwnProperty.call(updates, 'time')) {
+    fields.push(`match_time = $${index++}`);
+    values.push(updates.time);
+  }
+  if (Object.prototype.hasOwnProperty.call(updates, 'homeTeam')) {
+    fields.push(`home_team = $${index++}`);
+    values.push(updates.homeTeam);
+  }
+  if (Object.prototype.hasOwnProperty.call(updates, 'awayTeam')) {
+    fields.push(`away_team = $${index++}`);
+    values.push(updates.awayTeam);
+  }
+
+  if (!fields.length) return { ok: false, code: 'INVALID_REQUEST' };
+
+  fields.push('updated_at = NOW()');
+  values.push(id);
+  const { rows } = await db.query(
+    `
+      UPDATE world_cup_prediction_matches
+      SET ${fields.join(', ')}
+      WHERE id = $${index}
+      RETURNING *
+    `,
+    values
+  );
+
+  if (!rows[0]) return { ok: false, code: 'MATCH_NOT_FOUND' };
+  return { ok: true, match: mapMatch(rows[0]) };
+}
+
+async function deleteMatch(matchId) {
+  await ensureWorldCupPredictionTables();
+  const result = await db.query(
+    'DELETE FROM world_cup_prediction_matches WHERE id = $1',
+    [normalizeMatchId(matchId)]
+  );
+  return result.rowCount ? { ok: true } : { ok: false, code: 'MATCH_NOT_FOUND' };
+}
+
+async function setMatchStatus(matchId, status) {
+  await ensureWorldCupPredictionTables();
+  if (!VALID_STATUSES.has(status)) {
+    return { ok: false, code: 'INVALID_STATUS' };
+  }
+
+  const current = await getMatch(matchId);
+  if (!current) return { ok: false, code: 'MATCH_NOT_FOUND' };
+  if (current.status === STATUS_SETTLED && status !== STATUS_SETTLED) {
+    return { ok: false, code: 'MATCH_SETTLED' };
+  }
+
+  const { rows } = await db.query(
+    `
+      UPDATE world_cup_prediction_matches
+      SET status = $1, updated_at = NOW()
+      WHERE id = $2
+      RETURNING *
+    `,
+    [status, current.id]
+  );
+  return { ok: true, match: mapMatch(rows[0]) };
+}
+
+async function setMatchResult(matchId, resultInput) {
+  await ensureWorldCupPredictionTables();
+  const outcome = normalizeOutcome(resultInput) ?? inferOutcomeFromScore(resultInput);
+  if (outcome === null) return { ok: false, code: 'INVALID_RESULT' };
+
+  const { rows } = await db.query(
+    `
+      UPDATE world_cup_prediction_matches
+      SET result = $1, status = $2, updated_at = NOW()
+      WHERE id = $3
+      RETURNING *
+    `,
+    [outcome, STATUS_SETTLED, normalizeMatchId(matchId)]
+  );
+  if (!rows[0]) return { ok: false, code: 'MATCH_NOT_FOUND' };
+  return { ok: true, match: mapMatch(rows[0]) };
+}
+
+async function listMemberKeys() {
+  await ensureWorldCupPredictionTables();
+  const { rows } = await db.query(`
+    SELECT *
+    FROM world_cup_prediction_members
+    ORDER BY name, member_id
+  `);
+  return rows.map(mapMemberKey);
+}
+
+async function upsertMemberKey(payload) {
+  await ensureWorldCupPredictionTables();
+  const memberId = normalizeMemberId(payload.memberId);
+  const name = String(payload.name || '').trim();
+  const username = payload.username ? String(payload.username) : null;
+  const manualKey = payload.key == null ? null : String(payload.key).trim();
+
+  if (!isValidMemberId(memberId)) return { ok: false, code: 'INVALID_MEMBER_ID' };
+  if (!name) return { ok: false, code: 'INVALID_NAME' };
+  if (manualKey !== null && !/^\d{6}$/.test(manualKey)) {
+    return { ok: false, code: 'INVALID_MEMBER_KEY' };
+  }
+
+  const existingKeys = await getExistingKeys(memberId);
+  const accessKey = manualKey || generateSixDigitKey(existingKeys);
+  if (existingKeys.has(accessKey)) return { ok: false, code: 'MEMBER_KEY_EXISTS' };
+
+  const { rows } = await db.query(
+    `
+      INSERT INTO world_cup_prediction_members
+        (member_id, name, username, access_key, revoked_at, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, NULL, NOW(), NOW())
+      ON CONFLICT (member_id) DO UPDATE SET
+        name = EXCLUDED.name,
+        username = EXCLUDED.username,
+        access_key = EXCLUDED.access_key,
+        revoked_at = NULL,
+        updated_at = NOW()
+      RETURNING *
+    `,
+    [memberId, name, username, accessKey]
+  );
+  return { ok: true, memberKey: mapMemberKey(rows[0]) };
+}
+
+async function regenerateMemberKey(memberIdInput) {
+  await ensureWorldCupPredictionTables();
+  const memberId = normalizeMemberId(memberIdInput);
+  const existing = await getMemberById(memberId);
+  if (!existing || existing.revoked_at) return { ok: false, code: 'MEMBER_NOT_FOUND' };
+
+  const accessKey = generateSixDigitKey(await getExistingKeys(memberId));
+  const { rows } = await db.query(
+    `
+      UPDATE world_cup_prediction_members
+      SET access_key = $1, revoked_at = NULL, updated_at = NOW()
+      WHERE member_id = $2
+      RETURNING *
+    `,
+    [accessKey, memberId]
+  );
+  return { ok: true, memberKey: mapMemberKey(rows[0]) };
+}
+
+async function revokeMemberKey(memberIdInput) {
+  await ensureWorldCupPredictionTables();
+  const memberId = normalizeMemberId(memberIdInput);
+  const { rows } = await db.query(
+    `
+      UPDATE world_cup_prediction_members
+      SET revoked_at = NOW(), updated_at = NOW()
+      WHERE member_id = $1 AND revoked_at IS NULL
+      RETURNING *
+    `,
+    [memberId]
+  );
+  if (!rows[0]) return { ok: false, code: 'MEMBER_NOT_FOUND' };
+  return { ok: true, memberKey: mapMemberKey(rows[0]) };
+}
+
+async function getMemberById(memberId) {
+  await ensureWorldCupPredictionTables();
+  const { rows } = await db.query(
+    'SELECT * FROM world_cup_prediction_members WHERE member_id = $1',
+    [memberId]
+  );
+  return rows[0] || null;
+}
+
+async function getMemberByKey(rawKey) {
+  await ensureWorldCupPredictionTables();
+  const key = String(rawKey || '').trim();
+  const { rows } = await db.query(
+    `
+      SELECT *
+      FROM world_cup_prediction_members
+      WHERE access_key = $1 AND revoked_at IS NULL
+    `,
+    [key]
+  );
+  return rows[0] || null;
+}
+
+async function listPredictionRows() {
+  await ensureWorldCupPredictionTables();
+  const { rows } = await db.query(`
+    SELECT
+      p.match_id,
+      p.member_id,
+      p.prediction,
+      p.updated_at,
+      m.match_date,
+      m.match_time
+    FROM world_cup_predictions p
+    JOIN world_cup_prediction_matches m ON m.id = p.match_id
+  `);
+  return rows;
+}
+
+async function getOverallBoard() {
+  await ensureWorldCupPredictionTables();
+  const [matches, membersResult, predictionRows] = await Promise.all([
+    listMatches(),
+    db.query(`
+      SELECT *
+      FROM world_cup_prediction_members
+      WHERE revoked_at IS NULL
+      ORDER BY name, member_id
+    `),
+    listPredictionRows(),
+  ]);
+
+  const members = membersResult.rows.map(mapMember);
+  const matchById = Object.fromEntries(matches.map(match => [match.id, match]));
+  const predictions = Object.fromEntries(
+    members.map(member => [member.memberId, {}])
+  );
+
+  predictionRows.forEach(row => {
+    if (!predictions[row.member_id]) predictions[row.member_id] = {};
+    predictions[row.member_id][row.match_id] = mapPrediction(
+      row,
+      matchById[row.match_id]
+    );
   });
 
-  return {
-    ok: true,
-    state: current,
-    member: found.member,
-    matches: Object.values(current.matches),
-    predictions,
-  };
-}
-
-function setMemberPrediction(state, rawKey, rawMatchId, rawPrediction) {
-  const next = normalizePredictionState(state);
-  const found = findMemberByKey(next, rawKey);
-  if (!found) {
-    return { ok: false, code: 'INVALID_MEMBER_KEY', state: next };
-  }
-
-  const matchId = normalizeMatchId(rawMatchId);
-  const match = next.matches[matchId];
-  if (!match) {
-    return { ok: false, code: 'MATCH_NOT_FOUND', state: next };
-  }
-  if (isMatchClosed(match)) {
-    return { ok: false, code: 'MATCH_CLOSED', state: next };
-  }
-
-  const value = normalizeOutcome(rawPrediction);
-  if (value === null) {
-    return { ok: false, code: 'INVALID_PREDICTION', state: next };
-  }
-
-  const timestamp = nowIso();
-  next.entries[matchId] = next.entries[matchId] || {};
-  next.entries[matchId][found.member.memberId] = {
-    userId: found.member.memberId,
-    memberId: found.member.memberId,
-    matchId,
-    name: found.member.name,
-    username: found.member.username || null,
-    value,
-    winner: outcomeToWinner(value),
-    updatedAt: timestamp,
-  };
-
-  return {
-    ok: true,
-    state: next,
-    member: found.member,
-    matches: Object.values(next.matches),
-    predictions: {
-      [matchId]: next.entries[matchId][found.member.memberId],
-    },
-  };
-}
-
-
-function getLeaderboardRows(state) {
-  const current = normalizePredictionState(state);
-  const totals = new Map();
-
-  Object.values(current.matches)
-    .filter(match => match.status === STATUS_SETTLED && match.result)
-    .forEach(match => {
-      Object.values(current.entries[match.id] || {}).forEach(entry => {
-        const scoring = calculatePredictionPoints(entry, match.result);
-        const userId = String(entry.userId);
-        const row = totals.get(userId) || {
-          userId,
-          name: entry.name,
-          username: entry.username || null,
-          points: 0,
-          predictions: 0,
-          exactScores: 0,
-          correctResults: 0,
-        };
-
-        row.points += scoring.points;
-        row.predictions += 1;
-        if (scoring.exactScore) row.exactScores += 1;
-        if (scoring.correctWinner) row.correctResults += 1;
-        totals.set(userId, row);
-      });
+  members.forEach(member => {
+    matches.forEach(match => {
+      if (!Object.prototype.hasOwnProperty.call(predictions[member.memberId], match.id)) {
+        predictions[member.memberId][match.id] = null;
+      }
     });
-
-  return Array.from(totals.values()).sort((left, right) => {
-    if (right.points !== left.points) return right.points - left.points;
-    if (right.exactScores !== left.exactScores) {
-      return right.exactScores - left.exactScores;
-    }
-    if (right.correctResults !== left.correctResults) {
-      return right.correctResults - left.correctResults;
-    }
-    if (left.predictions !== right.predictions) {
-      return left.predictions - right.predictions;
-    }
-    return left.name.localeCompare(right.name, 'vi');
   });
+
+  return {
+    scoringMode: 'OUTCOME',
+    matches,
+    members,
+    predictions,
+    totals: await getTotalsByMember(),
+  };
+}
+
+async function getTotalsByMember() {
+  await ensureWorldCupPredictionTables();
+  const { rows } = await db.query(`
+    SELECT
+      mem.member_id,
+      COALESCE(SUM(CASE WHEN p.prediction = m.result THEN 1 ELSE 0 END), 0)::int AS points
+    FROM world_cup_prediction_members mem
+    LEFT JOIN world_cup_predictions p ON p.member_id = mem.member_id
+    LEFT JOIN world_cup_prediction_matches m
+      ON m.id = p.match_id AND m.status = 'SETTLED' AND m.result IS NOT NULL
+    WHERE mem.revoked_at IS NULL
+    GROUP BY mem.member_id
+  `);
+  return Object.fromEntries(rows.map(row => [row.member_id, row.points]));
+}
+
+async function getLeaderboardRows() {
+  await ensureWorldCupPredictionTables();
+  const { rows } = await db.query(`
+    SELECT
+      mem.member_id AS "userId",
+      mem.name,
+      mem.username,
+      COALESCE(SUM(CASE WHEN p.prediction = m.result THEN 1 ELSE 0 END), 0)::int AS points,
+      COUNT(p.match_id)::int AS predictions,
+      0::int AS "exactScores",
+      COALESCE(SUM(CASE WHEN p.prediction = m.result THEN 1 ELSE 0 END), 0)::int AS "correctResults"
+    FROM world_cup_prediction_members mem
+    LEFT JOIN world_cup_predictions p ON p.member_id = mem.member_id
+    LEFT JOIN world_cup_prediction_matches m
+      ON m.id = p.match_id AND m.status = 'SETTLED' AND m.result IS NOT NULL
+    WHERE mem.revoked_at IS NULL
+    GROUP BY mem.member_id, mem.name, mem.username
+    ORDER BY points DESC, "correctResults" DESC, predictions ASC, mem.name
+  `);
+  return rows;
+}
+
+async function getPredictionRowsForMatch(matchId) {
+  await ensureWorldCupPredictionTables();
+  const match = await getMatch(matchId);
+  if (!match) return { match: null, rows: [] };
+
+  const { rows } = await db.query(
+    `
+      SELECT
+        p.match_id,
+        p.member_id,
+        mem.name,
+        mem.username,
+        p.prediction,
+        p.updated_at,
+        CASE WHEN m.result IS NOT NULL AND p.prediction = m.result THEN 1 ELSE 0 END AS points
+      FROM world_cup_predictions p
+      JOIN world_cup_prediction_members mem ON mem.member_id = p.member_id
+      JOIN world_cup_prediction_matches m ON m.id = p.match_id
+      WHERE p.match_id = $1
+      ORDER BY points DESC, mem.name
+    `,
+    [match.id]
+  );
+
+  return {
+    match,
+    rows: rows.map(row => ({
+      memberId: row.member_id,
+      userId: row.member_id,
+      name: row.name,
+      username: row.username,
+      prediction: isPredictionVisible(match) ? row.prediction : '***',
+      value: isPredictionVisible(match) ? row.prediction : '***',
+      censored: !isPredictionVisible(match),
+      points: row.points,
+      exactScore: false,
+      correctWinner: row.points === 1,
+      updatedAt: row.updated_at,
+    })),
+  };
+}
+
+async function getMemberPredictionBoard(rawKey) {
+  await ensureWorldCupPredictionTables();
+  const memberRow = await getMemberByKey(rawKey);
+  if (!memberRow) return { ok: false, code: 'INVALID_MEMBER_KEY' };
+
+  const member = mapMember(memberRow);
+  const matches = await listMatches();
+  const matchById = Object.fromEntries(matches.map(match => [match.id, match]));
+  const { rows } = await db.query(
+    `
+      SELECT match_id, member_id, prediction, updated_at
+      FROM world_cup_predictions
+      WHERE member_id = $1
+    `,
+    [member.memberId]
+  );
+
+  const predictions = Object.fromEntries(matches.map(match => [match.id, null]));
+  rows.forEach(row => {
+    predictions[row.match_id] = mapPrediction(row, matchById[row.match_id]);
+  });
+
+  return { ok: true, member, matches, predictions };
+}
+
+async function setMemberPrediction(rawKey, rawMatchId, rawPrediction) {
+  await ensureWorldCupPredictionTables();
+  const memberRow = await getMemberByKey(rawKey);
+  if (!memberRow) return { ok: false, code: 'INVALID_MEMBER_KEY' };
+
+  const match = await getMatch(rawMatchId);
+  if (!match) return { ok: false, code: 'MATCH_NOT_FOUND' };
+  if (isPredictionClosed(match)) return { ok: false, code: 'MATCH_CLOSED' };
+
+  const prediction = normalizeOutcome(rawPrediction);
+  if (prediction === null) return { ok: false, code: 'INVALID_PREDICTION' };
+
+  await db.query(
+    `
+      INSERT INTO world_cup_predictions
+        (match_id, member_id, prediction, created_at, updated_at)
+      VALUES ($1, $2, $3, NOW(), NOW())
+      ON CONFLICT (match_id, member_id) DO UPDATE SET
+        prediction = EXCLUDED.prediction,
+        updated_at = NOW()
+    `,
+    [match.id, memberRow.member_id, prediction]
+  );
+
+  return getMemberPredictionBoard(rawKey);
 }
 
 module.exports = {
   STATUS_OPEN,
   STATUS_LOCKED,
   STATUS_SETTLED,
-  addMatch,
-  calculatePredictionPoints,
-  createEmptyPredictionState,
+  createMatch,
   deleteMatch,
-  formatScore,
+  ensureWorldCupPredictionTables,
   getLeaderboardRows,
   getMemberPredictionBoard,
+  getOverallBoard,
   getPredictionRowsForMatch,
-  inferWinner,
   isValidMatchId,
+  listMatches,
   listMemberKeys,
   normalizeMatchId,
   normalizeOutcome,
-  normalizePredictionState,
-  parseScore,
   regenerateMemberKey,
   revokeMemberKey,
   setMatchResult,
   setMatchStatus,
   setMemberPrediction,
+  updateMatch,
   upsertMemberKey,
 };

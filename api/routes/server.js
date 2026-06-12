@@ -35,21 +35,23 @@ const {
 const {
   STATUS_LOCKED,
   STATUS_OPEN,
-  addMatch,
-  deleteMatch,
+  createMatch: createWorldCupMatch,
+  deleteMatch: deleteWorldCupMatch,
+  getOverallBoard,
   getLeaderboardRows,
   getMemberPredictionBoard,
   getPredictionRowsForMatch,
   isValidMatchId,
-  listMemberKeys,
+  listMatches: listWorldCupMatches,
+  listMemberKeys: listWorldCupMemberKeys,
   normalizeMatchId,
   normalizeOutcome,
-  normalizePredictionState,
   regenerateMemberKey,
   revokeMemberKey,
   setMatchResult,
   setMatchStatus,
   setMemberPrediction,
+  updateMatch: updateWorldCupMatch,
   upsertMemberKey,
 } = require('../services/world-cup-predictions-service');
 
@@ -227,23 +229,12 @@ function requireAdmin(req, res, headers) {
   return true;
 }
 
-function getPredictionStateFromStorage(storage) {
-  return normalizePredictionState(storage.worldCupPredictions);
-}
-
-function buildPredictionStorage(storage, predictionState) {
-  return {
-    ...storage,
-    worldCupPredictions: normalizePredictionState(predictionState),
-  };
-}
-
 function sendPredictionResult(res, headers, result, successStatus, bodyBuilder) {
   if (result.ok) {
     return sendJson(res, successStatus, bodyBuilder(result), headers);
   }
 
-  if (result.code === 'MATCH_NOT_FOUND') {
+  if (result.code === 'MATCH_NOT_FOUND' || result.code === 'MEMBER_NOT_FOUND') {
     return sendJson(res, 404, { error: result.code }, headers);
   }
 
@@ -268,22 +259,26 @@ function validateMatchIdParam(rawMatchId) {
 }
 
 function validateCreatePredictionMatchPayload(payload) {
-  const id = normalizeMatchId(payload?.id ?? payload?.matchNumber);
+  const matchNumber = Number(payload?.matchNumber ?? payload?.id);
+  const id = normalizeMatchId(matchNumber);
   const homeTeam =
     typeof payload?.homeTeam === 'string' ? payload.homeTeam.trim() : '';
   const awayTeam =
     typeof payload?.awayTeam === 'string' ? payload.awayTeam.trim() : '';
   const date = typeof payload?.date === 'string' ? payload.date.trim() : '';
   const time = typeof payload?.time === 'string' ? payload.time.trim() : '';
-  const kickoff =
-    typeof payload?.kickoff === 'string'
-      ? payload.kickoff.trim()
-      : date && time
-        ? `${date} ${time}`
-        : '';
 
-  if (!id || !isValidMatchId(id)) {
+  if (!Number.isInteger(matchNumber) || matchNumber <= 0) {
+    return { ok: false, error: 'INVALID_MATCH_NUMBER' };
+  }
+  if (!isValidMatchId(id)) {
     return { ok: false, error: 'INVALID_MATCH_ID' };
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return { ok: false, error: 'INVALID_DATE' };
+  }
+  if (!/^\d{2}:\d{2}$/.test(time)) {
+    return { ok: false, error: 'INVALID_TIME' };
   }
   if (!homeTeam) {
     return { ok: false, error: 'INVALID_HOME_TEAM' };
@@ -291,21 +286,16 @@ function validateCreatePredictionMatchPayload(payload) {
   if (!awayTeam) {
     return { ok: false, error: 'INVALID_AWAY_TEAM' };
   }
-  if (!kickoff) {
-    return { ok: false, error: 'INVALID_KICKOFF' };
-  }
 
   return {
     ok: true,
     match: {
       id,
-      matchNumber:
-        payload?.matchNumber == null ? undefined : Number(payload.matchNumber),
+      matchNumber,
       date,
       time,
       homeTeam,
       awayTeam,
-      kickoff,
     },
   };
 }
@@ -328,61 +318,26 @@ function validateUpdatePredictionMatchPayload(payload) {
   }
 
   if (Object.prototype.hasOwnProperty.call(payload, 'date')) {
-    if (typeof payload.date !== 'string' || !payload.date.trim()) {
+    if (
+      typeof payload.date !== 'string' ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(payload.date.trim())
+    ) {
       return { ok: false, error: 'INVALID_DATE' };
     }
     updates.date = payload.date.trim();
   }
 
   if (Object.prototype.hasOwnProperty.call(payload, 'time')) {
-    if (typeof payload.time !== 'string' || !payload.time.trim()) {
+    if (
+      typeof payload.time !== 'string' ||
+      !/^\d{2}:\d{2}$/.test(payload.time.trim())
+    ) {
       return { ok: false, error: 'INVALID_TIME' };
     }
     updates.time = payload.time.trim();
   }
 
-  if (Object.prototype.hasOwnProperty.call(payload, 'kickoff')) {
-    if (typeof payload.kickoff !== 'string' || !payload.kickoff.trim()) {
-      return { ok: false, error: 'INVALID_KICKOFF' };
-    }
-    updates.kickoff = payload.kickoff.trim();
-  } else if (updates.date || updates.time) {
-    const date = updates.date || payload.date;
-    const time = updates.time || payload.time;
-    if (date && time) updates.kickoff = `${date} ${time}`;
-  }
-
   return { ok: true, updates };
-}
-
-function updatePredictionMatch(state, matchId, updates) {
-  const next = normalizePredictionState(state);
-  const id = normalizeMatchId(matchId);
-  const match = next.matches[id];
-
-  if (!match) {
-    return { ok: false, code: 'MATCH_NOT_FOUND', state: next };
-  }
-
-  Object.assign(match, updates, { updatedAt: new Date().toISOString() });
-  return { ok: true, state: next, match };
-}
-
-function listPredictionMatches(state) {
-  const current = normalizePredictionState(state);
-  return Object.values(current.matches)
-    .map(match => ({
-      ...match,
-      predictionCount: Object.keys(current.entries[match.id] || {}).length,
-    }))
-    .sort((left, right) => {
-      const byKickoff = String(left.kickoff || '').localeCompare(
-        String(right.kickoff || ''),
-        'vi'
-      );
-      if (byKickoff !== 0) return byKickoff;
-      return left.id.localeCompare(right.id, 'vi');
-    });
 }
 
 function createUiApiServer({ getStatus }) {
@@ -813,9 +768,7 @@ function createUiApiServer({ getStatus }) {
       if (!requireAuthenticated(req, res, headers)) return;
 
       try {
-        const storage = await readBotStorage();
-        const state = getPredictionStateFromStorage(storage);
-        return sendJson(res, 200, state, headers);
+        return sendJson(res, 200, await getOverallBoard(), headers);
       } catch (e) {
         console.error('Error reading World Cup predictions:', e);
         return sendJson(
@@ -834,9 +787,7 @@ function createUiApiServer({ getStatus }) {
       if (!requireAuthenticated(req, res, headers)) return;
 
       try {
-        const storage = await readBotStorage();
-        const state = getPredictionStateFromStorage(storage);
-        return sendJson(res, 200, listPredictionMatches(state), headers);
+        return sendJson(res, 200, await listWorldCupMatches(), headers);
       } catch (e) {
         console.error('Error reading World Cup prediction matches:', e);
         return sendJson(
@@ -855,12 +806,10 @@ function createUiApiServer({ getStatus }) {
       if (!requireAuthenticated(req, res, headers)) return;
 
       try {
-        const storage = await readBotStorage();
-        const state = getPredictionStateFromStorage(storage);
         return sendJson(
           res,
           200,
-          { rows: getLeaderboardRows(state) },
+          { rows: await getLeaderboardRows() },
           headers
         );
       } catch (e) {
@@ -878,12 +827,10 @@ function createUiApiServer({ getStatus }) {
       path === '/api/world-cup-predictions/member-keys' &&
       req.method === 'GET'
     ) {
-      if (!requireAuthenticated(req, res, headers)) return;
+      if (!requireAdmin(req, res, headers)) return;
 
       try {
-        const storage = await readBotStorage();
-        const state = getPredictionStateFromStorage(storage);
-        return sendJson(res, 200, listMemberKeys(state), headers);
+        return sendJson(res, 200, await listWorldCupMemberKeys(), headers);
       } catch (e) {
         console.error('Error reading World Cup prediction member keys:', e);
         return sendJson(
@@ -903,15 +850,12 @@ function createUiApiServer({ getStatus }) {
 
       try {
         const payload = (await readJson(req)) || {};
-        const storage = await readBotStorage();
-        const state = getPredictionStateFromStorage(storage);
-        const result = upsertMemberKey(state, payload);
+        const result = await upsertMemberKey(payload);
 
         if (!result.ok) {
           return sendPredictionResult(res, headers, result, 201, () => ({}));
         }
 
-        await writeBotStorage(buildPredictionStorage(storage, result.state));
         return sendJson(res, 201, result.memberKey, headers);
       } catch (e) {
         console.error('Error creating World Cup prediction member key:', e);
@@ -939,15 +883,12 @@ function createUiApiServer({ getStatus }) {
         if (!requireAdmin(req, res, headers)) return;
 
         try {
-          const storage = await readBotStorage();
-          const state = getPredictionStateFromStorage(storage);
-          const result = regenerateMemberKey(state, memberId);
+          const result = await regenerateMemberKey(memberId);
 
           if (!result.ok) {
             return sendPredictionResult(res, headers, result, 200, () => ({}));
           }
 
-          await writeBotStorage(buildPredictionStorage(storage, result.state));
           return sendJson(res, 200, result.memberKey, headers);
         } catch (e) {
           console.error('Error regenerating World Cup prediction member key:', e);
@@ -964,15 +905,12 @@ function createUiApiServer({ getStatus }) {
         if (!requireAdmin(req, res, headers)) return;
 
         try {
-          const storage = await readBotStorage();
-          const state = getPredictionStateFromStorage(storage);
-          const result = revokeMemberKey(state, memberId);
+          const result = await revokeMemberKey(memberId);
 
           if (!result.ok) {
             return sendPredictionResult(res, headers, result, 200, () => ({}));
           }
 
-          await writeBotStorage(buildPredictionStorage(storage, result.state));
           return sendJson(res, 200, { ok: true }, headers);
         } catch (e) {
           console.error('Error deleting World Cup prediction member key:', e);
@@ -998,9 +936,7 @@ function createUiApiServer({ getStatus }) {
 
       if (parts.length === 1 && req.method === 'GET') {
         try {
-          const storage = await readBotStorage();
-          const state = getPredictionStateFromStorage(storage);
-          const result = getMemberPredictionBoard(state, key);
+          const result = await getMemberPredictionBoard(key);
 
           if (!result.ok) {
             return sendJson(res, 401, { error: result.code }, headers);
@@ -1034,10 +970,7 @@ function createUiApiServer({ getStatus }) {
       ) {
         try {
           const payload = (await readJson(req)) || {};
-          const storage = await readBotStorage();
-          const state = getPredictionStateFromStorage(storage);
-          const result = setMemberPrediction(
-            state,
+          const result = await setMemberPrediction(
             key,
             parts[2],
             payload.prediction
@@ -1055,7 +988,6 @@ function createUiApiServer({ getStatus }) {
             return sendJson(res, status, { error: result.code }, headers);
           }
 
-          await writeBotStorage(buildPredictionStorage(storage, result.state));
           return sendJson(
             res,
             200,
@@ -1091,10 +1023,7 @@ function createUiApiServer({ getStatus }) {
           return sendJson(res, 400, { error: validation.error }, headers);
         }
 
-        const storage = await readBotStorage();
-        const state = getPredictionStateFromStorage(storage);
-        const result = addMatch(
-          state,
+        const result = await createWorldCupMatch(
           validation.match,
           getAdminActorId(req)
         );
@@ -1103,7 +1032,6 @@ function createUiApiServer({ getStatus }) {
           return sendPredictionResult(res, headers, result, 201, () => ({}));
         }
 
-        await writeBotStorage(buildPredictionStorage(storage, result.state));
         return sendJson(res, 201, result.match, headers);
       } catch (e) {
         console.error('Error creating World Cup prediction match:', e);
@@ -1131,9 +1059,7 @@ function createUiApiServer({ getStatus }) {
         if (!requireAuthenticated(req, res, headers)) return;
 
         try {
-          const storage = await readBotStorage();
-          const state = getPredictionStateFromStorage(storage);
-          const detail = getPredictionRowsForMatch(state, matchId);
+          const detail = await getPredictionRowsForMatch(matchId);
 
           if (!detail.match) {
             return sendJson(res, 404, { error: 'MATCH_NOT_FOUND' }, headers);
@@ -1166,10 +1092,7 @@ function createUiApiServer({ getStatus }) {
             return sendJson(res, 400, { error: validation.error }, headers);
           }
 
-          const storage = await readBotStorage();
-          const state = getPredictionStateFromStorage(storage);
-          const result = updatePredictionMatch(
-            state,
+          const result = await updateWorldCupMatch(
             matchId,
             validation.updates
           );
@@ -1178,7 +1101,6 @@ function createUiApiServer({ getStatus }) {
             return sendPredictionResult(res, headers, result, 200, () => ({}));
           }
 
-          await writeBotStorage(buildPredictionStorage(storage, result.state));
           return sendJson(res, 200, result.match, headers);
         } catch (e) {
           console.error('Error updating World Cup prediction match:', e);
@@ -1195,15 +1117,12 @@ function createUiApiServer({ getStatus }) {
         if (!requireAdmin(req, res, headers)) return;
 
         try {
-          const storage = await readBotStorage();
-          const state = getPredictionStateFromStorage(storage);
-          const result = deleteMatch(state, matchId);
+          const result = await deleteWorldCupMatch(matchId);
 
           if (!result.ok) {
             return sendPredictionResult(res, headers, result, 200, () => ({}));
           }
 
-          await writeBotStorage(buildPredictionStorage(storage, result.state));
           return sendJson(res, 200, { ok: true }, headers);
         } catch (e) {
           console.error('Error deleting World Cup prediction match:', e);
@@ -1221,21 +1140,19 @@ function createUiApiServer({ getStatus }) {
 
         try {
           const action = parts[1];
-          const storage = await readBotStorage();
-          const state = getPredictionStateFromStorage(storage);
           let result;
 
           if (action === 'open') {
-            result = setMatchStatus(state, matchId, STATUS_OPEN);
+            result = await setMatchStatus(matchId, STATUS_OPEN);
           } else if (action === 'lock') {
-            result = setMatchStatus(state, matchId, STATUS_LOCKED);
+            result = await setMatchStatus(matchId, STATUS_LOCKED);
           } else if (action === 'result') {
             const payload = (await readJson(req)) || {};
             const outcome = normalizeOutcome(payload.result);
             if (outcome === null && typeof payload.score !== 'string') {
               return sendJson(res, 400, { error: 'INVALID_RESULT' }, headers);
             }
-            result = setMatchResult(state, matchId, outcome ?? payload.score);
+            result = await setMatchResult(matchId, outcome ?? payload.score);
           } else {
             return sendJson(res, 404, { error: 'Not found' }, headers);
           }
@@ -1244,7 +1161,6 @@ function createUiApiServer({ getStatus }) {
             return sendPredictionResult(res, headers, result, 200, () => ({}));
           }
 
-          await writeBotStorage(buildPredictionStorage(storage, result.state));
           return sendJson(res, 200, result.match, headers);
         } catch (e) {
           console.error('Error changing World Cup prediction match:', e);
