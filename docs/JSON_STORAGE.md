@@ -25,6 +25,8 @@ The following data is now saved to disk:
 9. **teamThua** - Which team lost the match
 10. **activeVote** - Stored in both runtime state and PostgreSQL `current_match`
 
+World Cup predictions are not stored in this JSON file. They are stored in PostgreSQL tables documented in [WORLD_CUP_PREDICTIONS_API.md](./WORLD_CUP_PREDICTIONS_API.md).
+
 ## File Structure
 
 ```json

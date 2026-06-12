@@ -22,10 +22,6 @@ function createDefaultBotStorage() {
     tiennuoc: 0,
     teamThua: null,
     activeVote: null,
-    worldCupPredictions: {
-      matches: {},
-      entries: {},
-    },
     lastUpdated: null,
   };
 }

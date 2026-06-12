@@ -18,6 +18,20 @@ x-admin-role: viewer
 
 Member-key endpoints do not require admin headers.
 
+## Persistence
+
+World Cup prediction data is stored in PostgreSQL, not bot JSON storage.
+
+Tables:
+
+```text
+world_cup_prediction_matches
+world_cup_prediction_members
+world_cup_predictions
+```
+
+The API creates these tables automatically on first use. `yarn init-db` also verifies/creates them.
+
 ## Prediction Values
 
 ```text
@@ -222,4 +236,3 @@ Errors:
 404 MATCH_NOT_FOUND
 409 MATCH_CLOSED
 ```
-
