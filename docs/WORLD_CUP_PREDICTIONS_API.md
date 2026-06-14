@@ -42,7 +42,7 @@ The API creates these tables automatically on first use. `yarn init-db` also ver
 
 Each correct prediction adds `1` point.
 
-Predictions are censored as `***` until match start time. Prediction submission is locked automatically 10 minutes before match start.
+Predictions are censored as `***` until match start time. Prediction submission is controlled by match status: `OPEN` accepts predictions, while `LOCKED`/`CLOSED` blocks them.
 
 ## Admin Board
 
@@ -121,6 +121,40 @@ DELETE /api/world-cup-predictions/matches/:matchId
 ```http
 DELETE /api/world-cup-predictions/matches/1
 ```
+
+## Match Status
+
+Admin can manually open or close prediction submission for a match.
+
+```http
+POST /api/world-cup-predictions/matches/:matchId/open
+```
+
+```http
+POST /api/world-cup-predictions/matches/:matchId/close
+```
+
+`close` stores the match as `LOCKED`. The legacy `lock` action also works:
+
+```http
+POST /api/world-cup-predictions/matches/:matchId/lock
+```
+
+You can also set the status with a request body:
+
+```http
+POST /api/world-cup-predictions/matches/:matchId/status
+```
+
+Body:
+
+```json
+{
+  "status": "OPEN"
+}
+```
+
+Accepted values are `OPEN`, `LOCKED`, and `CLOSED`. `CLOSED` maps to `LOCKED`.
 
 ## Match Result
 

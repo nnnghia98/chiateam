@@ -156,7 +156,8 @@ function corsHeaders(req) {
       'Access-Control-Allow-Origin': origin,
       Vary: 'Origin',
       'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers':
+        'Content-Type, X-Internal-Api-Auth, X-Admin-Role, X-Admin-User-Id, X-Admin-Email, X-Admin-Name',
     };
   }
 
@@ -338,6 +339,18 @@ function validateUpdatePredictionMatchPayload(payload) {
   }
 
   return { ok: true, updates };
+}
+
+function normalizeManualPredictionMatchStatus(rawStatus) {
+  if (typeof rawStatus !== 'string') return null;
+
+  const status = rawStatus.trim().toUpperCase();
+  if (status === STATUS_OPEN) return STATUS_OPEN;
+  if (status === STATUS_LOCKED || status === 'CLOSED' || status === 'CLOSE') {
+    return STATUS_LOCKED;
+  }
+
+  return null;
 }
 
 function createUiApiServer({ getStatus }) {
@@ -1113,6 +1126,38 @@ function createUiApiServer({ getStatus }) {
         }
       }
 
+      if (
+        parts.length === 2 &&
+        parts[1] === 'status' &&
+        req.method === 'POST'
+      ) {
+        if (!requireAdmin(req, res, headers)) return;
+
+        try {
+          const payload = (await readJson(req)) || {};
+          const status = normalizeManualPredictionMatchStatus(payload.status);
+          if (!status) {
+            return sendJson(res, 400, { error: 'INVALID_STATUS' }, headers);
+          }
+
+          const result = await setMatchStatus(matchId, status);
+
+          if (!result.ok) {
+            return sendPredictionResult(res, headers, result, 200, () => ({}));
+          }
+
+          return sendJson(res, 200, result.match, headers);
+        } catch (e) {
+          console.error('Error updating World Cup prediction match status:', e);
+          return sendJson(
+            res,
+            500,
+            { error: 'Failed to update World Cup prediction match status' },
+            headers
+          );
+        }
+      }
+
       if (parts.length === 1 && req.method === 'DELETE') {
         if (!requireAdmin(req, res, headers)) return;
 
@@ -1144,7 +1189,7 @@ function createUiApiServer({ getStatus }) {
 
           if (action === 'open') {
             result = await setMatchStatus(matchId, STATUS_OPEN);
-          } else if (action === 'lock') {
+          } else if (action === 'close' || action === 'lock') {
             result = await setMatchStatus(matchId, STATUS_LOCKED);
           } else if (action === 'result') {
             const payload = (await readJson(req)) || {};
