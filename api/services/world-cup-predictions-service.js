@@ -122,9 +122,7 @@ function isPredictionVisible(match, now = new Date()) {
 
 function isPredictionClosed(match, now = new Date()) {
   if (!match || match.status !== STATUS_OPEN) return true;
-  const startAt = getMatchStartAt(match);
-  if (!startAt) return false;
-  return now.getTime() >= startAt.getTime() - 10 * 60 * 1000;
+  return false;
 }
 
 function mapMatch(row) {
