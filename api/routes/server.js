@@ -45,7 +45,6 @@ const {
   listMatches: listWorldCupMatches,
   listMemberKeys: listWorldCupMemberKeys,
   normalizeMatchId,
-  normalizeOutcome,
   regenerateMemberKey,
   revokeMemberKey,
   setMatchResult,
@@ -1192,12 +1191,7 @@ function createUiApiServer({ getStatus }) {
           } else if (action === 'close' || action === 'lock') {
             result = await setMatchStatus(matchId, STATUS_LOCKED);
           } else if (action === 'result') {
-            const payload = (await readJson(req)) || {};
-            const outcome = normalizeOutcome(payload.result);
-            if (outcome === null && typeof payload.score !== 'string') {
-              return sendJson(res, 400, { error: 'INVALID_RESULT' }, headers);
-            }
-            result = await setMatchResult(matchId, outcome ?? payload.score);
+            result = await setMatchResult(matchId, await readJson(req));
           } else {
             return sendJson(res, 404, { error: 'Not found' }, headers);
           }

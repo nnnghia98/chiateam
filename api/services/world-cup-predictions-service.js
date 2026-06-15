@@ -103,6 +103,22 @@ function inferOutcomeFromScore(score) {
   return parsedScore ? parsedScore.outcome : null;
 }
 
+function normalizeScoreValue(rawValue) {
+  const value =
+    typeof rawValue === 'number'
+      ? rawValue
+      : typeof rawValue === 'string' && rawValue.trim() !== ''
+        ? Number(rawValue)
+        : null;
+  return Number.isInteger(value) && value >= 0 ? value : null;
+}
+
+function outcomeFromScores(homeScore, awayScore) {
+  if (homeScore > awayScore) return 1;
+  if (awayScore > homeScore) return 2;
+  return 0;
+}
+
 function parseScore(score) {
   const match = String(score || '')
     .trim()
@@ -110,13 +126,53 @@ function parseScore(score) {
   if (!match) return null;
   const homeScore = Number(match[1]);
   const awayScore = Number(match[2]);
-  if (homeScore > awayScore) {
-    return { homeScore, awayScore, outcome: 1 };
+  return {
+    homeScore,
+    awayScore,
+    outcome: outcomeFromScores(homeScore, awayScore),
+  };
+}
+
+function parseResultInput(resultInput) {
+  if (!resultInput || typeof resultInput !== 'object' || Array.isArray(resultInput)) {
+    const parsedScore = parseScore(resultInput);
+    const outcome = normalizeOutcome(resultInput) ?? parsedScore?.outcome ?? null;
+    return {
+      outcome,
+      homeScore: parsedScore?.homeScore ?? null,
+      awayScore: parsedScore?.awayScore ?? null,
+    };
   }
-  if (awayScore > homeScore) {
-    return { homeScore, awayScore, outcome: 2 };
+
+  const parsedScore = parseScore(resultInput.score);
+  const payloadHomeScore = normalizeScoreValue(resultInput.homeScore);
+  const payloadAwayScore = normalizeScoreValue(resultInput.awayScore);
+  if (
+    parsedScore &&
+    ((payloadHomeScore !== null && payloadHomeScore !== parsedScore.homeScore) ||
+      (payloadAwayScore !== null && payloadAwayScore !== parsedScore.awayScore))
+  ) {
+    return { outcome: null, homeScore: null, awayScore: null };
   }
-  return { homeScore, awayScore, outcome: 0 };
+
+  const homeScore = payloadHomeScore ?? parsedScore?.homeScore ?? null;
+  const awayScore = payloadAwayScore ?? parsedScore?.awayScore ?? null;
+  const scoreOutcome =
+    homeScore === null || awayScore === null
+      ? parsedScore?.outcome ?? null
+      : outcomeFromScores(homeScore, awayScore);
+  const payloadOutcome = normalizeOutcome(resultInput.result);
+  if (
+    payloadOutcome !== null &&
+    scoreOutcome !== null &&
+    payloadOutcome !== scoreOutcome
+  ) {
+    return { outcome: null, homeScore: null, awayScore: null };
+  }
+
+  const outcome = payloadOutcome ?? scoreOutcome;
+
+  return { outcome, homeScore, awayScore };
 }
 
 function formatDate(value) {
@@ -369,8 +425,7 @@ async function setMatchStatus(matchId, status) {
 
 async function setMatchResult(matchId, resultInput) {
   await ensureWorldCupPredictionTables();
-  const parsedScore = parseScore(resultInput);
-  const outcome = normalizeOutcome(resultInput) ?? parsedScore?.outcome ?? null;
+  const { outcome, homeScore, awayScore } = parseResultInput(resultInput);
   if (outcome === null) return { ok: false, code: 'INVALID_RESULT' };
 
   const { rows } = await db.query(
@@ -386,8 +441,8 @@ async function setMatchResult(matchId, resultInput) {
     `,
     [
       outcome,
-      parsedScore?.homeScore ?? null,
-      parsedScore?.awayScore ?? null,
+      homeScore,
+      awayScore,
       STATUS_SETTLED,
       normalizeMatchId(matchId),
     ]
