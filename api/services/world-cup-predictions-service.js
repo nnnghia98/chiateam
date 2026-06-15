@@ -407,9 +407,6 @@ async function setMatchStatus(matchId, status) {
 
   const current = await getMatch(matchId);
   if (!current) return { ok: false, code: 'MATCH_NOT_FOUND' };
-  if (current.status === STATUS_SETTLED && status !== STATUS_SETTLED) {
-    return { ok: false, code: 'MATCH_SETTLED' };
-  }
 
   const { rows } = await db.query(
     `
