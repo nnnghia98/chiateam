@@ -22,10 +22,22 @@ async function ensureWorldCupPredictionTables() {
       away_team TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'OPEN',
       result SMALLINT CHECK (result IN (0, 1, 2)),
+      home_score SMALLINT CHECK (home_score IS NULL OR home_score >= 0),
+      away_score SMALLINT CHECK (away_score IS NULL OR away_score >= 0),
       created_by TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
+  `);
+
+  await db.query(`
+    ALTER TABLE world_cup_prediction_matches
+      ADD COLUMN IF NOT EXISTS home_score SMALLINT CHECK (home_score IS NULL OR home_score >= 0)
+  `);
+
+  await db.query(`
+    ALTER TABLE world_cup_prediction_matches
+      ADD COLUMN IF NOT EXISTS away_score SMALLINT CHECK (away_score IS NULL OR away_score >= 0)
   `);
 
   await db.query(`
@@ -87,15 +99,24 @@ function normalizeOutcome(rawValue) {
 }
 
 function inferOutcomeFromScore(score) {
+  const parsedScore = parseScore(score);
+  return parsedScore ? parsedScore.outcome : null;
+}
+
+function parseScore(score) {
   const match = String(score || '')
     .trim()
     .match(/^(\d{1,2})-(\d{1,2})$/);
   if (!match) return null;
-  const home = Number(match[1]);
-  const away = Number(match[2]);
-  if (home > away) return 1;
-  if (away > home) return 2;
-  return 0;
+  const homeScore = Number(match[1]);
+  const awayScore = Number(match[2]);
+  if (homeScore > awayScore) {
+    return { homeScore, awayScore, outcome: 1 };
+  }
+  if (awayScore > homeScore) {
+    return { homeScore, awayScore, outcome: 2 };
+  }
+  return { homeScore, awayScore, outcome: 0 };
 }
 
 function formatDate(value) {
@@ -136,6 +157,12 @@ function mapMatch(row) {
     awayTeam: row.away_team,
     status: row.status,
     result: row.result,
+    homeScore: row.home_score,
+    awayScore: row.away_score,
+    score:
+      row.home_score == null || row.away_score == null
+        ? null
+        : `${row.home_score}-${row.away_score}`,
     createdBy: row.created_by,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -342,17 +369,28 @@ async function setMatchStatus(matchId, status) {
 
 async function setMatchResult(matchId, resultInput) {
   await ensureWorldCupPredictionTables();
-  const outcome = normalizeOutcome(resultInput) ?? inferOutcomeFromScore(resultInput);
+  const parsedScore = parseScore(resultInput);
+  const outcome = normalizeOutcome(resultInput) ?? parsedScore?.outcome ?? null;
   if (outcome === null) return { ok: false, code: 'INVALID_RESULT' };
 
   const { rows } = await db.query(
     `
       UPDATE world_cup_prediction_matches
-      SET result = $1, status = $2, updated_at = NOW()
-      WHERE id = $3
+      SET result = $1,
+          home_score = COALESCE($2, home_score),
+          away_score = COALESCE($3, away_score),
+          status = $4,
+          updated_at = NOW()
+      WHERE id = $5
       RETURNING *
     `,
-    [outcome, STATUS_SETTLED, normalizeMatchId(matchId)]
+    [
+      outcome,
+      parsedScore?.homeScore ?? null,
+      parsedScore?.awayScore ?? null,
+      STATUS_SETTLED,
+      normalizeMatchId(matchId),
+    ]
   );
   if (!rows[0]) return { ok: false, code: 'MATCH_NOT_FOUND' };
   return { ok: true, match: mapMatch(rows[0]) };

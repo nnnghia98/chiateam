@@ -58,14 +58,22 @@ function formatInTargetTimeZone(date, time) {
 }
 
 function inferResult(score) {
+  const fullTimeScore = parseFullTimeScore(score);
+  if (!fullTimeScore) return null;
+
+  const { homeScore, awayScore } = fullTimeScore;
+  if (homeScore > awayScore) return 1;
+  if (awayScore > homeScore) return 2;
+  return 0;
+}
+
+function parseFullTimeScore(score) {
   const fullTime = score?.ft;
   if (!Array.isArray(fullTime) || fullTime.length !== 2) return null;
 
   const [homeScore, awayScore] = fullTime.map(Number);
   if (!Number.isFinite(homeScore) || !Number.isFinite(awayScore)) return null;
-  if (homeScore > awayScore) return 1;
-  if (awayScore > homeScore) return 2;
-  return 0;
+  return { homeScore, awayScore };
 }
 
 function mapWorldCupMatch(match, index) {
@@ -75,6 +83,7 @@ function mapWorldCupMatch(match, index) {
   }
 
   const kickoff = formatInTargetTimeZone(match.date, match.time);
+  const fullTimeScore = parseFullTimeScore(match.score);
   const result = inferResult(match.score);
 
   return {
@@ -85,6 +94,8 @@ function mapWorldCupMatch(match, index) {
     homeTeam: String(match.team1 || '').trim(),
     awayTeam: String(match.team2 || '').trim(),
     result,
+    homeScore: fullTimeScore?.homeScore ?? null,
+    awayScore: fullTimeScore?.awayScore ?? null,
     status: result === null ? 'OPEN' : 'SETTLED',
   };
 }
@@ -117,11 +128,13 @@ async function upsertMatch(client, match) {
           away_team,
           status,
           result,
+          home_score,
+          away_score,
           created_by,
           created_at,
           updated_at
         )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'worldcup.json', NOW(), NOW())
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'worldcup.json', NOW(), NOW())
       ON CONFLICT (id) DO UPDATE SET
         match_number = EXCLUDED.match_number,
         match_date = EXCLUDED.match_date,
@@ -136,6 +149,14 @@ async function upsertMatch(client, match) {
           WHEN EXCLUDED.result IS NULL THEN world_cup_prediction_matches.result
           ELSE EXCLUDED.result
         END,
+        home_score = CASE
+          WHEN EXCLUDED.result IS NULL THEN world_cup_prediction_matches.home_score
+          ELSE EXCLUDED.home_score
+        END,
+        away_score = CASE
+          WHEN EXCLUDED.result IS NULL THEN world_cup_prediction_matches.away_score
+          ELSE EXCLUDED.away_score
+        END,
         updated_at = NOW()
     `,
     [
@@ -147,6 +168,8 @@ async function upsertMatch(client, match) {
       match.awayTeam,
       match.status,
       match.result,
+      match.homeScore,
+      match.awayScore,
     ]
   );
 }
