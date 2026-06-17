@@ -186,18 +186,7 @@ function formatTime(value) {
   return String(value).slice(0, 5);
 }
 
-function getMatchStartAt(match) {
-  if (!match?.date || !match?.time) return null;
-  const parsed = new Date(`${match.date}T${match.time}:00+07:00`);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-function isPredictionVisible(match, now = new Date()) {
-  const startAt = getMatchStartAt(match);
-  return startAt ? now.getTime() >= startAt.getTime() : false;
-}
-
-function isPredictionClosed(match, now = new Date()) {
+function isPredictionClosed(match) {
   if (!match || match.status !== STATUS_OPEN) return true;
   return false;
 }
@@ -251,15 +240,14 @@ function mapMemberKey(row) {
   };
 }
 
-function mapPrediction(row, match, { censor = true } = {}) {
+function mapPrediction(row) {
   if (!row) return null;
-  const visible = !censor || isPredictionVisible(match);
   return {
     memberId: row.member_id,
     matchId: row.match_id,
-    prediction: visible ? row.prediction : '***',
-    value: visible ? row.prediction : '***',
-    censored: !visible,
+    prediction: row.prediction,
+    value: row.prediction,
+    censored: false,
     updatedAt: row.updated_at,
   };
 }
@@ -588,10 +576,7 @@ async function getOverallBoard() {
 
   predictionRows.forEach(row => {
     if (!predictions[row.member_id]) predictions[row.member_id] = {};
-    predictions[row.member_id][row.match_id] = mapPrediction(
-      row,
-      matchById[row.match_id]
-    );
+    predictions[row.member_id][row.match_id] = mapPrediction(row);
   });
 
   members.forEach(member => {
@@ -680,9 +665,9 @@ async function getPredictionRowsForMatch(matchId) {
       userId: row.member_id,
       name: row.name,
       username: row.username,
-      prediction: isPredictionVisible(match) ? row.prediction : '***',
-      value: isPredictionVisible(match) ? row.prediction : '***',
-      censored: !isPredictionVisible(match),
+      prediction: row.prediction,
+      value: row.prediction,
+      censored: false,
       points: row.points,
       exactScore: false,
       correctWinner: row.points === 1,
@@ -710,7 +695,7 @@ async function getMemberPredictionBoard(rawKey) {
 
   const predictions = Object.fromEntries(matches.map(match => [match.id, null]));
   rows.forEach(row => {
-    predictions[row.match_id] = mapPrediction(row, matchById[row.match_id]);
+    predictions[row.match_id] = mapPrediction(row);
   });
 
   return { ok: true, member, matches, predictions };
