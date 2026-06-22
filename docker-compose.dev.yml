@@ -14,14 +14,14 @@ services:
     environment:
       NODE_ENV: development
       API_PORT: 8787
-      BOT_STATE_FILE: /data/bot/storage.json
+      BOT_STATE_FILE: /api/data/bot/storage.json
       CHOKIDAR_USEPOLLING: "true"
     ports:
       - "8787:8787"
     volumes:
       - ./:/app
       - app_node_modules:/app/node_modules
-      - ./data/bot:/data/bot
+      - ./api/data/bot:/api/data/bot
     healthcheck:
       test:
         [

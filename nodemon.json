@@ -1,5 +1,5 @@
 {
-  "ignore": ["data/bot/", "node_modules/", ".git/", "*.test.js"],
+  "ignore": ["api/data/bot/", "node_modules/", ".git/", "*.test.js"],
   "watch": ["bot/", "api/"],
   "ext": "js,json"
 }

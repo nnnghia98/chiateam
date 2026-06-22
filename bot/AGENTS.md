@@ -13,7 +13,7 @@ The active runtime starts at [index.js](/Users/nnnghia98/Projects/chiateam-bot/b
   Telegram client creation and polling/webhook error wiring.
 
 - [storage.json.example](/Users/nnnghia98/Projects/chiateam-bot/bot/storage.json.example)
-  Example persisted-state shape. Real runtime state lives in `/data/bot/storage.json` via `BOT_STATE_FILE`.
+  Example persisted-state shape. Real runtime state lives in `/api/data/bot/storage.json` via `BOT_STATE_FILE`.
 
 - [chamhet.db](/Users/nnnghia98/Projects/chiateam-bot/bot/chamhet.db)
   Legacy local artifact. Do not treat it as the active runtime database unless a task explicitly says to.
@@ -57,7 +57,7 @@ Use these folders as the first place to look:
 ## Shared Utilities
 
 - [utils/storage.js](/Users/nnnghia98/Projects/chiateam-bot/bot/utils/storage.js)
-  Shared mutable runtime state for bench, teams, costs, votes, and reset behavior. Treat `/data/bot/storage.json` as persistent state, keep next-match data there, and back it up before risky changes.
+  Shared mutable runtime state for bench, teams, costs, votes, and reset behavior. Treat `/api/data/bot/storage.json` as persistent state, keep next-match data there, and back it up before risky changes.
 
 - [utils/chat.js](/Users/nnnghia98/Projects/chiateam-bot/bot/utils/chat.js)
   Message sending helpers.
@@ -85,4 +85,4 @@ Use these folders as the first place to look:
 - Reuse helpers from `utils/` instead of duplicating formatting, validation, or permission logic.
 - For Telegram inline keyboards that list players or members, show at most 10 player/member buttons per page by default and add pagination controls when there are more.
 - Do not add runtime writes to tracked files inside `bot/`. Persisted state belongs in `BOT_STATE_FILE`.
-- Do not move next-match data out of `/data/bot/storage.json` unless the user explicitly approves that storage change.
+- Do not move next-match data out of `/api/data/bot/storage.json` unless the user explicitly approves that storage change.
