@@ -17,8 +17,8 @@ COPY bot ./bot
 COPY api ./api
 COPY config ./config
 
-# Persistent bot storage is mounted to this path in docker-compose.
-RUN mkdir -p /app/.runtime/bot
+# Persistent bot storage is mounted to this path in docker-compose/Railway.
+RUN mkdir -p /data/bot
 
 EXPOSE 8787
 

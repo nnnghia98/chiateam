@@ -13,8 +13,8 @@ Both `bot` and `api` share the same app image (`Dockerfile`) with different star
 
 Next-match state is persisted at:
 
-- Host path: `.runtime/bot/storage.json` (inside `APP_DIR` on VPS)
-- Container path: `/app/.runtime/bot/storage.json` (mounted from host)
+- Host path: `data/bot/storage.json` (inside `APP_DIR` on VPS)
+- Container path: `/data/bot/storage.json` (mounted from host)
 
 Deployment automatically backs up this file before rollout to:
 
@@ -44,7 +44,7 @@ On push to `main` (or manual `workflow_dispatch`), workflow:
 1. Builds/pushes:
    - `ghcr.io/<owner>/<repo>/app:sha-<commit>`
 2. Uploads `docker-compose.yml` to VPS.
-3. Backs up `.runtime/bot/storage.json` on VPS.
+3. Backs up `data/bot/storage.json` on VPS.
 4. Stops/removes old PM2 process `chiateam` if present.
 5. Pulls image tags for current commit and runs:
    - `docker compose --env-file .env.deploy up -d --remove-orphans --no-build`
@@ -58,4 +58,4 @@ On push to `main` (or manual `workflow_dispatch`), workflow:
 3. Run workflow manually once (`workflow_dispatch`) to cut over.
 4. Verify:
    - Telegram bot responds.
-   - `.runtime/bot/storage.json` is preserved after container restart.
+   - `/data/bot/storage.json` is preserved after container restart.

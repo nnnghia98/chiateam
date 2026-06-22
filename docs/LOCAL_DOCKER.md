@@ -42,10 +42,10 @@ yarn docker:prod:down
 
 Dev and prod compose both mount:
 
-- Host: `.runtime/bot`
-- Container: `/app/.runtime/bot`
+- Host: `data/bot`
+- Container: `/data/bot`
 
-So `.runtime/bot/storage.json` persists between container restarts.
+So `/data/bot/storage.json` persists between container restarts.
 
 ## Troubleshooting
 

@@ -135,7 +135,7 @@ Player avatars are uploaded to Supabase Storage using:
 
 Next-match state must stay in the bot state JSON file.
 
-- Default path: `.runtime/bot/storage.json`
+- Default path: `/data/bot/storage.json`
 - Override env var: `BOT_STATE_FILE`
 - Example shape: `bot/storage.json.example`
 
@@ -300,7 +300,7 @@ In Docker, the bot should use:
 BOT_API_BASE_URL=http://api:8787
 ```
 
-Both Docker stacks mount `.runtime/bot` so `storage.json` persists across
+Both Docker stacks mount `data/bot` to `/data/bot` so `storage.json` persists across
 container restarts.
 
 See `docs/LOCAL_DOCKER.md` for the full local runbook.
@@ -319,7 +319,7 @@ Both containers share the same app image and use different start commands.
 The deployment workflow backs up:
 
 ```text
-.runtime/bot/storage.json
+/data/bot/storage.json
 ```
 
 before rollout.

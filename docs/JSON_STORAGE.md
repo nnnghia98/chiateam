@@ -4,7 +4,7 @@
 
 The bot uses a persistent JSON file to keep next-match roster and team state across restarts. The file is owned by the bot runtime, and next-match data must always stay in it.
 
-The default runtime file is `.runtime/bot/storage.json`. You can override it with `BOT_STATE_FILE`, but the data still belongs in that file-backed state.
+The default runtime file is `/data/bot/storage.json`. You can override it with `BOT_STATE_FILE`, but the data still belongs in that file-backed state.
 
 `activeVote` is the exception: it is mirrored into the PostgreSQL `current_match` table so Telegram poll tracking survives Railway redeploys.
 
@@ -75,7 +75,7 @@ The storage system automatically saves to disk whenever:
 ## Files
 
 - **`bot/utils/storage.js`** - Storage utility functions
-- **`.runtime/bot/storage.json`** - Default runtime data (auto-generated, gitignored)
+- **`/data/bot/storage.json`** - Default runtime data (auto-generated, gitignored)
 - **`bot/storage.json.example`** - Example data structure
 
 ## Usage in Code
