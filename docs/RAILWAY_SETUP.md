@@ -23,7 +23,7 @@ VIP_THREAD_ID=63171
 STATISTICS_THREAD_ID=73073
 API_PORT=8787
 INTERNAL_API_AUTH_TOKEN=change-this-shared-internal-token
-BOT_STATE_FILE=/data/bot/storage.json
+BOT_STATE_FILE=/api/data/bot/storage.json
 ```
 
 ### Database (Supabase PostgreSQL)

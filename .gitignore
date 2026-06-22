@@ -11,8 +11,8 @@ coverage/
 *.tsbuildinfo
 
 # Runtime files
-data/bot/*
-!data/bot/.gitkeep
+api/data/bot/*
+!api/data/bot/.gitkeep
 logs/
 *.log
 *.pid

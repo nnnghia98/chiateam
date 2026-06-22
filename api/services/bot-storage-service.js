@@ -4,7 +4,7 @@ const { db } = require('../db/config');
 
 const BOT_STORAGE_FILE = path.resolve(
   process.cwd(),
-  process.env.BOT_STATE_FILE || '/data/bot/storage.json'
+  process.env.BOT_STATE_FILE || '/api/data/bot/storage.json'
 );
 const CURRENT_MATCH_ROW_ID = 1;
 

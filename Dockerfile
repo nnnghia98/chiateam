@@ -18,7 +18,7 @@ COPY api ./api
 COPY config ./config
 
 # Persistent bot storage is mounted to this path in docker-compose/Railway.
-RUN mkdir -p /data/bot
+RUN mkdir -p /api/data/bot
 
 EXPOSE 8787
 
