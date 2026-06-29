@@ -53,6 +53,11 @@ async function ensureWorldCupPredictionTables() {
   `);
 
   await db.query(`
+    ALTER TABLE world_cup_prediction_members
+      ADD COLUMN IF NOT EXISTS username TEXT
+  `);
+
+  await db.query(`
     CREATE TABLE IF NOT EXISTS world_cup_predictions (
       match_id TEXT NOT NULL REFERENCES world_cup_prediction_matches(id) ON DELETE CASCADE,
       member_id TEXT NOT NULL REFERENCES world_cup_prediction_members(member_id) ON DELETE CASCADE,
