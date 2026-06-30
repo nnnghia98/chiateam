@@ -42,10 +42,11 @@ docs(root): add git commit conventions
 
 ## Persistent Bot Storage
 
-- `/api/data/bot/storage.json` (via `BOT_STATE_FILE`) is persistent state.
-- Next-match data must always stay in that JSON file.
-- Before risky changes to that data, make a backup and restore it if needed.
-- Do not migrate next-match data anywhere else unless the user explicitly approves that storage change.
+- PostgreSQL table `storage` is the primary persistent state when `DATABASE_URL` is configured.
+- The configured `BOT_STATE_FILE` JSON file is still kept as a fallback/backup mirror; default local/VPS path is `/api/data/bot/storage.json`.
+- Railway should keep `BOT_STATE_FILE` inside the mounted volume, such as `/data/bot/storage.json` when the volume mount path is `/data`.
+- Next-match data must always stay in the `storage` table and the configured JSON mirror unless the user explicitly approves another storage change.
+- Before risky changes to that data, make a database backup and a JSON-file backup, then restore them if needed.
 
 ## Environment File Rules
 

@@ -14,6 +14,7 @@ yarn docker:dev:up
 ```
 
 Services:
+
 - API: `http://localhost:8787`
 - Bot: running with `yarn dev:bot` inside container
 
@@ -45,7 +46,9 @@ Dev and prod compose both mount:
 - Host: `api/data/bot`
 - Container: `/api/data/bot`
 
-So `/api/data/bot/storage.json` persists between container restarts.
+So `/api/data/bot/storage.json` persists between container restarts as the JSON
+mirror. When `DATABASE_URL` is configured, PostgreSQL table `storage` is the
+primary runtime state.
 
 ## Troubleshooting
 

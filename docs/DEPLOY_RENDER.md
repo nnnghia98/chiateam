@@ -22,25 +22,25 @@ Render.com offers a **free Web Service tier** — no credit card required, no su
 
 In Render dashboard → your service → **Environment** tab, add all vars:
 
-| Key | Value |
-|---|---|
-| `NODE_ENV` | `production` |
-| `TELEGRAM_BOT_TOKEN` | your token |
-| `BOT_OWNER_ID` | your Telegram ID |
-| `BOT_ADMIN_IDS` | comma-separated IDs |
-| `CHAT_ID` | group chat ID |
-| `MAIN_THREAD_ID` | `2` |
-| `ANNOUNCEMENT_THREAD_ID` | `3` |
-| `VIP_THREAD_ID` | `51` |
-| `STATISTICS_THREAD_ID` | `52` |
-| `DATABASE_URL` | Supabase connection string (URL-encode `@`→`%40`, `!`→`%21` in password) |
-| `SUPABASE_URL` | Supabase project URL, e.g. `https://your-project-ref.supabase.co` |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key for server-side Storage uploads |
-| `SUPABASE_STORAGE_BUCKET` | Avatar bucket name, e.g. `player-avatars` |
-| `GEMINI_API_KEY` | AI Studio key (optional) |
-| `ADMIN_UI_URL` | Admin app URL (for CORS) |
-| `INTERNAL_API_AUTH_TOKEN` | Shared token for trusted admin proxy calls |
-| `BOT_STATE_FILE` | Optional runtime state path (default: `/api/data/bot/storage.json`) |
+| Key                         | Value                                                                                                                       |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `NODE_ENV`                  | `production`                                                                                                                |
+| `TELEGRAM_BOT_TOKEN`        | your token                                                                                                                  |
+| `BOT_OWNER_ID`              | your Telegram ID                                                                                                            |
+| `BOT_ADMIN_IDS`             | comma-separated IDs                                                                                                         |
+| `CHAT_ID`                   | group chat ID                                                                                                               |
+| `MAIN_THREAD_ID`            | `2`                                                                                                                         |
+| `ANNOUNCEMENT_THREAD_ID`    | `3`                                                                                                                         |
+| `VIP_THREAD_ID`             | `51`                                                                                                                        |
+| `STATISTICS_THREAD_ID`      | `52`                                                                                                                        |
+| `DATABASE_URL`              | Supabase connection string (URL-encode `@`→`%40`, `!`→`%21` in password)                                                    |
+| `SUPABASE_URL`              | Supabase project URL, e.g. `https://your-project-ref.supabase.co`                                                           |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key for server-side Storage uploads                                                                   |
+| `SUPABASE_STORAGE_BUCKET`   | Avatar bucket name, e.g. `player-avatars`                                                                                   |
+| `GEMINI_API_KEY`            | AI Studio key (optional)                                                                                                    |
+| `ADMIN_UI_URL`              | Admin app URL (for CORS)                                                                                                    |
+| `INTERNAL_API_AUTH_TOKEN`   | Shared token for trusted admin proxy calls                                                                                  |
+| `BOT_STATE_FILE`            | Optional JSON mirror path (default: `/api/data/bot/storage.json`; DB table `storage` is primary when `DATABASE_URL` is set) |
 
 ## Deploy
 
@@ -63,6 +63,7 @@ Or manually: Render dashboard → **Manual Deploy → Deploy latest commit**.
 Free web services on Render sleep after 15 min of inactivity. For a Telegram bot using polling, the bot loop itself keeps the process active. But the HTTP API port may be put to sleep.
 
 Add a simple health-check ping using an external service like [UptimeRobot](https://uptimerobot.com) (free):
+
 1. Sign up at uptimerobot.com
 2. Add monitor: `https://chiateam-bot.onrender.com/api/status`
 3. Check interval: every 5 minutes

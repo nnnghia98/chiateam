@@ -123,6 +123,7 @@ Main tables:
 - `matches`
 - `match_players`
 - `match_player_stats`
+- `storage`
 - `current_match`
 
 Player avatars are uploaded to Supabase Storage using:
@@ -133,15 +134,20 @@ Player avatars are uploaded to Supabase Storage using:
 
 ### Persistent Bot State
 
-Next-match state must stay in the bot state JSON file.
+Next-match state is stored in PostgreSQL table `storage` when `DATABASE_URL` is
+configured. The API also mirrors the state to the bot state JSON file as a
+fallback and backup.
 
-- Default path: `/api/data/bot/storage.json`
-- Override env var: `BOT_STATE_FILE`
+- Table: `storage`
+- JSON mirror default local/VPS path: `/api/data/bot/storage.json`
+- JSON mirror Railway volume path: `/data/bot/storage.json` when the volume is mounted at `/data`
+- JSON mirror override env var: `BOT_STATE_FILE`
 - Example shape: `bot/storage.json.example`
 
-This file stores current bench/team/vote/venue/fee state. Back it up before
-risky storage changes, deployment cutovers, or manual resets. Do not migrate
-next-match data elsewhere unless that storage change is explicitly approved.
+The stored state includes current bench/team/vote/venue/fee values. Back up the
+`storage` table and the JSON mirror before risky storage changes, deployment
+cutovers, or manual resets. On first DB-backed read, the API seeds an empty
+`storage` table from the JSON mirror for a safe cutover.
 
 ## Environment Setup
 
@@ -243,7 +249,7 @@ ENV_FILE=.env.production
 
 ## Database Checks
 
-Verify the configured database connection and ensure runtime helper columns or
+Verify the configured database connection and ensure runtime helper columns and
 tables exist:
 
 ```bash
@@ -300,10 +306,26 @@ In Docker, the bot should use:
 BOT_API_BASE_URL=http://api:8787
 ```
 
-Both Docker stacks mount `api/data/bot` to `/api/data/bot` so `storage.json` persists across
-container restarts.
+Both Docker stacks mount `api/data/bot` to `/api/data/bot` so the JSON mirror
+persists across container restarts.
 
 See `docs/LOCAL_DOCKER.md` for the full local runbook.
+
+## Railway Storage
+
+The PostgreSQL `storage` table is primary on Railway. The volume-backed JSON
+file is still useful as a mirror and recovery backup.
+
+Railway volumes persist only at their configured mount path. If the `api` volume
+is mounted at `/data`, keep this on the Railway **api** service:
+
+```text
+BOT_STATE_FILE=/data/bot/storage.json
+```
+
+The app also falls back to `${RAILWAY_VOLUME_MOUNT_PATH}/bot/storage.json` on
+Railway when `BOT_STATE_FILE` is not set. See `docs/RAILWAY_SETUP.md` before a
+Railway deployment or storage recovery.
 
 ## VPS Deployment
 
