@@ -21,7 +21,7 @@ Default port resolution order: `API_PORT` → `UI_API_PORT` → `PORT` → `8787
   Exports a single `pg.Pool` instance (`db`). Connection string comes from `DATABASE_URL`. SSL is enabled only in production.
 
 - [db/tables.sql](./db/tables.sql)
-  Reference schema for the five tables: `players`, `leaderboard`, `matches`, `match_players`, `match_player_stats`.
+  Reference schema for core tables. Runtime bootstrapping also ensures helper tables such as `storage`, `current_match`, and World Cup prediction tables.
 
 - [db/init-database.js](./db/init-database.js)
   One-shot script to create tables in the target database.
@@ -101,8 +101,8 @@ Header: `x-admin-role: admin` in addition to auth header above.
 | -------- | -------------------------------- | ------------------------------------------------------------------------------ |
 | `POST`   | `/api/settings`                  | Update `maintenanceMode`, `debugLogging`, `botCommandPrefix`, `allowedChatIds` |
 | `POST`   | `/api/players`                   | Create admin-managed player (no Telegram ID)                                   |
-| `PUT`    | `/api/players/:number`           | Update player `name`, `username`, or `avatar` by shirt number                   |
-| `POST`   | `/api/players/:number/avatar`    | Upload a player avatar image to Supabase Storage and update `players.avatar`    |
+| `PUT`    | `/api/players/:number`           | Update player `name`, `username`, or `avatar` by shirt number                  |
+| `POST`   | `/api/players/:number/avatar`    | Upload a player avatar image to Supabase Storage and update `players.avatar`   |
 | `DELETE` | `/api/players/:number`           | Delete player and their leaderboard row                                        |
 | `POST`   | `/api/matches`                   | Create a new match                                                             |
 | `PUT`    | `/api/matches/:date`             | Update match fields (`san`, `tiensan`, scores, `notes`)                        |

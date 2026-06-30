@@ -11,12 +11,13 @@ Both `bot` and `api` share the same app image (`Dockerfile`) with different star
 
 ## Persistent Bot State
 
-Next-match state is persisted at:
+Next-match state is persisted primarily in PostgreSQL table `storage` when
+`DATABASE_URL` is configured. The API also writes a JSON mirror at:
 
 - Host path: `api/data/bot/storage.json` (inside `APP_DIR` on VPS)
 - Container path: `/api/data/bot/storage.json` (mounted from host)
 
-Deployment automatically backs up this file before rollout to:
+Deployment automatically backs up this JSON mirror before rollout to:
 
 - `backups/bot-storage/storage-YYYYMMDD-HHMMSS.json`
 
@@ -55,7 +56,9 @@ On push to `main` (or manual `workflow_dispatch`), workflow:
 
 1. Ensure `.env.production` is created in `APP_DIR` with production values.
 2. Ensure GHCR pull credentials are valid.
-3. Run workflow manually once (`workflow_dispatch`) to cut over.
-4. Verify:
+3. Back up PostgreSQL table `storage` through your database provider before a risky rollout.
+4. Run workflow manually once (`workflow_dispatch`) to cut over.
+5. Verify:
    - Telegram bot responds.
-   - `/api/data/bot/storage.json` is preserved after container restart.
+   - PostgreSQL table `storage` has one row with `id = 1`.
+   - `/api/data/bot/storage.json` is preserved as the JSON mirror after container restart.
