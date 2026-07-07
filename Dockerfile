@@ -16,6 +16,7 @@ COPY package.json yarn.lock ./
 COPY bot ./bot
 COPY api ./api
 COPY config ./config
+COPY shared ./shared
 
 # Persistent bot storage is mounted to this path in docker-compose/Railway.
 RUN mkdir -p /api/data/bot
