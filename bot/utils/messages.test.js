@@ -59,3 +59,11 @@ test('/demvote total counts selected vote values', () => {
   assert.match(result, /\*Số người vote:\* 8/);
   assert.match(result, /\*\+4\* \(2\)/);
 });
+
+test('vote commands have command-specific no-active-vote messages', () => {
+  assert.match(TAO_VOTE.noVoteToClear, /xóa/);
+  assert.match(TAO_VOTE.noVoteToCount, /đếm/);
+  assert.match(TAO_VOTE.noVoteToSync, /đồng bộ/);
+  assert.notEqual(TAO_VOTE.noVoteToClear, TAO_VOTE.noVoteToCount);
+  assert.notEqual(TAO_VOTE.noVoteToClear, TAO_VOTE.noVoteToSync);
+});
