@@ -1,6 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 const { db } = require('../db/config');
+const {
+  getSelectedVoteOption,
+  isComingVoteOption,
+} = require('../../shared/vote-options');
 
 const DEFAULT_BOT_STORAGE_FILE = '/api/data/bot/storage.json';
 
@@ -471,9 +475,9 @@ async function syncBotStorageFromVote() {
   voters.forEach(voter => {
     const userId = voter.id;
     const userName = voter.name;
-    const voteOption = voter.options[0];
+    const voteOption = getSelectedVoteOption(voter);
 
-    if (voteOption === 0) return;
+    if (!isComingVoteOption(voteOption)) return;
 
     if (benchMap.has(userId)) {
       skippedCount++;

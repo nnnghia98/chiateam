@@ -59,7 +59,8 @@ const CLEAR_BENCH = {
     '⚠️ Không có lựa chọn hợp lệ. Ví dụ:\n`/clearbench 1,3,5` hoặc `/clearbench 1-3` hoặc `/clearbench all`',
   success: '✅ Đã xóa {count} member(s):\n{removedNames}',
   singleSuccess: '✅ Đã xóa {name} khỏi bench.',
-  staleButton: '⚠️ Lựa chọn này không còn hợp lệ. Dùng /clearbench để tải lại danh sách.',
+  staleButton:
+    '⚠️ Lựa chọn này không còn hợp lệ. Dùng /clearbench để tải lại danh sách.',
   clearAllSuccess: '✅ Đã xóa toàn bộ member khỏi bench.',
   noRemovedMembers: '⚠️ Không có member nào bị xóa.',
   listError: '❌ Có lỗi xảy ra. Vui lòng thử lại.',
@@ -104,12 +105,10 @@ const MANIFEST = {
   invalidSelection:
     '⚠️ Cú pháp manifest không hợp lệ. Ví dụ: `/manifest 1 <3 3`, `/manifest 1 ❤️ 3`, `/manifest 1 </3 3` hoặc `/manifest 1 💔 3`',
   success: '🧞‍♂️ Đã nhận nguyện vọng: `{first} {symbol} {second}`',
-  replaceSuccess:
-    '♻️ Đã cập nhật nguyện vọng: `{first} {symbol} {second}`',
+  replaceSuccess: '♻️ Đã cập nhật nguyện vọng: `{first} {symbol} {second}`',
   conflict:
     '⚠️ Manifest này mâu thuẫn với danh sách hiện tại. Dùng `/mf` để xem hoặc `/removemanifest [số thứ tự]` để xóa manifest cũ.',
-  removeInstruction:
-    '📋 Chọn manifest cần xóa:',
+  removeInstruction: '📋 Chọn manifest cần xóa:',
   invalidRemoveSelection:
     '⚠️ Số thứ tự manifest không hợp lệ. Dùng `/mf` để xem danh sách manifest.',
   removeSuccess: '✅ Đã xóa manifest: {manifest}',
@@ -182,7 +181,9 @@ const TAO_VOTE = {
     '⚠️ Hiện tại đã có một vote đang hoạt động. Hãy xoá vote cũ trước khi tạo vote mới bằng lệnh /clearvote.',
   explanation: 'Vote được tạo bởi',
   error: '❌ Có lỗi xảy ra khi tạo vote. Vui lòng thử lại.',
-  noVote: '📭 Không có vote nào đang hoạt động để xóa.',
+  noVoteToClear: '📭 Không có vote nào đang hoạt động để xóa.',
+  noVoteToCount: '📭 Không có vote nào đang hoạt động để đếm.',
+  noVoteToSync: '📭 Không có vote nào đang hoạt động để đồng bộ.',
   result: '📊 *Kết quả vote hiện tại:*\n*${question}*\n\n',
   clearSuccess: '🗑️ Đã xoá vote.',
   noVoterLine: '*Ai vote?* Chưa có ai vote',

@@ -2,6 +2,11 @@ const { CHAT_ID, THREAD_TYPES, sendMessage } = require('../../utils/chat');
 const { TAO_VOTE } = require('../../utils/messages');
 const { requireAdmin } = require('../../utils/permissions');
 const { toEntry } = require('../../utils/team-member');
+const {
+  getSelectedVoteOption,
+  isComingVote,
+  isComingVoteOption,
+} = require('../../../shared/vote-options');
 
 const bot = require('../../telegram-client');
 
@@ -35,7 +40,9 @@ const voteCommand = ({ members, getActiveVote, setActiveVote }) => {
       options: pollAnswer.option_ids,
     };
 
-    activeVote.totalVoters = Object.keys(activeVote.votes).length;
+    activeVote.totalVoters = Object.values(activeVote.votes).filter(
+      isComingVote
+    ).length;
 
     // Save updated vote back to storage
     setActiveVote(activeVote);
@@ -127,7 +134,7 @@ const voteCommand = ({ members, getActiveVote, setActiveVote }) => {
       sendMessage({
         msg,
         type: 'DEFAULT',
-        message: TAO_VOTE.noVote,
+        message: TAO_VOTE.noVoteToClear,
       });
       return;
     }
@@ -148,7 +155,7 @@ const voteCommand = ({ members, getActiveVote, setActiveVote }) => {
       sendMessage({
         msg,
         type: 'DEFAULT',
-        message: TAO_VOTE.noVote,
+        message: TAO_VOTE.noVoteToCount,
       });
       return;
     }
@@ -175,7 +182,7 @@ const voteCommand = ({ members, getActiveVote, setActiveVote }) => {
       sendMessage({
         msg,
         type: 'DEFAULT',
-        message: TAO_VOTE.noVote,
+        message: TAO_VOTE.noVoteToSync,
       });
       return;
     }
@@ -183,6 +190,7 @@ const voteCommand = ({ members, getActiveVote, setActiveVote }) => {
     console.log(`🔄 [sync] Syncing voters from poll: "${activeVote.question}"`);
 
     const voters = Object.values(activeVote.votes);
+    const comingVoters = voters.filter(isComingVote);
     let addedCount = 0;
     let skippedCount = 0;
     const addedNames = [];
@@ -191,11 +199,11 @@ const voteCommand = ({ members, getActiveVote, setActiveVote }) => {
     voters.forEach(voter => {
       const userId = voter.id;
       const userName = voter.name;
-      const voteOption = voter.options[0]; // Get the first (and only) option they selected
+      const voteOption = getSelectedVoteOption(voter);
 
-      // Option 0 means not coming, skip this voter
-      if (voteOption === 0) {
-        console.log(`⏭️ [sync] Skipped ${userName} (voted 0 - not coming)`);
+      // Only +1 through +4 mean coming. 0, retracted, or malformed votes are skipped.
+      if (!isComingVoteOption(voteOption)) {
+        console.log(`⏭️ [sync] Skipped ${userName} (not coming)`);
         return;
       }
 
@@ -244,7 +252,7 @@ const voteCommand = ({ members, getActiveVote, setActiveVote }) => {
       type: 'ANNOUNCEMENT',
       message: TAO_VOTE.buildSyncSummary({
         question: activeVote.question,
-        totalVoters: voters.length,
+        totalVoters: comingVoters.length,
         addedCount,
         addedNames,
         skippedCount,
