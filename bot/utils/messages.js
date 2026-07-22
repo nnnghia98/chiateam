@@ -665,6 +665,7 @@ const ME = {
 };
 
 const TEAM = {
+  refreshError: '❌ Không thể tải danh sách đội hiện tại từ API.',
   noTeam: '⚠️ Chưa có team nào được chia. Dùng /chiateam trước',
   noTeam3: '⚠️ Chưa có 3 team nào được chia. Dùng /chiateam 3 để chia 3 team',
   buildTwoTeamMessage(homeMembers, awayMembers) {
