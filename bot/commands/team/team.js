@@ -5,9 +5,35 @@ const { escapeMarkdown } = require('../../utils/format');
 
 const bot = require('../../telegram-client');
 
-const teamsCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
+const teamsCommand = ({
+  teamA,
+  teamB,
+  team3A,
+  team3B,
+  team3C,
+  refreshFromSource,
+}) => {
+  const refreshTeams = async msg => {
+    if (typeof refreshFromSource !== 'function') return true;
+
+    try {
+      await refreshFromSource();
+      return true;
+    } catch (error) {
+      console.error('❌ [team] Failed to refresh bot storage from API:', error);
+      await sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: TEAM.refreshError,
+      });
+      return false;
+    }
+  };
+
   // Show 2-team view (HOME / AWAY)
-  bot.onText(/^\/team$/, msg => {
+  bot.onText(/^\/team$/, async msg => {
+    if (!(await refreshTeams(msg))) return;
+
     if (teamA.size === 0 && teamB.size === 0) {
       sendMessage({
         msg,
@@ -29,7 +55,9 @@ const teamsCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
   });
 
   // Show 3-team view (HOME / AWAY / EXTRA)
-  bot.onText(/^\/team 3$/, msg => {
+  bot.onText(/^\/team 3$/, async msg => {
+    if (!(await refreshTeams(msg))) return;
+
     if (team3A.size === 0 && team3B.size === 0 && team3C.size === 0) {
       sendMessage({
         msg,

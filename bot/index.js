@@ -124,7 +124,14 @@ async function bootstrapBot() {
   editBenchCommand({ members });
   clearBenchCommand({ members });
   addCommand({ members });
-  teamCommand({ teamA, teamB, team3A, team3B, team3C });
+  teamCommand({
+    teamA,
+    teamB,
+    team3A,
+    team3B,
+    team3C,
+    refreshFromSource,
+  });
   tiensanCommand(getTiensan, setTiensan);
   chiaTienCommand(getTiensan, getTeamThua, { teamA, teamB });
   taoVoteCommand({ members, getActiveVote, setActiveVote });
