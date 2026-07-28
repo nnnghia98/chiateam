@@ -110,6 +110,7 @@ x-admin-role: admin
 ```
 
 Viewer endpoints accept `x-admin-role: viewer` with the same internal token.
+`GET /api/bot-storage` is public and does not require authentication headers.
 
 ## Data Storage
 
