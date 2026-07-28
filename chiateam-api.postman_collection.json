@@ -8,12 +8,12 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:8787",
+      "value": "https://api-production-6834.up.railway.app",
       "type": "string"
     },
     {
       "key": "authToken",
-      "value": "local-internal-api-token-change-me",
+      "value": "",
       "type": "string"
     },
     {
@@ -321,10 +321,6 @@
           "name": "Get Bot Storage",
           "request": {
             "method": "GET",
-            "header": [
-              { "key": "x-internal-api-auth", "value": "{{authToken}}" },
-              { "key": "x-admin-role", "value": "viewer" }
-            ],
             "url": {
               "raw": "{{baseUrl}}/api/bot-storage",
               "host": ["{{baseUrl}}"],

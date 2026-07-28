@@ -1373,7 +1373,6 @@ function createUiApiServer({ getStatus }) {
 
     // Bot Storage API
     if (path === '/api/bot-storage' && req.method === 'GET') {
-      if (!requireAuthenticated(req, res, headers)) return;
       try {
         return sendJson(res, 200, await readBotStorage(), headers);
       } catch (e) {
