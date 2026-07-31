@@ -107,7 +107,7 @@ jobs:
               exit 1
             fi
 
-            mkdir -p .runtime/bot
+            mkdir -p api/data/bot
             mkdir -p backups/bot-storage
 
             if [ ! -f ".env.production" ]; then
@@ -115,7 +115,7 @@ jobs:
               exit 1
             fi
 
-            STORAGE_FILE=".runtime/bot/storage.json"
+            STORAGE_FILE="api/data/bot/storage.json"
             if [ -f "\$STORAGE_FILE" ]; then
               cp "\$STORAGE_FILE" "backups/bot-storage/storage-\$(date +%Y%m%d-%H%M%S).json"
             fi
