@@ -117,7 +117,7 @@ const MANIFEST = {
 
 const RESET = {
   success:
-    '🔄 *ĐÃ RESET TOÀN BỘ DỮ LIỆU*\n\n✅ Đã xóa:\n• Bench\n• Tất cả các team\n• Tiền sân → null\n• Team thua → null',
+    '🔄 *ĐÃ RESET TOÀN BỘ DỮ LIỆU*\n\n✅ Đã xóa:\n• Bench\n• Tất cả các team\n• Tiền sân\n• Tiền nước\n• Kết quả thắng/thua',
 };
 
 const CLEAR_TEAM_INDIVIDUAL = {
@@ -145,6 +145,8 @@ const CALLBACK_QUERY = {
 const CHIA_TIEN = {
   instruction: '💸 Bạn chưa thêm tiền sân. Dùng /tiensan [số tiền] trước.',
   noMembers: '⚠️ Không có thành viên nào trong team để chia tiền.',
+  threeTeamUnsupported:
+    '⚠️ Chưa hỗ trợ chia tiền cho 3 team. Tính năng này sẽ được bổ sung sau.',
   totalMembers:
     '💸 Tổng tiền: {tiensan} VND\n👥 Số người: {totalMembers}\n\nMỗi người phải trả: {perMember} VND',
 };
@@ -155,6 +157,26 @@ const TIEN_SAN = {
   current: '💰 Tiền sân hiện tại: {value} VND',
   noMembers: '⚠️ Không có thành viên nào trong team để chia tiền.',
   success: '✅ Đã cập nhật tiền sân: {value} VND',
+};
+
+const TIEN_NUOC = {
+  instruction: '⚠️ Vui lòng nhập số tiền hợp lệ. Ví dụ: /tiennuoc 60000',
+  empty: '⚠️ Chưa thêm tiền nước.',
+  current: '🧊 Tiền nước hiện tại: {value} VND',
+  success: '✅ Đã cập nhật tiền nước: {value} VND',
+};
+
+const TEAM_THUA = {
+  noWinner:
+    '⚠️ Chưa chọn team thắng. Dùng `/teamthang HOME` hoặc `/teamthang AWAY`',
+  winnerCurrent: '📋 Team thắng hiện tại: *{team}*',
+  winnerSuccess: '✅ Đã chọn team thắng: *{team}*',
+  threeTeamUnsupported:
+    '⚠️ Chưa hỗ trợ tính tiền cho 3 team. Hãy dùng 2 team để dùng lệnh này.',
+  noTeamThua:
+    '⚠️ Chưa chọn team thua. Dùng `/teamthua HOME` hoặc `/teamthua AWAY`',
+  current: '📋 Team thua hiện tại: *{team}*',
+  success: '✅ Đã chọn team thua: *{team}*',
 };
 
 const SAN = {
@@ -310,6 +332,7 @@ const START = {
 • \`/team 3\` - Xem 3 team hiện tại
 • \`/addtoteam\` - Thêm người vào team
 • \`/clearteam\` - Xóa người khỏi team
+• \`/teamthang HOME|AWAY\` - Chọn team thắng để tính tiền 2 team
 
 *TRẬN ĐẤU*
 • \`/match\` - Xem trận tuần này
@@ -320,7 +343,8 @@ const START = {
 • \`/san\` - Xem hoặc lưu sân
 • \`/clearsan\` - Xóa sân hiện tại (admin)
 • \`/tiensan\` - Xem hoặc cập nhật tiền sân
-• \`/chiatien\` - Chia tiền sân
+• \`/tiennuoc\` - Xem hoặc cập nhật tiền nước
+• \`/chiatien\` - Chia tiền 2 team (đội thua trả thêm tiền nước)
 • \`/taovote\` - Tạo vote
 • \`/demvote\` - Xem kết quả vote
 • \`/sync\` - Đồng bộ người vote vào bench (admin)
@@ -844,6 +868,8 @@ module.exports = {
   START,
   TAO_VOTE,
   TEAM,
+  TEAM_THUA,
+  TIEN_NUOC,
   TIEN_SAN,
   UNKNOWN,
   UPDATE_LEADERBOARD,

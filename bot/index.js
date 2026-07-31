@@ -12,6 +12,8 @@ const {
   teamCommand,
   clearBenchCommand,
   tiensanCommand,
+  tiennuocCommand,
+  teamThuaCommand,
   chiaTienCommand,
   taoVoteCommand,
   editStatsCommand,
@@ -99,7 +101,10 @@ async function bootstrapBot() {
   const { bench: members, teamA, teamB, team3A, team3B, team3C } = storage;
   const getTiensan = storage.getTiensan;
   const setTiensan = storage.setTiensan;
+  const getTiennuoc = storage.getTiennuoc;
+  const setTiennuoc = storage.setTiennuoc;
   const getTeamThua = storage.getTeamThua;
+  const setTeamThua = storage.setTeamThua;
   const getActiveVote = storage.getActiveVote;
   const setActiveVote = storage.setActiveVote;
   const getManifest = storage.getManifest;
@@ -133,7 +138,25 @@ async function bootstrapBot() {
     refreshFromSource,
   });
   tiensanCommand(getTiensan, setTiensan);
-  chiaTienCommand(getTiensan, getTeamThua, { teamA, teamB });
+  tiennuocCommand(getTiennuoc, setTiennuoc);
+  teamThuaCommand({
+    getTiensan,
+    getTiennuoc,
+    getTeamThua,
+    setTeamThua,
+    teamA,
+    teamB,
+    team3A,
+    team3B,
+    team3C,
+  });
+  chiaTienCommand(getTiensan, getTiennuoc, getTeamThua, {
+    teamA,
+    teamB,
+    team3A,
+    team3B,
+    team3C,
+  });
   taoVoteCommand({ members, getActiveVote, setActiveVote });
   sanCommand();
   editStatsCommand();

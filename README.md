@@ -42,18 +42,18 @@ from `bot/commands/`.
 
 Known commands registered by the active bot runtime:
 
-| Area                  | Commands                                                               |
-| --------------------- | ---------------------------------------------------------------------- |
-| Help                  | `/start`                                                               |
-| Bench                 | `/addme`, `/add`, `/bench`, `/editbench`, `/clearbench`                |
-| Teams                 | `/chiateam`, `/team`, `/addtoteam`, `/clearteam`                       |
-| Team constraints      | `/manifest`, `/mf`, `/manifests`, `/removemanifest`, `/clearmanifests` |
-| Venue and fees        | `/san`, `/clearsan`, `/tiensan`, `/chiatien`                           |
-| Attendance vote       | `/taovote`, `/clearvote`, `/demvote`, `/sync`                          |
-| Players and stats     | `/register`, `/players`, `/me`, `/player`, `/edit-stats`               |
-| Matches               | `/match`, `/matches`                                                   |
-| World Cup predictions | `/pred`, `/predict`, `/worldcup`, `/wc`                                |
-| Admin reset           | `/reset`                                                               |
+| Area                  | Commands                                                                |
+| --------------------- | ----------------------------------------------------------------------- |
+| Help                  | `/start`                                                                |
+| Bench                 | `/addme`, `/add`, `/bench`, `/editbench`, `/clearbench`                 |
+| Teams                 | `/chiateam`, `/team`, `/addtoteam`, `/clearteam`                        |
+| Team constraints      | `/manifest`, `/mf`, `/manifests`, `/removemanifest`, `/clearmanifests`  |
+| Venue and fees        | `/san`, `/clearsan`, `/tiensan`, `/tiennuoc`, `/teamthang`, `/chiatien` |
+| Attendance vote       | `/taovote`, `/clearvote`, `/demvote`, `/sync`                           |
+| Players and stats     | `/register`, `/players`, `/me`, `/player`, `/edit-stats`                |
+| Matches               | `/match`, `/matches`                                                    |
+| World Cup predictions | `/pred`, `/predict`, `/worldcup`, `/wc`                                 |
+| Admin reset           | `/reset`                                                                |
 
 There are older handler files for standalone AI and leaderboard commands, but
 `bot/index.js` does not currently register them. Keep README command docs tied

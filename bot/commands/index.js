@@ -9,6 +9,8 @@ const manifestCommand = require('./team/manifest');
 const teamCommand = require('./team/team');
 const clearBenchCommand = require('./bench/clear-bench');
 const tiensanCommand = require('./management/tien-san');
+const tiennuocCommand = require('./management/tien-nuoc');
+const teamThuaCommand = require('./management/team-thua');
 const chiaTienCommand = require('./management/chia-tien');
 const taoVoteCommand = require('./management/tao-vote');
 const editStatsCommand = require('./leaderboard/edit-stats');
@@ -36,6 +38,8 @@ module.exports = {
   teamCommand,
   clearBenchCommand,
   tiensanCommand,
+  tiennuocCommand,
+  teamThuaCommand,
   chiaTienCommand,
   taoVoteCommand,
   editStatsCommand,
