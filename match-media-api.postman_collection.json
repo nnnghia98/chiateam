@@ -1,0 +1,379 @@
+{
+  "info": {
+    "name": "ChiaTeam Match Media API",
+    "description": "Postman collection only for match YouTube sources and timeline highlights.\n\nSetup:\n1. Set `baseUrl` to the deployed API URL.\n2. Set `matchId` to the numeric match ID.\n\nAuthentication:\n- All endpoints in this collection are public and do not require admin headers or an API token.\n- Do not send `createdBy` in the JSON body. The server ignores it.\n\nVideo synchronization: `video time = match timeline time + offsetSeconds`.\n\nError body: `{ \"error\": \"MACHINE_READABLE_CODE\", \"message\": \"Optional message\" }`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8787",
+      "type": "string"
+    },
+    {
+      "key": "matchId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "highlightId",
+      "value": "5",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Video Sources",
+      "description": "Each match supports zero, one, or two YouTube sources. Slots can only be 1 or 2.",
+      "item": [
+        {
+          "name": "Get Video Sources",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response contains sources', function () {",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(data.matchId).to.eql(Number(pm.collectionVariables.get('matchId')));",
+                  "  pm.expect(data.sources).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "description": "Public endpoint.\n\nExample response:\n```json\n{\n  \"matchId\": 1,\n  \"sources\": [\n    {\n      \"id\": 3,\n      \"slot\": 1,\n      \"provider\": \"youtube\",\n      \"videoId\": \"5enTofQyWG0\",\n      \"url\": \"https://youtu.be/5enTofQyWG0\",\n      \"title\": \"Cam 1\",\n      \"offsetSeconds\": 0,\n      \"createdAt\": \"2026-07-29T14:51:28.806Z\",\n      \"updatedAt\": \"2026-07-29T14:51:28.806Z\"\n    }\n  ]\n}\n```\n\nReturns `404 MATCH_NOT_FOUND` when the match does not exist.",
+            "url": {
+              "raw": "{{baseUrl}}/api/matches/by-id/{{matchId}}/video-sources",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "matches",
+                "by-id",
+                "{{matchId}}",
+                "video-sources"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Replace All Video Sources",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Two sources were returned', function () {",
+                  "  pm.expect(pm.response.json().sources).to.have.lengthOf(2);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Public endpoint. This replaces the complete source collection in one transaction. Existing slots omitted from the body are deleted. An empty `sources` array removes all sources. Do not send `videoId`; the server extracts it from `url`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sources\": [\n    {\n      \"slot\": 1,\n      \"provider\": \"youtube\",\n      \"url\": \"https://youtu.be/5enTofQyWG0\",\n      \"title\": \"Cam 1\",\n      \"offsetSeconds\": 0\n    },\n    {\n      \"slot\": 2,\n      \"provider\": \"youtube\",\n      \"url\": \"https://youtu.be/8raVsHcoCz0\",\n      \"title\": \"Cam 2\",\n      \"offsetSeconds\": 260\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/matches/by-id/{{matchId}}/video-sources",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "matches",
+                "by-id",
+                "{{matchId}}",
+                "video-sources"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Highlights",
+      "description": "Highlights belong to the match timeline. They are ordered by `timestampSeconds`, then ID.",
+      "item": [
+        {
+          "name": "Get All Highlights",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response contains highlights', function () {",
+                  "  pm.expect(pm.response.json().highlights).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "description": "Public endpoint.\n\nExample response:\n```json\n{\n  \"matchId\": 1,\n  \"highlights\": [\n    {\n      \"id\": 5,\n      \"matchId\": 1,\n      \"timestampSeconds\": 823,\n      \"timestamp\": \"13:43\",\n      \"caption\": \"Nong Thổ 20\",\n      \"preferredSourceSlot\": 1,\n      \"createdBy\": \"worker\",\n      \"createdAt\": \"2026-07-29T14:51:29.656Z\",\n      \"updatedAt\": \"2026-07-29T14:51:29.656Z\"\n    }\n  ]\n}\n```\n\nReturns `404 MATCH_NOT_FOUND` when the match does not exist.",
+            "url": {
+              "raw": "{{baseUrl}}/api/matches/by-id/{{matchId}}/highlights",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "matches", "by-id", "{{matchId}}", "highlights"]
+            }
+          }
+        },
+        {
+          "name": "Get Highlights by Source Slot",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "description": "Public endpoint. `sourceSlot` can only be `1` or `2`.",
+            "url": {
+              "raw": "{{baseUrl}}/api/matches/by-id/{{matchId}}/highlights?sourceSlot=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "matches", "by-id", "{{matchId}}", "highlights"],
+              "query": [
+                {
+                  "key": "sourceSlot",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Highlight",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const data = pm.response.json();",
+                  "if (data.highlight && data.highlight.id != null) {",
+                  "  pm.collectionVariables.set('highlightId', String(data.highlight.id));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Public endpoint. Returns `201`. The test saves the returned ID in `highlightId`. `createdBy` is ignored if sent in the body.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"timestampSeconds\": 930,\n  \"caption\": \"Bàn thắng siêu phẩm sút xa của Tú\",\n  \"preferredSourceSlot\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/matches/by-id/{{matchId}}/highlights",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "matches", "by-id", "{{matchId}}", "highlights"]
+            }
+          }
+        },
+        {
+          "name": "Update Highlight",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Public partial update. Allowed fields are `timestampSeconds`, `caption`, and `preferredSourceSlot`. At least one field is required.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"caption\": \"Updated highlight caption\",\n  \"preferredSourceSlot\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/matches/by-id/{{matchId}}/highlights/{{highlightId}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "matches",
+                "by-id",
+                "{{matchId}}",
+                "highlights",
+                "{{highlightId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete One Highlight",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Delete succeeded', function () {",
+                  "  pm.expect(pm.response.json()).to.eql({ ok: true });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "description": "Public endpoint. Deletes only when both `matchId` and `highlightId` match. Returns `404 HIGHLIGHT_NOT_FOUND` when absent.",
+            "url": {
+              "raw": "{{baseUrl}}/api/matches/by-id/{{matchId}}/highlights/{{highlightId}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "matches",
+                "by-id",
+                "{{matchId}}",
+                "highlights",
+                "{{highlightId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "DANGER - Delete All Highlights",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Delete succeeded', function () {",
+                  "  pm.expect(pm.response.json().ok).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "description": "DANGER: Public endpoint. Deletes every highlight for the match. Example response: `{ \"ok\": true, \"deletedCount\": 7 }`.",
+            "url": {
+              "raw": "{{baseUrl}}/api/matches/by-id/{{matchId}}/highlights",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "matches", "by-id", "{{matchId}}", "highlights"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

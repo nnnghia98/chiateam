@@ -28,6 +28,7 @@ const {
   updateMatchByDate,
 } = require('./matches');
 const { updatePlayerStats } = require('./leaderboard');
+const defaultMatchMediaService = require('../services/match-media-service');
 const {
   isMaintenanceModeEnabled,
   getMaintenanceUntil,
@@ -253,6 +254,270 @@ function getAdminActorId(req) {
   return rawValue == null ? null : String(rawValue);
 }
 
+const MATCH_MEDIA_PATH_PREFIX = '/api/matches/by-id';
+const POSTGRES_INTEGER_MAX = 2_147_483_647;
+const MATCH_MEDIA_BAD_REQUEST_CODES = new Set([
+  'DUPLICATE_SOURCE_SLOT',
+  'INVALID_CAPTION',
+  'INVALID_HIGHLIGHT_ID',
+  'INVALID_JSON',
+  'INVALID_MATCH_ID',
+  'INVALID_OFFSET_SECONDS',
+  'INVALID_PREFERRED_SOURCE_SLOT',
+  'INVALID_SOURCES',
+  'INVALID_SOURCE_SLOT',
+  'INVALID_TIMESTAMP_SECONDS',
+  'INVALID_YOUTUBE_URL',
+  'NO_HIGHLIGHT_FIELDS',
+]);
+
+class MatchMediaBodyError extends Error {
+  constructor(code) {
+    super(code);
+    this.code = code;
+  }
+}
+
+function parsePositivePathId(rawValue) {
+  if (typeof rawValue !== 'string' || !/^\d+$/.test(rawValue)) {
+    return null;
+  }
+
+  const value = Number(rawValue);
+  return Number.isSafeInteger(value) &&
+    value > 0 &&
+    value <= POSTGRES_INTEGER_MAX
+    ? value
+    : null;
+}
+
+function parseMatchMediaRoute(path) {
+  if (
+    path !== MATCH_MEDIA_PATH_PREFIX &&
+    !path.startsWith(`${MATCH_MEDIA_PATH_PREFIX}/`)
+  ) {
+    return null;
+  }
+
+  const suffix = path.slice(MATCH_MEDIA_PATH_PREFIX.length);
+  if (!suffix.startsWith('/')) {
+    return { kind: 'invalidPath' };
+  }
+
+  const segments = suffix.slice(1).split('/');
+  const resource = segments[1];
+
+  if (
+    segments.length === 2 &&
+    (resource === 'video-sources' || resource === 'highlights')
+  ) {
+    const matchId = parsePositivePathId(segments[0]);
+    if (!matchId) {
+      return { kind: 'invalidId', code: 'INVALID_MATCH_ID' };
+    }
+
+    return {
+      kind: resource === 'video-sources' ? 'videoSources' : 'highlights',
+      matchId,
+    };
+  }
+
+  if (
+    segments.length === 3 &&
+    resource === 'highlights' &&
+    segments[2] !== ''
+  ) {
+    const matchId = parsePositivePathId(segments[0]);
+    if (!matchId) {
+      return { kind: 'invalidId', code: 'INVALID_MATCH_ID' };
+    }
+
+    const highlightId = parsePositivePathId(segments[2]);
+    if (!highlightId) {
+      return { kind: 'invalidId', code: 'INVALID_HIGHLIGHT_ID' };
+    }
+
+    return { kind: 'highlight', matchId, highlightId };
+  }
+
+  return { kind: 'invalidPath' };
+}
+
+function readMatchMediaJson(req, { maxBytes = 1_000_000 } = {}) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let byteLength = 0;
+    let tooLarge = false;
+
+    req.on('data', chunk => {
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      byteLength += buffer.length;
+
+      if (byteLength > maxBytes) {
+        tooLarge = true;
+        chunks.length = 0;
+        return;
+      }
+
+      if (!tooLarge) chunks.push(buffer);
+    });
+
+    req.on('end', () => {
+      if (tooLarge) {
+        reject(new MatchMediaBodyError('PAYLOAD_TOO_LARGE'));
+        return;
+      }
+
+      const body = Buffer.concat(chunks).toString('utf8');
+      if (!body) {
+        resolve(null);
+        return;
+      }
+
+      try {
+        resolve(JSON.parse(body));
+      } catch (_error) {
+        reject(new MatchMediaBodyError('INVALID_JSON'));
+      }
+    });
+
+    req.on('error', reject);
+  });
+}
+
+function sendMatchMediaError(res, headers, code) {
+  if (code === 'PAYLOAD_TOO_LARGE') {
+    return sendJson(res, 413, { error: code }, headers);
+  }
+  if (code === 'MATCH_NOT_FOUND' || code === 'HIGHLIGHT_NOT_FOUND') {
+    return sendJson(res, 404, { error: code }, headers);
+  }
+  if (MATCH_MEDIA_BAD_REQUEST_CODES.has(code)) {
+    return sendJson(res, 400, { error: code }, headers);
+  }
+
+  return sendJson(res, 500, { error: 'INTERNAL_ERROR' }, headers);
+}
+
+function sendMatchMediaResult(res, headers, result, successStatus, buildBody) {
+  if (!result || !result.ok) {
+    return sendMatchMediaError(res, headers, result?.code);
+  }
+
+  return sendJson(res, successStatus, buildBody(result), headers);
+}
+
+function getAllowedMatchMediaMethods(route) {
+  if (route.kind === 'videoSources') return ['GET', 'PUT'];
+  if (route.kind === 'highlights') return ['GET', 'POST', 'DELETE'];
+  if (route.kind === 'highlight') return ['PUT', 'DELETE'];
+  return [];
+}
+
+async function handleMatchMediaRequest({
+  req,
+  res,
+  headers,
+  url,
+  route,
+  service,
+}) {
+  if (route.kind === 'invalidPath') {
+    return sendJson(res, 404, { error: 'NOT_FOUND' }, headers);
+  }
+  if (route.kind === 'invalidId') {
+    return sendMatchMediaError(res, headers, route.code);
+  }
+
+  const method = req.method || 'GET';
+  const allowedMethods = getAllowedMatchMediaMethods(route);
+  if (!allowedMethods.includes(method)) {
+    return sendJson(
+      res,
+      405,
+      { error: 'METHOD_NOT_ALLOWED' },
+      { ...headers, Allow: allowedMethods.join(', ') }
+    );
+  }
+
+  try {
+    if (route.kind === 'videoSources' && method === 'GET') {
+      const result = await service.listVideoSources(route.matchId);
+      return sendMatchMediaResult(res, headers, result, 200, value => ({
+        matchId: value.matchId,
+        sources: value.sources,
+      }));
+    }
+
+    if (route.kind === 'videoSources' && method === 'PUT') {
+      const payload = await readMatchMediaJson(req);
+      const result = await service.replaceVideoSources(route.matchId, payload);
+      return sendMatchMediaResult(res, headers, result, 200, value => ({
+        matchId: value.matchId,
+        sources: value.sources,
+      }));
+    }
+
+    if (route.kind === 'highlights' && method === 'GET') {
+      const sourceSlot = url.searchParams.has('sourceSlot')
+        ? url.searchParams.get('sourceSlot')
+        : null;
+      const result = await service.listHighlights(route.matchId, sourceSlot);
+      return sendMatchMediaResult(res, headers, result, 200, value => ({
+        matchId: value.matchId,
+        highlights: value.highlights,
+      }));
+    }
+
+    if (route.kind === 'highlights' && method === 'POST') {
+      const payload = await readMatchMediaJson(req);
+      const result = await service.createHighlight(
+        route.matchId,
+        payload,
+        getAdminActorId(req)
+      );
+      return sendMatchMediaResult(res, headers, result, 201, value => ({
+        highlight: value.highlight,
+      }));
+    }
+
+    if (route.kind === 'highlights' && method === 'DELETE') {
+      const result = await service.deleteAllHighlights(route.matchId);
+      return sendMatchMediaResult(res, headers, result, 200, value => ({
+        ok: true,
+        deletedCount: value.deletedCount,
+      }));
+    }
+
+    if (route.kind === 'highlight' && method === 'PUT') {
+      const payload = await readMatchMediaJson(req);
+      const result = await service.updateHighlight(
+        route.matchId,
+        route.highlightId,
+        payload
+      );
+      return sendMatchMediaResult(res, headers, result, 200, value => ({
+        highlight: value.highlight,
+      }));
+    }
+
+    const result = await service.deleteHighlight(
+      route.matchId,
+      route.highlightId
+    );
+    return sendMatchMediaResult(res, headers, result, 200, () => ({
+      ok: true,
+    }));
+  } catch (error) {
+    if (error instanceof MatchMediaBodyError) {
+      return sendMatchMediaError(res, headers, error.code);
+    }
+
+    console.error('Error handling match media request:', error);
+    return sendJson(res, 500, { error: 'INTERNAL_ERROR' }, headers);
+  }
+}
+
 function validateMatchIdParam(rawMatchId) {
   const matchId = normalizeMatchId(decodeURIComponent(rawMatchId || ''));
   return isValidMatchId(matchId) ? matchId : null;
@@ -352,7 +617,10 @@ function normalizeManualPredictionMatchStatus(rawStatus) {
   return null;
 }
 
-function createUiApiServer({ getStatus }) {
+function createUiApiServer({
+  getStatus,
+  matchMediaService = defaultMatchMediaService,
+} = {}) {
   const startedAt = new Date().toISOString();
   const maintenanceMode = isMaintenanceModeEnabled();
   const maintenanceUntil = getMaintenanceUntil();
@@ -1247,6 +1515,18 @@ function createUiApiServer({ getStatus }) {
       }
     }
 
+    const matchMediaRoute = parseMatchMediaRoute(path);
+    if (matchMediaRoute) {
+      return handleMatchMediaRequest({
+        req,
+        res,
+        headers,
+        url,
+        route: matchMediaRoute,
+        service: matchMediaService,
+      });
+    }
+
     if (path.startsWith('/api/matches/') && req.method === 'GET') {
       const matchDate = path.slice('/api/matches/'.length);
       try {
@@ -1491,4 +1771,4 @@ function createUiApiServer({ getStatus }) {
   return { start, stop };
 }
 
-module.exports = { createUiApiServer };
+module.exports = { createUiApiServer, parseMatchMediaRoute };
