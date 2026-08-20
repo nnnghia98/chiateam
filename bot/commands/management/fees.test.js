@@ -78,7 +78,47 @@ test('/tiennuoc reads and updates the stored water fee', async () => {
   assert.match(mock.sentMessages.at(-1).message, /60\.000 VND/);
 });
 
-test('/teamthang stores the losing team and announces the 2-team split', async () => {
+test('legacy /tiensan handler can leave the command to shared runtime', () => {
+  const mock = createMockBot();
+  const tiensanCommand = loadCommand('tien-san', mock.bot);
+
+  tiensanCommand(
+    () => 0,
+    () => {},
+    { registerCommand: false }
+  );
+
+  assert.equal(
+    mock.handlers.some(({ pattern }) => pattern.test('/tiensan')),
+    false
+  );
+  assert.equal(
+    mock.handlers.some(({ pattern }) => pattern.test('/tiensan 500000')),
+    false
+  );
+});
+
+test('legacy /tiennuoc handler can leave the command to shared runtime', () => {
+  const mock = createMockBot();
+  const tiennuocCommand = loadCommand('tien-nuoc', mock.bot);
+
+  tiennuocCommand(
+    () => 0,
+    () => {},
+    { registerCommand: false }
+  );
+
+  assert.equal(
+    mock.handlers.some(({ pattern }) => pattern.test('/tiennuoc')),
+    false
+  );
+  assert.equal(
+    mock.handlers.some(({ pattern }) => pattern.test('/tiennuoc 60000')),
+    false
+  );
+});
+
+test('/winner and /loser use the renamed team-result commands', async () => {
   const mock = createMockBot();
   const teamThuaCommand = loadCommand('team-thua', mock.bot);
   const teamA = new Map([
@@ -99,12 +139,59 @@ test('/teamthang stores the losing team and announces the 2-team split', async (
     teamB,
   });
 
-  await invokeCommand(mock.handlers, '/teamthang HOME');
+  assert.equal(
+    mock.handlers.some(({ pattern }) => pattern.test('/winner HOME')),
+    true
+  );
+  assert.equal(
+    mock.handlers.some(({ pattern }) => pattern.test('/loser HOME')),
+    true
+  );
+  assert.equal(
+    mock.handlers.some(({ pattern }) => pattern.test('/teamthang HOME')),
+    false
+  );
+  assert.equal(
+    mock.handlers.some(({ pattern }) => pattern.test('/teamthua HOME')),
+    false
+  );
+
+  await invokeCommand(mock.handlers, '/winner HOME');
 
   assert.equal(teamThua, 'AWAY');
   assert.match(mock.sentMessages.at(-1).message, /HOME \(thắng\)/);
   assert.match(mock.sentMessages.at(-1).message, /AWAY \(thua\)/);
   assert.match(mock.sentMessages.at(-1).message, /226\.667 VND/);
+
+  await invokeCommand(mock.handlers, '/loser HOME');
+
+  assert.equal(teamThua, 'HOME');
+  assert.match(mock.sentMessages.at(-1).message, /AWAY \(thắng\)/);
+  assert.match(mock.sentMessages.at(-1).message, /HOME \(thua\)/);
+});
+
+test('legacy result handlers can leave /winner and /loser to shared runtime', () => {
+  const mock = createMockBot();
+  const teamResultCommand = loadCommand('team-thua', mock.bot);
+
+  teamResultCommand({
+    getTiensan: () => 0,
+    getTiennuoc: () => 0,
+    getTeamThua: () => null,
+    setTeamThua: () => {},
+    teamA: new Map(),
+    teamB: new Map(),
+    registerCommands: false,
+  });
+
+  assert.equal(
+    mock.handlers.some(({ pattern }) => pattern.test('/winner HOME')),
+    false
+  );
+  assert.equal(
+    mock.handlers.some(({ pattern }) => pattern.test('/loser HOME')),
+    false
+  );
 });
 
 test('/chiatien uses the selected losing team for the water fee', async () => {

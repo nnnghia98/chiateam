@@ -18,6 +18,9 @@ The admin UI lives in a separate repository:
 
 ```text
 bot/                 Telegram bot runtime and command handlers
+core/                Platform-independent command contracts and football rules
+platforms/           Thin platform input/output adapters
+runtime/             Shared command wiring and repository adapters
 api/                 HTTP API, data-access routes, and domain services
 api/db/              Database connection and verification scripts
 config/              Shared environment and maintenance-mode config
@@ -37,27 +40,37 @@ Important entrypoints:
 
 ### Bot
 
-The bot is built with `node-telegram-bot-api` and registers command handlers
-from `bot/commands/`.
+The bot uses a shared platform-independent command runtime. Telegram input,
+output, polls, permissions, and callbacks stay under `platforms/telegram/`.
+The supported command list is defined once in
+`core/commands/command-manifest.js`; `/start` help and command filtering are
+generated from that manifest.
 
 Known commands registered by the active bot runtime:
 
-| Area                  | Commands                                                                |
-| --------------------- | ----------------------------------------------------------------------- |
-| Help                  | `/start`                                                                |
-| Bench                 | `/addme`, `/add`, `/bench`, `/editbench`, `/clearbench`                 |
-| Teams                 | `/chiateam`, `/team`, `/addtoteam`, `/clearteam`                        |
-| Team constraints      | `/manifest`, `/mf`, `/manifests`, `/removemanifest`, `/clearmanifests`  |
-| Venue and fees        | `/san`, `/clearsan`, `/tiensan`, `/tiennuoc`, `/teamthang`, `/chiatien` |
-| Attendance vote       | `/taovote`, `/clearvote`, `/demvote`, `/sync`                           |
-| Players and stats     | `/register`, `/players`, `/me`, `/player`, `/edit-stats`                |
-| Matches               | `/match`, `/matches`                                                    |
-| World Cup predictions | `/pred`, `/predict`, `/worldcup`, `/wc`                                 |
-| Admin reset           | `/reset`                                                                |
+| Area              | Commands                                                                       |
+| ----------------- | ------------------------------------------------------------------------------ |
+| Help              | `/start`                                                                       |
+| Bench             | `/addme`, `/add`, `/bench`, `/editbench`, `/clearbench`                        |
+| Teams             | `/chiateam`, `/team`, `/addtoteam`, `/clearteam`                               |
+| Team constraints  | `/manifest`, `/mf`, `/manifests`, `/removemanifest`, `/clearmanifests`         |
+| Venue and fees    | `/san`, `/clearsan`, `/tiensan`, `/tiennuoc`, `/winner`, `/loser`, `/chiatien` |
+| Attendance vote   | `/taovote`, `/clearvote`, `/demvote`, `/sync`                                  |
+| Players and stats | `/register`, `/players`, `/me`, `/player`, `/edit-stats`                       |
+| Matches           | `/match`, `/matches`                                                           |
+| Admin reset       | `/reset`                                                                       |
 
-There are older handler files for standalone AI and leaderboard commands, but
-`bot/index.js` does not currently register them. Keep README command docs tied
-to the runtime wiring, not just files present under `bot/commands/`.
+Standalone AI, old leaderboard-update, and unsupported World Cup names are not
+part of the supported bot runtime.
+
+Important rewritten command forms:
+
+- `/clearvote confirm` and `/reset confirm` require confirmation.
+- `/register NUMBER`, `/register add NAME NUMBER`, or
+  `/register delete NUMBER`.
+- `/edit-stats NUMBER matches=N wins=N losses=N draws=N`.
+- `/match view|save|score|goal|assist|mvp|delete ...` uses one explicit action.
+- `/matches [LIMIT] [PAGE]` and `/players [PAGE]` support bounded pages.
 
 Interactive commands that use inline keyboards:
 
@@ -67,6 +80,9 @@ Interactive commands that use inline keyboards:
 - `/clearteam`
 - `/manifest`
 - `/removemanifest`
+- `/clearmanifests`
+- `/clearvote`
+- `/reset`
 
 These commands are admin-only when they show or handle inline keyboard actions.
 Inline keyboards show at most 10 players or manifest entries per page. Their
@@ -268,17 +284,18 @@ environment and backup plan are confirmed.
 
 ## Tests
 
-There is no package-level test script yet. Run the Node test files directly:
+There is no package-level test script yet. Run the full Node test suite
+directly:
 
 ```bash
-node --test bot/**/*.test.js
+node --test
 ```
 
 Focused examples:
 
 ```bash
-node --test bot/utils/command-filter.test.js
-node --test bot/commands/team/chia-team.test.js
+node --test core/use-cases/matches/match-command.test.js
+node --test runtime/start-bot.test.js
 ```
 
 ## Local Docker

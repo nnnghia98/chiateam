@@ -76,6 +76,7 @@ const STORAGE_SELECT_COLUMNS = `
   "team3B",
   "team3C",
   manifest,
+  san,
   tiensan,
   tiennuoc,
   "teamThua",
@@ -92,6 +93,7 @@ function createDefaultBotStorage() {
     team3B: [],
     team3C: [],
     manifest: null,
+    san: null,
     tiensan: 0,
     tiennuoc: 0,
     teamThua: null,
@@ -139,12 +141,6 @@ function readBotStorageFile() {
   return JSON.parse(raw);
 }
 
-function writeBotStorageFile(payload) {
-  const toSave = buildStoragePayload(payload);
-  writeBotStorageFileSnapshot(toSave);
-  return toSave;
-}
-
 function resetBotStorageFile() {
   const defaultStorage = createDefaultBotStorage();
   writeBotStorageFileSnapshot(defaultStorage);
@@ -169,6 +165,7 @@ function storageRowToPayload(row) {
     team3B: row.team3B ?? [],
     team3C: row.team3C ?? [],
     manifest: row.manifest ?? null,
+    san: row.san ?? null,
     tiensan: row.tiensan ?? 0,
     tiennuoc: row.tiennuoc ?? 0,
     teamThua: row.teamThua ?? null,
@@ -188,6 +185,7 @@ async function ensureStorageTable() {
       "team3B" JSONB,
       "team3C" JSONB,
       manifest JSONB,
+      san TEXT,
       tiensan INTEGER,
       tiennuoc INTEGER,
       "teamThua" TEXT,
@@ -203,6 +201,7 @@ async function ensureStorageTable() {
   await db.query('ALTER TABLE storage ADD COLUMN IF NOT EXISTS "team3B" JSONB');
   await db.query('ALTER TABLE storage ADD COLUMN IF NOT EXISTS "team3C" JSONB');
   await db.query('ALTER TABLE storage ADD COLUMN IF NOT EXISTS manifest JSONB');
+  await db.query('ALTER TABLE storage ADD COLUMN IF NOT EXISTS san TEXT');
   await db.query(
     'ALTER TABLE storage ADD COLUMN IF NOT EXISTS tiensan INTEGER'
   );
@@ -255,6 +254,7 @@ async function writeBotStorageToDb(storage) {
         "team3B",
         "team3C",
         manifest,
+        san,
         tiensan,
         tiennuoc,
         "teamThua",
@@ -273,8 +273,9 @@ async function writeBotStorageToDb(storage) {
         $9,
         $10,
         $11,
-        $12::jsonb,
-        $13
+        $12,
+        $13::jsonb,
+        $14
       )
       ON CONFLICT (id)
       DO UPDATE SET
@@ -285,6 +286,7 @@ async function writeBotStorageToDb(storage) {
         "team3B" = EXCLUDED."team3B",
         "team3C" = EXCLUDED."team3C",
         manifest = EXCLUDED.manifest,
+        san = EXCLUDED.san,
         tiensan = EXCLUDED.tiensan,
         tiennuoc = EXCLUDED.tiennuoc,
         "teamThua" = EXCLUDED."teamThua",
@@ -301,6 +303,7 @@ async function writeBotStorageToDb(storage) {
       serializeJsonColumn(storage.team3B),
       serializeJsonColumn(storage.team3C),
       serializeJsonColumn(storage.manifest),
+      storage.san ?? null,
       storage.tiensan ?? null,
       storage.tiennuoc ?? null,
       storage.teamThua ?? null,

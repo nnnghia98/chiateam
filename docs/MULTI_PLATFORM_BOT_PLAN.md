@@ -1,6 +1,6 @@
 # Multi-Platform Bot Refactor Plan
 
-Status: Proposal
+Status: In progress — command catalog approved
 
 ## Goal
 
@@ -34,7 +34,8 @@ The first version will not include:
 4. Adapters only translate platform input and output.
 5. The API remains the only writer for persistent bot state.
 6. Platform-only features must have a fallback, such as plain text.
-7. Add a second platform only after the shared flow works on Telegram.
+7. Add a second platform only after the independent command model works on
+   Telegram.
 
 ## Current and Target Design
 
@@ -64,12 +65,13 @@ flowchart LR
     end
 
     subgraph C["Shared football core"]
-        R["Command router"]
-        G["Permission check"]
-        U["Football use case"]
-        X["Simple result"]
+        R["Command registry"]
+        D["Independent command"]
+        G["Condition check"]
+        U["Action"]
+        X["Reply result"]
 
-        R --> G --> U --> X
+        R --> D --> G --> U --> X
     end
 
     S["API and storage"]
@@ -83,19 +85,36 @@ flowchart LR
     W --> S
 ```
 
-## Shared Core Flow
+## Independent Command Request Model
 
-Every supported command should follow the same flow:
+Commands do not form a required sequence. Every command is an independent
+request that reads the current state and handles its own conditions.
+
+Examples:
+
+- `/bench` can run before `/addme` and return an empty or current bench.
+- `/team` can run before `/chiateam` and explain that no team exists.
+- `/addme` can be followed by any other command.
+- `/chiateam` checks its own player requirements when it is called.
+
+Every command keeps four parts:
+
+1. **Instruction**: Name, aliases, arguments, help text, and permission.
+2. **Condition**: Validate the actor, input, and current state.
+3. **Action**: Read or change football state.
+4. **Reply**: Return a platform-neutral result.
+
+The common runtime handles one request at a time:
 
 1. A platform receives a message or button action.
 2. Its adapter creates a common command context.
-3. The command router selects a football use case.
-4. The core checks permissions.
-5. The use case loads the required state.
-6. The use case applies football rules.
-7. The use case saves state when needed.
-8. The core returns a simple result.
-9. The adapter renders and sends that result.
+3. The registry finds the independent command.
+4. The command loads only the state it needs.
+5. The command checks its condition.
+6. The command runs its action.
+7. The command saves state only when it changed.
+8. The command creates its reply result.
+9. The adapter renders and sends the reply.
 
 ```mermaid
 sequenceDiagram
@@ -106,18 +125,45 @@ sequenceDiagram
 
     User->>Adapter: Send command
     Adapter->>Core: Common command context
-    Core->>API: Load state
+    Core->>API: Load required state
     API-->>Core: Current state
-    Core->>Core: Apply football rule
-    Core->>API: Save changed state
+    Core->>Core: Check condition and run action
+    opt State changed
+        Core->>API: Save changed state
+    end
+    Core->>Core: Create reply
     Core-->>Adapter: Common result
     Adapter-->>User: Platform response
 ```
 
+There is no workflow engine and no required command order. A multi-step button
+or poll interaction may keep temporary interaction state, but it still belongs
+to one command.
+
 ## Minimal Core Contracts
 
 These contracts are examples. Their final fields can change during the first
-vertical slice.
+independent command refactor.
+
+### Command Definition
+
+```js
+{
+  name: 'bench',
+  aliases: [],
+  instruction: {
+    usage: '/bench',
+    description: 'Show the current bench',
+    permission: 'player'
+  },
+  condition(context, state),
+  action(context, state),
+  reply(outcome)
+}
+```
+
+Each command owns these four parts. The shared runtime only calls them in the
+same way.
 
 ### Command Context
 
@@ -148,26 +194,39 @@ Telegram, Zalo, or Messenger event.
   messages: [
     {
       text: 'Nghia joined the bench.',
-      actions: [
-        { id: 'view_bench', label: 'View bench' }
-      ]
-    }
-  ]
+      actions: [{ id: 'view_bench', label: 'View bench' }],
+    },
+  ];
 }
 ```
 
 An adapter may render `actions` as buttons. If the platform does not support
 buttons, it may return a text command instead.
 
+A message may also include a small platform-neutral follow-up input:
+
+```js
+{
+  input: {
+    command: 'editbench',
+    args: ['2']
+  }
+}
+```
+
+The adapter may use this to route the actor's next text message back to the
+same command. The temporary input state stays in the adapter and expires; the
+core does not store raw platform events.
+
 ### Platform Adapter
 
 ```js
 {
-  start(),
-  stop(),
-  toCommandContext(platformEvent),
-  sendResult(context, result),
-  capabilities
+  (start(),
+    stop(),
+    toCommandContext(platformEvent),
+    sendResult(context, result),
+    capabilities);
 }
 ```
 
@@ -183,17 +242,17 @@ The core must not assume that every capability exists.
 
 ## Shared and Platform-Specific Responsibilities
 
-| Shared football core | Platform adapter |
-| --- | --- |
-| Bench rules | Raw event parsing |
-| Player and team rules | Platform authentication |
-| Team shuffling | Message sending |
-| Team constraints | Markdown conversion |
-| Venue and fee calculations | Buttons and callbacks |
-| Match creation | Native polls |
-| Leaderboard updates | Threads or topics |
-| Role-based permission decisions | Webhook verification |
-| Storage interfaces | Platform error handling |
+| Shared football core            | Platform adapter        |
+| ------------------------------- | ----------------------- |
+| Bench rules                     | Raw event parsing       |
+| Player and team rules           | Platform authentication |
+| Team shuffling                  | Message sending         |
+| Team constraints                | Markdown conversion     |
+| Venue and fee calculations      | Buttons and callbacks   |
+| Match creation                  | Native polls            |
+| Leaderboard updates             | Threads or topics       |
+| Role-based permission decisions | Webhook verification    |
+| Storage interfaces              | Platform error handling |
 
 ## Target Folder Structure
 
@@ -243,67 +302,159 @@ api/
 
 Effort: Small
 
-- [ ] List the commands that are active in `bot/index.js`.
-- [ ] Add missing tests for the first migration flow.
-- [ ] Record expected Telegram messages and state changes.
-- [ ] Keep the current PostgreSQL and JSON mirror behavior unchanged.
-- [ ] Confirm all current tests pass before refactoring.
+- [x] List the commands that are active in `bot/index.js`.
+- [x] Add missing tests for the first command refactor.
+- [x] Record expected Telegram messages and state changes.
+- [x] Keep the current PostgreSQL and JSON mirror behavior unchanged.
+- [x] Confirm all current tests pass before refactoring.
 
 Exit criteria:
 
 - The current Telegram behavior has enough tests to detect regressions.
 - There is no database or storage migration in this phase.
 
-### Phase 1: Create the Shared Flow
+### Phase 1: Audit and Redesign Commands
 
 Effort: Medium
 
-- [ ] Add the common command context.
-- [ ] Add the common command result.
-- [ ] Add a small command runner.
-- [ ] Add a state repository interface around the current API client.
-- [ ] Add a Telegram adapter around the current Telegram client.
-- [ ] Keep old commands working during the migration.
+Do this before extracting the shared core. We should not migrate commands that
+are unused, duplicated, unclear, or too difficult to use.
+
+Create `docs/COMMAND_CATALOG.md` as the command decision record. For every
+command and alias, record:
+
+| Field               | Purpose                                                      |
+| ------------------- | ------------------------------------------------------------ |
+| Command and aliases | Show every way the command can be called                     |
+| Runtime status      | Confirm whether `bot/index.js` registers it                  |
+| User                | Player, admin, or system                                     |
+| Purpose             | Describe the user problem it solves                          |
+| Inputs              | Text arguments, buttons, replies, or polls                   |
+| State changes       | Show what data it reads and writes                           |
+| Current output      | Text, buttons, poll, or message edit                         |
+| Usage evidence      | Logs, team feedback, or unknown                              |
+| Current problems    | Confusing name, duplicate purpose, weak result, or dead code |
+| Platform dependency | Telegram-only behavior that needs a fallback                 |
+| Decision            | Keep, merge, rewrite, deprecate, or remove                   |
+
+Current command information is spread across:
+
+- `bot/index.js`
+- `bot/commands/index.js`
+- `bot/commands/command-registry.js`
+- The `/start` help message
+- `README.md`
+- Command handler files that may not be registered
+
+For example, AI and standalone leaderboard handler files exist, but the active
+runtime does not register all of them. The audit must find every mismatch like
+this before the architecture migration.
+
+#### Command Decisions
+
+Use only these decisions:
+
+- **Keep**: The command is useful and its current behavior is clear.
+- **Merge**: Another command solves the same user problem.
+- **Rewrite**: The feature is useful, but its name, inputs, or output are weak.
+- **Deprecate**: Keep it temporarily and direct users to its replacement.
+- **Remove**: It is dead, unsafe, or has no supported use case.
+
+#### Audit and Refactor Tasks
+
+- [x] Find all registered and unregistered command handlers.
+- [x] List aliases and overlapping commands.
+- [x] Review command usage logs when available.
+- [x] Ask the current team about commands with no clear usage evidence.
+- [x] Map each command to one clear user need.
+- [x] Mark every command as keep, merge, rewrite, deprecate, or remove.
+- [x] Define the final command name, arguments, permission, and response.
+- [x] Define a plain-text fallback for every interactive command.
+- [x] Create one command manifest for active command metadata.
+- [x] Generate command filtering and help text from that manifest where safe.
+- [x] Make the runtime, registry, help message, and README agree.
+- [x] Add deprecation messages before removing commands used by real users.
+- [x] Remove dead commands from active registration after catalog approval.
+
+Do not fully rewrite football rules in this phase. Define the correct command
+behavior first, then implement it once through the shared core. This prevents
+refactoring the same command twice.
+
+Exit criteria:
+
+- Every command file and alias is recorded in the command catalog.
+- Every command has an approved decision.
+- There is one supported command list.
+- Unused commands are excluded from the core migration.
+- The first commands selected for refactoring have clear specifications.
+
+### Phase 2: Create the Independent Command Runtime
+
+Effort: Medium
+
+- [x] Add the common command context.
+- [x] Add the common command result.
+- [x] Add the command definition contract.
+- [x] Add a small command registry and runner.
+- [x] Run each command through instruction, condition, action, and reply.
+- [x] Add a state repository interface around the current API client.
+- [x] Add a Telegram adapter around the current Telegram client.
+- [x] Keep old commands working during the migration.
 
 Exit criteria:
 
 - Core contracts do not import `telegram-client.js`.
+- The runtime does not require one command to run before another command.
 - Old and new command styles can run at the same time.
 
-### Phase 2: Prove One Vertical Slice
+### Phase 3: Prove the Pattern with One Command
 
 Effort: Medium
 
-Migrate this complete user journey first:
+Choose one retained command from the approved command catalog. Prefer a command
+that is used often and has clear behavior. Do not connect it to another command.
 
-```text
-/addme -> /bench -> /chiateam -> /team
-```
-
-- [ ] Move bench join rules into a core use case.
-- [ ] Move bench viewing into a core use case.
-- [ ] Move team creation and shuffle rules into core use cases.
-- [ ] Move team viewing into a core use case.
-- [ ] Keep Telegram text compatible with the current bot.
-- [ ] Test the use cases without mocking Telegram.
-- [ ] Run Telegram adapter tests for input and output translation.
+- [x] Move its instruction into the command definition.
+- [x] Extract its conditions from Telegram handling.
+- [x] Extract its action into platform-neutral core code.
+- [x] Return its reply as a common command result.
+- [x] Keep its Telegram behavior compatible with the current bot.
+- [x] Test the command directly from every relevant starting state.
+- [x] Test Telegram input and output translation separately.
+- [x] Confirm unrelated earlier commands do not affect it.
 
 Exit criteria:
 
-- The full flow works on Telegram.
-- Its football rules can run without Telegram.
+- The selected command works on Telegram.
+- Its condition, action, and reply can run without Telegram.
+- It works without a required previous command.
 - The shared contracts feel small and clear.
 
 Decision point:
 
 - If the contracts are too large, simplify them before migrating more commands.
-- Do not continue until this slice is stable.
+- Do not continue until this command is stable.
 
-### Phase 3: Migrate Remaining Commands
+Current result: the contracts remain small, all automated `/bench` core,
+repository, and Telegram adapter tests pass, and the live Telegram smoke test
+passed on 2026-08-03. Phase 4 may continue.
+
+The first state-changing migration, `/addme`, passed its live Telegram test on
+2026-08-04. Its API save also synchronizes the legacy in-memory maps during the
+transition.
+
+The admin-only `/add` migration passed its live Telegram checkpoint on
+2026-08-05.
+
+The `/editbench` button, follow-up text, and API persistence flow passed its
+live Telegram checkpoint on 2026-08-05.
+
+### Phase 4: Migrate Remaining Commands
 
 Effort: Large
 
-Migrate one feature group at a time:
+Refactor one command at a time. The groups below are only for planning; they do
+not define runtime order:
 
 1. Bench editing and clearing.
 2. Team editing, clearing, and constraints.
@@ -312,24 +463,101 @@ Migrate one feature group at a time:
 5. Matches and leaderboard.
 6. Voting and other platform-heavy interactions.
 
-For every feature group:
+For every retained command:
 
-- [ ] Extract football rules into use cases.
-- [ ] Replace raw Telegram identity access with the common actor.
-- [ ] Return common results from the core.
-- [ ] Keep platform formatting in the Telegram adapter.
-- [ ] Add core tests and adapter tests.
-- [ ] Remove the old handler only after the new handler is stable.
+- [x] Follow the approved command-catalog decision.
+- [x] Merge, rewrite, deprecate, or remove commands before migrating them.
+- [x] Refactor each retained command independently.
+- [x] Preserve its instruction, condition, action, and reply.
+- [x] Extract football rules into its use case.
+- [x] Replace raw Telegram identity access with the common actor.
+- [x] Return common results from the core.
+- [x] Keep platform formatting in the Telegram adapter.
+- [x] Test all valid and invalid starting states without command-order assumptions.
+- [x] Add core tests and adapter tests.
+- [x] Remove the old slash handler after the new handler is stable.
 
 Exit criteria:
 
 - Football use cases do not import the Telegram client.
+- Retained commands work as independent requests.
 - Telegram remains fully usable.
 - Platform-only behavior is isolated in `platforms/telegram/`.
 
-### Phase 4: Add the Small Admin Site
+Migration progress:
+
+- [x] `/bench` — read-only bench view.
+- [x] `/addme` — actor-based bench join with API persistence and Telegram
+      identity compatibility.
+- [x] `/add` — admin-only atomic guest batch with stable member identities.
+- [x] `/editbench` — admin-only rename by button or numbered text, with
+      adapter-owned follow-up input and API persistence.
+- [x] `/clearbench` — admin-only atomic selection removal with paginated
+      actions; `all` clears the bench directly as approved by the owner.
+- [x] `/chiateam` — admin-only atomic two-team or three-team assignment with
+      stable identities and manifest constraints.
+- [x] `/addtoteam` — admin-only atomic member selection with stable duplicate
+      checks, paginated actions, and explicit two-team or three-team targets.
+- [x] `/clearteam` — admin-only atomic member removal with paginated actions
+      and confirmed whole-stack deletion.
+- [x] `/team` — read-only two-team and three-team views.
+- [x] `/manifest` — admin-only multi-step or text constraint creation with
+      stable identities, contradiction checks, and no bench side effects.
+- [x] `/manifests` — read-only constraint list; `/mf` transition alias.
+- [x] `/removemanifest` — admin-only atomic numbered or paginated action
+      removal with API persistence, stale-button protection, and a plain-text
+      fallback.
+- [x] `/clearmanifests` — admin-only confirmed atomic clear with API
+      persistence and platform-neutral confirm/cancel actions.
+- [x] `/san` — persistent venue read for players and atomic replacement writes
+      for admins; legacy `/clearsan` uses the same stored value.
+- [x] `/clearsan` — admin-only atomic clear of the persistent venue with safe
+      empty-state handling.
+- [x] `/tiensan` — persistent fee read for players and strict atomic updates
+      for admins, with grouped-number support and invalid-input rejection.
+- [x] `/tiennuoc` — persistent water-fee read for players and strict atomic
+      updates for admins, using the shared money parser.
+- [x] `/chiatien` — read-only two-team fee calculation.
+- [x] `/winner` — renamed from `/teamthang`; player reads, atomic admin writes,
+      and optional two-team fee results now use the shared runtime.
+- [x] `/loser` — renamed from `/teamthua`; transition-only guidance maps its
+      old input to the correct `/winner` replacement without changing state.
+- [x] `/taovote` — platform-neutral creation rules publish Telegram native
+      polls through a port, save one active vote atomically, and preserve the
+      legacy poll-answer listener during migration.
+- [x] `/demvote` — read-only normalized summary supports legacy Telegram poll
+      indexes and platform-neutral named choices with rich adapter output.
+- [x] `/start` — help is generated from the approved 33-command manifest.
+- [x] `/sync` — admin-only atomic attendance sync uses stable actor and guest
+      identities while preserving legacy Telegram vote compatibility.
+- [x] `/clearvote` — admin-only confirmation closes the platform poll when
+      supported and clears persistent vote state atomically.
+- [x] `/register` — explicit self, admin add, and admin delete actions use a
+      platform-neutral player repository.
+- [x] `/me` — actor identity and linked player statistics are read through
+      shared player and statistics ports.
+- [x] `/players` — ranked, paginated player and statistics list.
+- [x] `/player` — detailed statistics lookup by shirt number.
+- [x] `/edit-stats` — admin-only named fields replace totals with validation
+      and a before/after result.
+- [x] `/match` — explicit read and admin-write actions use shared match,
+      player, statistics, and optional summary ports; only `save` loads
+      next-match state.
+- [x] `/matches` — bounded recent-match pagination through the match port.
+- [x] `/reset` — admin-only confirmed atomic reset with best-effort poll close.
+
+Phase 4 result: all 33 approved commands (34 names including `/mf`) now run
+through one shared registry. The Telegram poll-answer listener remains as a
+platform event; no legacy slash handler is initialized. The full automated
+suite passes 349 tests.
+
+### Phase 5: Add the Small Admin Site
 
 Effort: Medium
+
+Owner checkpoint:
+
+- [ ] Notify the project owner before creating any settings-site UI.
 
 Serve a small admin site from the existing API, for example at `/admin`.
 
@@ -362,7 +590,7 @@ Exit criteria:
 - A new user can see status and edit safe settings in one place.
 - The settings are persistent and used by the runtime.
 
-### Phase 5: Prove a Second Adapter
+### Phase 6: Prove a Second Adapter
 
 Effort: Medium to Large
 
@@ -390,7 +618,7 @@ Exit criteria:
 - Telegram and the second platform use the same football use cases.
 - No second-platform checks are added inside core use cases.
 
-### Phase 6: Prepare the Open-Source Release
+### Phase 7: Prepare the Open-Source Release
 
 Effort: Medium
 
@@ -413,7 +641,8 @@ Exit criteria:
 
 ## Identity Plan
 
-Do not change the player database during the first vertical slice.
+Do not change the player database during the first independent command
+refactor.
 
 During the Telegram-only phases:
 
@@ -438,13 +667,13 @@ real requirement.
 
 ## Platform Capability Fallbacks
 
-| Feature | Preferred behavior | Fallback |
-| --- | --- | --- |
-| Inline buttons | Render platform buttons | Send numbered text choices |
-| Message editing | Update the existing message | Send a new message |
-| Native polls | Use the platform poll | Use text voting or the admin site |
-| Telegram topics | Send to the selected topic | Send to the main conversation |
-| Markdown | Use supported rich text | Send plain text |
+| Feature         | Preferred behavior          | Fallback                          |
+| --------------- | --------------------------- | --------------------------------- |
+| Inline buttons  | Render platform buttons     | Send numbered text choices        |
+| Message editing | Update the existing message | Send a new message                |
+| Native polls    | Use the platform poll       | Use text voting or the admin site |
+| Telegram topics | Send to the selected topic  | Send to the main conversation     |
+| Markdown        | Use supported rich text     | Send plain text                   |
 
 ## Testing Strategy
 
@@ -468,26 +697,28 @@ real requirement.
 
 ## Main Risks
 
-| Risk | Impact | Control |
-| --- | --- | --- |
-| Telegram behavior changes during refactor | High | Migrate one flow at a time and keep regression tests |
-| Core contracts become too generic | High | Validate them with one vertical slice before expanding |
-| Buttons and polls differ by platform | Medium | Use capabilities and text fallbacks |
-| Player identities conflict across platforms | High | Add a separate identity table before adapter two |
-| Admin site exposes secrets | High | Localhost default, real auth, and env-based secrets |
-| Admin and bot overwrite state | High | Keep the API as the only writer and add safe update checks |
-| Scope grows into an OpenClaw-like system | High | Follow the non-goals and release one adapter at a time |
+| Risk                                        | Impact | Control                                                     |
+| ------------------------------------------- | ------ | ----------------------------------------------------------- |
+| Telegram behavior changes during refactor   | High   | Migrate one command at a time and keep regression tests     |
+| Core contracts become too generic           | High   | Validate them with one independent command before expanding |
+| Buttons and polls differ by platform        | Medium | Use capabilities and text fallbacks                         |
+| Player identities conflict across platforms | High   | Add a separate identity table before adapter two            |
+| Admin site exposes secrets                  | High   | Localhost default, real auth, and env-based secrets         |
+| Admin and bot overwrite state               | High   | Keep the API as the only writer and add safe update checks  |
+| Scope grows into an OpenClaw-like system    | High   | Follow the non-goals and release one adapter at a time      |
 
 ## First Milestone Definition of Done
 
 The first milestone is complete when:
 
-- [ ] Telegram still supports `/addme`, `/bench`, `/chiateam`, and `/team`.
-- [ ] These commands use shared football use cases.
-- [ ] Their core tests run without Telegram.
-- [ ] Telegram input and output are handled through an adapter.
-- [ ] Persistent storage behavior has not changed.
-- [ ] The design is still understandable from one architecture diagram.
+- [x] One retained command uses the independent command runtime.
+- [x] Its instruction, condition, action, and reply are clearly separated.
+- [x] Its core tests run without Telegram.
+- [x] Tests cover its valid, invalid, and empty starting states.
+- [x] It does not require another command to run first.
+- [x] Its Telegram input and output are handled through an adapter.
+- [x] Persistent storage behavior has not changed.
+- [x] The design is still understandable from one architecture diagram.
 
 ## Final Release Definition of Done
 
@@ -502,11 +733,9 @@ The first open-source multi-platform release is complete when:
 
 ## Recommended First Action
 
-Start only Phase 0 and Phase 1, then migrate the first vertical slice:
+Start with Phase 0 and Phase 1. Approve the command catalog before creating the
+independent command runtime in Phase 2. Then select one retained command for
+Phase 3 and refactor it without linking it to another command.
 
-```text
-/addme -> /bench -> /chiateam -> /team
-```
-
-Do not build the admin site or a second adapter until this flow proves that the
-shared core is useful and simple.
+Do not migrate commands marked for removal. Do not build the admin site or a
+second adapter until the independent command pattern is useful and simple.

@@ -1,35 +1,29 @@
 const { escapeMarkdown, formatMoney } = require('./format');
 const { getDisplayName } = require('./team-member');
+const {
+  calculateTwoTeamFee,
+} = require('../../core/use-cases/management/two-team-fee');
 
 function getTwoTeamFeeBreakdown({ tiensan, tiennuoc, teamThua, teamA, teamB }) {
-  if (!['HOME', 'AWAY'].includes(teamThua)) {
-    return null;
-  }
+  const breakdown = calculateTwoTeamFee({
+    tiensan,
+    tiennuoc,
+    teamThua,
+    teamA: Array.from(teamA.values()),
+    teamB: Array.from(teamB.values()),
+  });
 
-  const totalMembers = teamA.size + teamB.size;
-  if (totalMembers === 0) {
+  if (!breakdown) {
     return null;
   }
 
   const loserTeam = teamThua === 'HOME' ? teamA : teamB;
   const winnerTeam = teamThua === 'HOME' ? teamB : teamA;
-  const loserName = teamThua;
-  const winnerName = teamThua === 'HOME' ? 'AWAY' : 'HOME';
-  const loserCount = loserTeam.size;
-  const perMember = Math.ceil(tiensan / totalMembers);
-  const waterPerLoser = loserCount > 0 ? Math.ceil(tiennuoc / loserCount) : 0;
 
   return {
-    totalMembers,
+    ...breakdown,
     loserTeam,
     winnerTeam,
-    loserName,
-    winnerName,
-    loserCount,
-    perMember,
-    waterPerLoser,
-    winnerTotal: perMember,
-    loserTotal: perMember + waterPerLoser,
   };
 }
 

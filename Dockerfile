@@ -15,6 +15,9 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY package.json yarn.lock ./
 COPY bot ./bot
 COPY api ./api
+COPY core ./core
+COPY platforms ./platforms
+COPY runtime ./runtime
 COPY config ./config
 COPY shared ./shared
 

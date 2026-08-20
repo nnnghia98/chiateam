@@ -167,14 +167,12 @@ const TIEN_NUOC = {
 };
 
 const TEAM_THUA = {
-  noWinner:
-    '⚠️ Chưa chọn team thắng. Dùng `/teamthang HOME` hoặc `/teamthang AWAY`',
+  noWinner: '⚠️ Chưa chọn team thắng. Dùng `/winner HOME` hoặc `/winner AWAY`',
   winnerCurrent: '📋 Team thắng hiện tại: *{team}*',
   winnerSuccess: '✅ Đã chọn team thắng: *{team}*',
   threeTeamUnsupported:
     '⚠️ Chưa hỗ trợ tính tiền cho 3 team. Hãy dùng 2 team để dùng lệnh này.',
-  noTeamThua:
-    '⚠️ Chưa chọn team thua. Dùng `/teamthua HOME` hoặc `/teamthua AWAY`',
+  noTeamThua: '⚠️ Chưa chọn team thua. Dùng `/loser HOME` hoặc `/loser AWAY`',
   current: '📋 Team thua hiện tại: *{team}*',
   success: '✅ Đã chọn team thua: *{team}*',
 };
@@ -190,12 +188,12 @@ const SAN = {
 const TAO_VOTE = {
   instruction:
     '📊 *Cách sử dụng /taovote:*\n' +
-    '• `/taovote [question]` - Tạo vote với câu hỏi và 4 lựa chọn cố định (0, +1, +2, +3, +4)\n' +
+    '• `/taovote [question]` - Tạo vote với câu hỏi và 5 lựa chọn cố định (0, +1, +2, +3, +4)\n' +
     '• `/demvote` - Kiểm tra kết quả vote\n' +
     '• `/sync` - Đồng bộ người vote vào bench (admin)\n' +
     '• `/clearvote` - Xóa tất cả vote đang hoạt động (admin)\n' +
     '\nVí dụ: `/taovote Sân XX ngày YY giờ ZZ`\n' +
-    '\n*Lưu ý:* Vote sẽ có 4 lựa chọn: 0, +1, +2, +3, +4',
+    '\n*Lưu ý:* Vote sẽ có 5 lựa chọn: 0, +1, +2, +3, +4',
   shortInstruction:
     '⚠️ Cần nhập câu hỏi cho vote.\n' +
     'Ví dụ: `/taovote Sân XX ngày YY giờ ZZ`',
@@ -309,7 +307,7 @@ const START = {
 *BẮT ĐẦU NHANH*
 • \`/addme\` - Tự thêm mình vào bench
 • \`/bench\` - Xem danh sách đang chờ
-• \`/chiateam\` - Chia 2 team
+• \`/chiateam\` - Chia 2 team (admin)
 • \`/team\` - Xem kết quả chia team
 
 *DANH SÁCH LỆNH*
@@ -322,7 +320,7 @@ const START = {
 • \`/clearbench\` - Xóa người khỏi bench
 
 *TEAM*
-• \`/chiateam\` - Chia 2 team HOME / AWAY
+• \`/chiateam\` - Chia 2 team HOME / AWAY (admin)
 • \`/chiateam 3\` - Chia 3 team HOME / AWAY / EXTRA (admin)
 • \`/manifest\` - Ghép hoặc tách 2 người khi chia team
 • \`/mf\` - Xem manifest nhanh
@@ -330,9 +328,9 @@ const START = {
 • \`/clearmanifests\` - Xóa tất cả manifest
 • \`/team\` - Xem 2 team hiện tại
 • \`/team 3\` - Xem 3 team hiện tại
-• \`/addtoteam\` - Thêm người vào team
-• \`/clearteam\` - Xóa người khỏi team
-• \`/teamthang HOME|AWAY\` - Chọn team thắng để tính tiền 2 team
+• \`/addtoteam\` - Thêm người vào team (admin)
+• \`/clearteam\` - Xóa người khỏi team (admin)
+• \`/winner HOME|AWAY\` - Chọn team thắng để tính tiền 2 team (admin)
 
 *TRẬN ĐẤU*
 • \`/match\` - Xem trận tuần này
@@ -345,7 +343,7 @@ const START = {
 • \`/tiensan\` - Xem hoặc cập nhật tiền sân
 • \`/tiennuoc\` - Xem hoặc cập nhật tiền nước
 • \`/chiatien\` - Chia tiền 2 team (đội thua trả thêm tiền nước)
-• \`/taovote\` - Tạo vote
+• \`/taovote\` - Tạo vote (admin)
 • \`/demvote\` - Xem kết quả vote
 • \`/sync\` - Đồng bộ người vote vào bench (admin)
 • \`/clearvote\` - Xóa vote hiện tại (admin)

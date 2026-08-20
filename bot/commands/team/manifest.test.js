@@ -3,14 +3,16 @@ const assert = require('node:assert/strict');
 
 process.env.BOT_OWNER_ID = '123';
 
-function loadManifestWithMockedBot(mockBot) {
+function loadManifestWithMockedBot(mockBot, registeredCallbacks = []) {
   const commandPath = require.resolve('./manifest');
   const chatPath = require.resolve('../../utils/chat');
   const telegramClientPath = require.resolve('../../telegram-client');
+  const callbackQueryPath = require.resolve('../common/callback-query');
 
   delete require.cache[commandPath];
   delete require.cache[chatPath];
   delete require.cache[telegramClientPath];
+  delete require.cache[callbackQueryPath];
 
   require.cache[telegramClientPath] = {
     id: telegramClientPath,
@@ -19,22 +21,45 @@ function loadManifestWithMockedBot(mockBot) {
     exports: mockBot,
   };
 
+  require.cache[callbackQueryPath] = {
+    id: callbackQueryPath,
+    filename: callbackQueryPath,
+    loaded: true,
+    exports: {
+      registerCallbackQueryHandler(handler) {
+        registeredCallbacks.push(handler);
+      },
+    },
+  };
+
   return require('./manifest');
 }
 
 function createMockBot() {
   const handlers = [];
   const sentMessages = [];
+  const answeredCallbacks = [];
+  const editedReplyMarkups = [];
 
   return {
     handlers,
     sentMessages,
+    answeredCallbacks,
+    editedReplyMarkups,
     bot: {
       onText(pattern, handler) {
         handlers.push({ pattern, handler });
       },
       async sendMessage(chatId, message, options) {
         sentMessages.push({ chatId, message, options });
+        return { ok: true };
+      },
+      async answerCallbackQuery(id, options) {
+        answeredCallbacks.push({ id, options });
+        return { ok: true };
+      },
+      async editMessageReplyMarkup(replyMarkup, options) {
+        editedReplyMarkups.push({ replyMarkup, options });
         return { ok: true };
       },
     },
@@ -53,6 +78,18 @@ async function invokeCommand(handlers, command) {
     },
     command.match(handler.pattern)
   );
+}
+
+async function invokeCallback(callbackHandler, data, messageId) {
+  return callbackHandler({
+    id: `callback-${messageId}`,
+    data,
+    from: { id: 123 },
+    message: {
+      chat: { id: 456 },
+      message_id: messageId,
+    },
+  });
 }
 
 test('/mf shows the current manifest without bench instructions', async () => {
@@ -105,6 +142,44 @@ test('/manifests shows an empty state when no manifest exists', async () => {
   assert.equal(sentMessages[0].message, 'Chưa có manifest nào.');
 });
 
+test('legacy manifest handler can leave migrated commands to shared runtime', () => {
+  const { bot, handlers } = createMockBot();
+  const registeredCallbacks = [];
+  const manifestCommand = loadManifestWithMockedBot(bot, registeredCallbacks);
+
+  manifestCommand({
+    members: new Map(),
+    getManifest: () => null,
+    setManifest: () => {},
+    registerListCommands: false,
+    registerManifestCommands: false,
+    registerRemoveCommands: false,
+    registerClearCommands: false,
+  });
+
+  assert.equal(
+    handlers.some(({ pattern }) => pattern.test('/manifests')),
+    false
+  );
+  assert.equal(
+    handlers.some(({ pattern }) => pattern.test('/mf')),
+    false
+  );
+  assert.equal(
+    handlers.some(({ pattern }) => pattern.test('/manifest')),
+    false
+  );
+  assert.equal(
+    handlers.some(({ pattern }) => pattern.test('/removemanifest')),
+    false
+  );
+  assert.equal(
+    handlers.some(({ pattern }) => pattern.test('/clearmanifests')),
+    false
+  );
+  assert.equal(registeredCallbacks.length, 0);
+});
+
 test('/manifest shows inline buttons instead of bench list', async () => {
   const { bot, handlers, sentMessages } = createMockBot();
   const manifestCommand = loadManifestWithMockedBot(bot);
@@ -127,6 +202,68 @@ test('/manifest shows inline buttons instead of bench list', async () => {
     [{ text: '1. Alice', callback_data: 'manifest:first:0' }],
     [{ text: '2. Bob', callback_data: 'manifest:first:1' }],
   ]);
+});
+
+test('/manifest inline flow saves the selected second member', async () => {
+  const { bot, handlers, sentMessages, editedReplyMarkups } = createMockBot();
+  const registeredCallbacks = [];
+  const manifestCommand = loadManifestWithMockedBot(bot, registeredCallbacks);
+  let savedManifest = null;
+
+  manifestCommand({
+    members: new Map([
+      [1, { name: 'Alice', userId: 1 }],
+      [2, { name: 'Bob', userId: 2 }],
+    ]),
+    getManifest: () => savedManifest,
+    setManifest: value => {
+      savedManifest = value;
+    },
+  });
+
+  assert.equal(registeredCallbacks.length, 1);
+  const callbackHandler = registeredCallbacks[0];
+
+  await invokeCommand(handlers, '/manifest');
+  await invokeCallback(callbackHandler, 'manifest:first:0', 1);
+
+  const relationButton =
+    sentMessages[1].options.reply_markup.inline_keyboard[0][0];
+  assert.equal(relationButton.callback_data, 'manifest:relation:0:same');
+  await invokeCallback(callbackHandler, relationButton.callback_data, 2);
+
+  assert.deepEqual(
+    sentMessages[2].options.reply_markup.inline_keyboard.map(row =>
+      row.map(button => button.text)
+    ),
+    [['2. Bob']]
+  );
+  const secondMemberButton =
+    sentMessages[2].options.reply_markup.inline_keyboard[0][0];
+  assert.equal(secondMemberButton.callback_data, 'manifest:second:0:same:1');
+  await invokeCallback(callbackHandler, secondMemberButton.callback_data, 3);
+
+  assert.deepEqual(savedManifest, [
+    {
+      relation: 'same',
+      players: [
+        { identity: 'tele:1', name: 'Alice' },
+        { identity: 'tele:2', name: 'Bob' },
+      ],
+    },
+  ]);
+  assert.match(sentMessages[3].message, /Alice <3 Bob/);
+  assert.deepEqual(
+    editedReplyMarkups.map(({ replyMarkup, options }) => ({
+      replyMarkup,
+      messageId: options.message_id,
+    })),
+    [
+      { replyMarkup: { inline_keyboard: [] }, messageId: 1 },
+      { replyMarkup: { inline_keyboard: [] }, messageId: 2 },
+      { replyMarkup: { inline_keyboard: [] }, messageId: 3 },
+    ]
+  );
 });
 
 test('/removemanifest shows inline buttons for existing manifests', async () => {

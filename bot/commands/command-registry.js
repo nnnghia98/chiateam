@@ -1,39 +1,8 @@
-const REGISTERED_COMMANDS = Object.freeze([
-  '/start',
-  '/addme',
-  '/add',
-  '/editbench',
-  '/bench',
-  '/chiateam',
-  '/team',
-  '/clearbench',
-  '/tiensan',
-  '/tiennuoc',
-  '/teamthang',
-  '/teamthua',
-  '/chiatien',
-  '/taovote',
-  '/clearvote',
-  '/demvote',
-  '/sync',
-  '/edit-stats',
-  '/player',
-  '/register',
-  '/players',
-  '/san',
-  '/clearsan',
-  '/addtoteam',
-  '/clearteam',
-  '/manifest',
-  '/mf',
-  '/manifests',
-  '/removemanifest',
-  '/clearmanifests',
-  '/me',
-  '/match',
-  '/matches',
-  '/reset',
-]);
+const {
+  listSupportedCommandNames,
+} = require('../../core/commands/command-manifest');
+
+const REGISTERED_COMMANDS = Object.freeze(listSupportedCommandNames());
 
 module.exports = {
   REGISTERED_COMMANDS,

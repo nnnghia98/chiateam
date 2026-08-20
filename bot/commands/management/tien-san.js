@@ -4,7 +4,11 @@ const { TIEN_SAN } = require('../../utils/messages');
 
 const bot = require('../../telegram-client');
 
-module.exports = (getTiensan, setTiensan) => {
+module.exports = (getTiensan, setTiensan, { registerCommand = true } = {}) => {
+  if (!registerCommand) {
+    return;
+  }
+
   bot.onText(/^\/tiensan$/, msg => {
     const tiensan = getTiensan();
     if (!tiensan) {
