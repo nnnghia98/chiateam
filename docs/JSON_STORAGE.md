@@ -32,10 +32,12 @@ The following data is now saved to disk:
 4. **team3A** - Team A (3-team split)
 5. **team3B** - Team B (3-team split)
 6. **team3C** - Team C/Extra (3-team split)
-7. **tiensan** - Field rental cost
-8. **tiennuoc** - Water cost
-9. **teamThua** - Which team lost the match
-10. **activeVote** - Current Telegram poll/vote state
+7. **manifest** - Current same-team and different-team constraints
+8. **san** - Current venue
+9. **tiensan** - Field rental cost
+10. **tiennuoc** - Water cost
+11. **teamThua** - Which team lost the match
+12. **activeVote** - Current Telegram poll/vote state
 
 World Cup predictions are not stored in this JSON file. They are stored in PostgreSQL tables documented in [WORLD_CUP_PREDICTIONS_API.md](./WORLD_CUP_PREDICTIONS_API.md).
 
@@ -49,6 +51,8 @@ World Cup predictions are not stored in this JSON file. They are stored in Postg
   "team3A": [[userId, playerData], ...],
   "team3B": [[userId, playerData], ...],
   "team3C": [[userId, playerData], ...],
+  "manifest": null,
+  "san": "Sân số 8" | null,
   "tiensan": 0,
   "tiennuoc": 0,
   "teamThua": "HOME" | "AWAY" | null,
@@ -72,6 +76,7 @@ CREATE TABLE IF NOT EXISTS storage (
   "team3B" JSONB,
   "team3C" JSONB,
   manifest JSONB,
+  san TEXT,
   tiensan INTEGER,
   tiennuoc INTEGER,
   "teamThua" TEXT,
@@ -102,6 +107,7 @@ The storage system automatically saves to disk whenever:
 
 - A player is added/removed from bench
 - A team is modified (player added/removed)
+- The venue (san) is updated
 - Field cost (tiensan) is updated
 - Water cost (tiennuoc) is updated
 - Team loss status (teamThua) is changed
@@ -129,6 +135,8 @@ const { bench: members, teamA, teamB, team3A, team3B, team3C } = storage;
 // Use getter/setter functions for primitive values
 const getTiensan = storage.getTiensan;
 const setTiensan = storage.setTiensan;
+const getSan = storage.getSan;
+const setSan = storage.setSan;
 ```
 
 ### Working with Maps
@@ -153,9 +161,11 @@ Use getter/setter functions:
 ```javascript
 // Get current value
 const currentCost = getTiensan();
+const currentVenue = getSan();
 
 // Update value (auto-saves)
 setTiensan(600000);
+setSan('Sân số 8');
 ```
 
 ## Runtime Behavior

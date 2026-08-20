@@ -4,7 +4,15 @@ const { TIEN_NUOC } = require('../../utils/messages');
 
 const bot = require('../../telegram-client');
 
-module.exports = (getTiennuoc, setTiennuoc) => {
+module.exports = (
+  getTiennuoc,
+  setTiennuoc,
+  { registerCommand = true } = {}
+) => {
+  if (!registerCommand) {
+    return;
+  }
+
   bot.onText(/^\/tiennuoc(?:\s+(.+))?$/, (msg, match) => {
     const rawInput = match[1]?.trim();
 

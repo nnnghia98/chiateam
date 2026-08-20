@@ -22,7 +22,12 @@ function registerTeamResultCommand({
   team3A = new Map(),
   team3B = new Map(),
   team3C = new Map(),
+  registerCommands = true,
 }) {
+  if (!registerCommands) {
+    return;
+  }
+
   const announceResult = (msg, teamThua, label) => {
     const hasTwoTeamMembers = teamA.size + teamB.size > 0;
     const hasThreeTeamMembers = team3A.size + team3B.size + team3C.size > 0;
@@ -38,16 +43,18 @@ function registerTeamResultCommand({
 
     setTeamThua(teamThua);
 
-    const message =
-      getTiensan() && hasTwoTeamMembers
-        ? buildTwoTeamFeeMessage({
-            tiensan: getTiensan(),
-            tiennuoc: getTiennuoc(),
-            teamThua,
-            teamA,
-            teamB,
-          })
-        : null;
+    const tiensan = getTiensan();
+    let message = null;
+
+    if (tiensan && hasTwoTeamMembers) {
+      message = buildTwoTeamFeeMessage({
+        tiensan,
+        tiennuoc: getTiennuoc(),
+        teamThua,
+        teamA,
+        teamB,
+      });
+    }
 
     sendMessage({
       msg,
@@ -62,12 +69,12 @@ function registerTeamResultCommand({
   };
 
   // Preferred command: choose the winning team.
-  bot.onText(/^\/teamthang\s+(HOME|AWAY)$/i, (msg, match) => {
+  bot.onText(/^\/winner\s+(HOME|AWAY)$/i, (msg, match) => {
     const teamThang = match[1].toUpperCase();
     announceResult(msg, getLoserFromWinner(teamThang), 'winner');
   });
 
-  bot.onText(/^\/teamthang$/, msg => {
+  bot.onText(/^\/winner$/, msg => {
     const teamThua = getTeamThua();
     sendMessage({
       msg,
@@ -80,11 +87,11 @@ function registerTeamResultCommand({
   });
 
   // Compatibility command: older usage selected the losing team directly.
-  bot.onText(/^\/teamthua\s+(HOME|AWAY)$/i, (msg, match) => {
+  bot.onText(/^\/loser\s+(HOME|AWAY)$/i, (msg, match) => {
     announceResult(msg, match[1].toUpperCase(), 'loser');
   });
 
-  bot.onText(/^\/teamthua$/, msg => {
+  bot.onText(/^\/loser$/, msg => {
     const teamThua = getTeamThua();
     sendMessage({
       msg,

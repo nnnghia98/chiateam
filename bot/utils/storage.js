@@ -14,6 +14,7 @@ const DEFAULT_DATA = {
   team3B: [],
   team3C: [],
   manifest: null,
+  san: null,
   tiensan: 0,
   tiennuoc: 0,
   teamThua: null,
@@ -95,6 +96,14 @@ function normalizeManifest(value) {
   return normalized.length > 0 ? normalized : null;
 }
 
+function normalizeSan(value) {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  return value.trim() || null;
+}
+
 function mapToArray(map) {
   return Array.from(map.entries());
 }
@@ -114,6 +123,7 @@ function normalizeStorageData(data = {}) {
     team3B: normalizeEntryArray(data.team3B),
     team3C: normalizeEntryArray(data.team3C),
     manifest: normalizeManifest(data.manifest),
+    san: normalizeSan(data.san),
     tiensan: data.tiensan ?? 0,
     tiennuoc: data.tiennuoc ?? 0,
     teamThua: data.teamThua ?? null,
@@ -175,6 +185,7 @@ function buildStorageSnapshot(state) {
     team3B: mapToArray(state.team3B),
     team3C: mapToArray(state.team3C),
     manifest: state.getManifest(),
+    san: state.getSan(),
     tiensan: state.getTiensan(),
     tiennuoc: state.getTiennuoc(),
     teamThua: state.getTeamThua(),
@@ -255,6 +266,7 @@ function createStateFromData(data) {
   const team3C = arrayToMap(data.team3C);
 
   let manifest = normalizeManifest(data.manifest);
+  let san = normalizeSan(data.san);
   let tiensan = data.tiensan ?? 0;
   let tiennuoc = data.tiennuoc ?? 0;
   let teamThua = data.teamThua ?? null;
@@ -279,6 +291,7 @@ function createStateFromData(data) {
     replaceMapContents(team3B, nextData.team3B);
     replaceMapContents(team3C, nextData.team3C);
     manifest = normalizeManifest(nextData.manifest);
+    san = normalizeSan(nextData.san);
     tiensan = nextData.tiensan ?? 0;
     tiennuoc = nextData.tiennuoc ?? 0;
     teamThua = nextData.teamThua ?? null;
@@ -347,6 +360,11 @@ function createStateFromData(data) {
       manifest = normalizeManifest(val);
       return persist();
     },
+    getSan: () => san,
+    setSan: val => {
+      san = normalizeSan(val);
+      return persist();
+    },
     getTiensan: () => tiensan,
     setTiensan: val => {
       tiensan = val;
@@ -376,6 +394,17 @@ function createStateFromData(data) {
 
       return saveQueue;
     },
+    syncFromSnapshot: snapshot => {
+      if (
+        !snapshot ||
+        typeof snapshot !== 'object' ||
+        Array.isArray(snapshot)
+      ) {
+        throw new TypeError('storage snapshot must be an object.');
+      }
+
+      applyStorageData(normalizeStorageData(snapshot));
+    },
     resetAll: () => {
       const originalBenchClear = Object.getPrototypeOf(bench).clear;
       const originalTeamAClear = Object.getPrototypeOf(teamA).clear;
@@ -392,6 +421,7 @@ function createStateFromData(data) {
       originalTeam3CClear.call(team3C);
 
       manifest = null;
+      san = null;
       tiensan = 0;
       tiennuoc = 0;
       teamThua = null;
@@ -419,6 +449,7 @@ async function initializeStorage() {
 }
 
 module.exports = {
+  createStateFromData,
   initializeStorage,
   loadData,
   saveData,

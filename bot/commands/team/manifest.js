@@ -112,16 +112,40 @@ function buildManifestListMessage(currentManifest) {
   return MANIFEST.list.replace('{manifestList}', buildManifestLines(manifests));
 }
 
-function buildMemberKeyboard({ entries, callbackPrefix, pageCallbackPrefix, page = 0 }) {
+function buildMemberKeyboard({
+  entries,
+  callbackPrefix,
+  pageCallbackPrefix,
+  page = 0,
+  excludedIndex = null,
+}) {
+  const indexedEntries = entries
+    .map((entry, index) => ({ entry, index }))
+    .filter(({ index }) => index !== excludedIndex);
+
   return buildPaginatedKeyboard({
-    entries,
+    entries: indexedEntries,
     page,
     pageCallbackPrefix,
-    itemToButton: (([, member], index) => ({
+    itemToButton: ({ entry: [, member], index }) => ({
       text: `${index + 1}. ${getDisplayName(member)}`,
       callback_data: `${callbackPrefix}${index}`,
-    })),
+    }),
   });
+}
+
+async function clearInlineKeyboard(query) {
+  if (!query.message?.chat?.id || query.message.message_id == null) {
+    return;
+  }
+
+  await bot.editMessageReplyMarkup(
+    { inline_keyboard: [] },
+    {
+      chat_id: query.message.chat.id,
+      message_id: query.message.message_id,
+    }
+  );
 }
 
 function buildRemoveManifestKeyboard(manifests, page = 0) {
@@ -129,10 +153,10 @@ function buildRemoveManifestKeyboard(manifests, page = 0) {
     entries: manifests,
     page,
     pageCallbackPrefix: REMOVE_MANIFEST_PAGE_PREFIX,
-    itemToButton: ((manifest, index) => ({
+    itemToButton: (manifest, index) => ({
       text: buildManifestLine(manifest, index).replaceAll('`', ''),
       callback_data: `${REMOVE_MANIFEST_PREFIX}${index}`,
-    })),
+    }),
   });
 }
 
@@ -204,12 +228,26 @@ function upsertManifest(currentManifest, nextManifest) {
   };
 }
 
-const manifestCommand = ({ members, getManifest, setManifest }) => {
-  const saveManifestPair = ({ firstIndex, secondIndex, relation, symbol, msg }) => {
+const manifestCommand = ({
+  members,
+  getManifest,
+  setManifest,
+  registerListCommands = true,
+  registerManifestCommands = true,
+  registerRemoveCommands = true,
+  registerClearCommands = true,
+}) => {
+  const saveManifestPair = async ({
+    firstIndex,
+    secondIndex,
+    relation,
+    symbol,
+    msg,
+  }) => {
     const entries = Array.from(members.entries());
 
     if (entries.length === 0) {
-      sendMessage({
+      await sendMessage({
         msg,
         type: 'DEFAULT',
         message: MANIFEST.emptyBench,
@@ -224,7 +262,7 @@ const manifestCommand = ({ members, getManifest, setManifest }) => {
       firstIndex > entries.length ||
       secondIndex > entries.length
     ) {
-      sendMessage({
+      await sendMessage({
         msg,
         type: 'DEFAULT',
         message: MANIFEST.invalidSelection,
@@ -244,7 +282,7 @@ const manifestCommand = ({ members, getManifest, setManifest }) => {
     const result = upsertManifest(currentManifest, nextManifest);
 
     if (!result.isValid) {
-      sendMessage({
+      await sendMessage({
         msg,
         type: 'DEFAULT',
         message: MANIFEST.conflict,
@@ -253,12 +291,15 @@ const manifestCommand = ({ members, getManifest, setManifest }) => {
       return false;
     }
 
-    setManifest(result.manifests);
+    await setManifest(result.manifests);
 
-    sendMessage({
+    await sendMessage({
       msg,
       type: 'DEFAULT',
-      message: (result.isReplacement ? MANIFEST.replaceSuccess : MANIFEST.success)
+      message: (result.isReplacement
+        ? MANIFEST.replaceSuccess
+        : MANIFEST.success
+      )
         .replace('{first}', escapeMarkdown(first.name))
         .replace('{symbol}', symbol)
         .replace('{second}', escapeMarkdown(second.name)),
@@ -267,18 +308,22 @@ const manifestCommand = ({ members, getManifest, setManifest }) => {
     return true;
   };
 
-  registerCallbackQueryHandler(async query => {
+  const handleManifestCallback = async query => {
     const data = query.data || '';
     const entries = Array.from(members.entries());
 
-    const isManifestCallback =
+    const isCreateManifestCallback =
       data.startsWith(MANIFEST_FIRST_PREFIX) ||
       data.startsWith(MANIFEST_FIRST_PAGE_PREFIX) ||
       data.startsWith(MANIFEST_RELATION_PREFIX) ||
       data.startsWith(MANIFEST_SECOND_PREFIX) ||
-      data.startsWith(MANIFEST_SECOND_PAGE_PREFIX) ||
+      data.startsWith(MANIFEST_SECOND_PAGE_PREFIX);
+    const isRemoveManifestCallback =
       data.startsWith(REMOVE_MANIFEST_PREFIX) ||
       data.startsWith(REMOVE_MANIFEST_PAGE_PREFIX);
+    const isManifestCallback =
+      (registerManifestCommands && isCreateManifestCallback) ||
+      (registerRemoveCommands && isRemoveManifestCallback);
 
     if (!isManifestCallback) {
       return false;
@@ -327,7 +372,8 @@ const manifestCommand = ({ members, getManifest, setManifest }) => {
       }
 
       await bot.answerCallbackQuery(query.id, { text: '', show_alert: false });
-      sendMessage({
+      await clearInlineKeyboard(query);
+      await sendMessage({
         msg: query.message,
         type: 'DEFAULT',
         message: MANIFEST.relationPrompt.replace(
@@ -374,7 +420,8 @@ const manifestCommand = ({ members, getManifest, setManifest }) => {
 
       const symbol = relation === 'same' ? '<3' : '</3';
       await bot.answerCallbackQuery(query.id, { text: '', show_alert: false });
-      sendMessage({
+      await clearInlineKeyboard(query);
+      await sendMessage({
         msg: query.message,
         type: 'DEFAULT',
         message: MANIFEST.secondPlayerPrompt
@@ -387,6 +434,7 @@ const manifestCommand = ({ members, getManifest, setManifest }) => {
               entries,
               callbackPrefix: `${MANIFEST_SECOND_PREFIX}${firstIndex}:${relation}:`,
               pageCallbackPrefix: `${MANIFEST_SECOND_PAGE_PREFIX}${firstIndex}:${relation}:`,
+              excludedIndex: firstIndex,
             }),
           },
         },
@@ -408,6 +456,7 @@ const manifestCommand = ({ members, getManifest, setManifest }) => {
             callbackPrefix: `${MANIFEST_SECOND_PREFIX}${firstIndex}:${relation}:`,
             pageCallbackPrefix: `${MANIFEST_SECOND_PAGE_PREFIX}${firstIndex}:${relation}:`,
             page: Number.isInteger(page) ? page : 0,
+            excludedIndex: firstIndex,
           }),
         },
         {
@@ -426,13 +475,16 @@ const manifestCommand = ({ members, getManifest, setManifest }) => {
       const relationValue = relation === 'same' ? 'same' : 'different';
       const symbol = relationValue === 'same' ? '<3' : '</3';
 
-      saveManifestPair({
+      const saved = await saveManifestPair({
         firstIndex: parseInt(firstRaw, 10) + 1,
         secondIndex: parseInt(secondRaw, 10) + 1,
         relation: relationValue,
         symbol,
         msg: query.message,
       });
+      if (saved) {
+        await clearInlineKeyboard(query);
+      }
       await bot.answerCallbackQuery(query.id, { text: '', show_alert: false });
       return true;
     }
@@ -460,7 +512,10 @@ const manifestCommand = ({ members, getManifest, setManifest }) => {
     }
 
     if (data.startsWith(REMOVE_MANIFEST_PREFIX)) {
-      const manifestIndex = parseInt(data.slice(REMOVE_MANIFEST_PREFIX.length), 10);
+      const manifestIndex = parseInt(
+        data.slice(REMOVE_MANIFEST_PREFIX.length),
+        10
+      );
       const currentManifest =
         typeof getManifest === 'function' ? getManifest() : null;
       const manifests = getManifestList(currentManifest);
@@ -498,7 +553,11 @@ const manifestCommand = ({ members, getManifest, setManifest }) => {
     }
 
     return false;
-  });
+  };
+
+  if (registerManifestCommands || registerRemoveCommands) {
+    registerCallbackQueryHandler(handleManifestCallback);
+  }
 
   const sendManifestList = msg => {
     const currentManifest =
@@ -512,194 +571,212 @@ const manifestCommand = ({ members, getManifest, setManifest }) => {
     });
   };
 
-  bot.onText(/^\/(?:mf|manifests)$/, msg => {
-    sendManifestList(msg);
-  });
-
-  bot.onText(/^\/clearmanifests$/, async msg => {
-    if (!requireAdmin(msg, { useSourceChat: true })) {
-      return;
-    }
-
-    const currentManifest =
-      typeof getManifest === 'function' ? getManifest() : null;
-
-    if (getManifestList(currentManifest).length === 0) {
-      sendMessage({
-        msg,
-        type: 'DEFAULT',
-        message: MANIFEST.noCurrent,
-      });
-      return;
-    }
-
-    if (typeof setManifest === 'function') {
-      await setManifest(null);
-    }
-
-    sendMessage({
-      msg,
-      type: 'DEFAULT',
-      message: MANIFEST.clearSuccess,
+  if (registerListCommands) {
+    bot.onText(/^\/(?:mf|manifests)$/, msg => {
+      sendManifestList(msg);
     });
-  });
+  }
 
-  bot.onText(/^\/removemanifest\s+(\d+)$/, async (msg, match) => {
-    if (!requireAdmin(msg, { useSourceChat: true })) {
-      return;
-    }
+  if (registerClearCommands) {
+    bot.onText(/^\/clearmanifests$/, async msg => {
+      if (!requireAdmin(msg, { useSourceChat: true })) {
+        return;
+      }
 
-    const manifestIndex = parseInt(match[1], 10);
-    const currentManifest =
-      typeof getManifest === 'function' ? getManifest() : null;
-    const manifests = getManifestList(currentManifest);
+      const currentManifest =
+        typeof getManifest === 'function' ? getManifest() : null;
 
-    if (manifests.length === 0) {
+      if (getManifestList(currentManifest).length === 0) {
+        sendMessage({
+          msg,
+          type: 'DEFAULT',
+          message: MANIFEST.noCurrent,
+        });
+        return;
+      }
+
+      if (typeof setManifest === 'function') {
+        await setManifest(null);
+      }
+
       sendMessage({
         msg,
         type: 'DEFAULT',
-        message: MANIFEST.noCurrent,
+        message: MANIFEST.clearSuccess,
       });
-      return;
-    }
+    });
+  }
 
-    if (
-      manifestIndex < 1 ||
-      manifestIndex > manifests.length ||
-      Number.isNaN(manifestIndex)
-    ) {
+  if (registerRemoveCommands) {
+    bot.onText(/^\/removemanifest\s+(\d+)$/, async (msg, match) => {
+      if (!requireAdmin(msg, { useSourceChat: true })) {
+        return;
+      }
+
+      const manifestIndex = parseInt(match[1], 10);
+      const currentManifest =
+        typeof getManifest === 'function' ? getManifest() : null;
+      const manifests = getManifestList(currentManifest);
+
+      if (manifests.length === 0) {
+        sendMessage({
+          msg,
+          type: 'DEFAULT',
+          message: MANIFEST.noCurrent,
+        });
+        return;
+      }
+
+      if (
+        manifestIndex < 1 ||
+        manifestIndex > manifests.length ||
+        Number.isNaN(manifestIndex)
+      ) {
+        sendMessage({
+          msg,
+          type: 'DEFAULT',
+          message: MANIFEST.invalidRemoveSelection,
+          options: { parse_mode: 'Markdown' },
+        });
+        return;
+      }
+
+      const removedManifest = manifests[manifestIndex - 1];
+      const nextManifests = manifests.filter(
+        (_, index) => index !== manifestIndex - 1
+      );
+
+      if (typeof setManifest === 'function') {
+        await setManifest(nextManifests.length > 0 ? nextManifests : null);
+      }
+
       sendMessage({
         msg,
         type: 'DEFAULT',
-        message: MANIFEST.invalidRemoveSelection,
+        message: MANIFEST.removeSuccess.replace(
+          '{manifest}',
+          buildManifestLine(removedManifest)
+        ),
         options: { parse_mode: 'Markdown' },
       });
-      return;
-    }
+    });
+  }
 
-    const removedManifest = manifests[manifestIndex - 1];
-    const nextManifests = manifests.filter(
-      (_, index) => index !== manifestIndex - 1
+  if (registerManifestCommands) {
+    bot.onText(/^\/manifest$/, msg => {
+      if (!requireAdmin(msg, { useSourceChat: true })) {
+        return;
+      }
+
+      const entries = Array.from(members.entries());
+      const currentManifest =
+        typeof getManifest === 'function' ? getManifest() : null;
+      const currentManifests = getManifestList(currentManifest);
+      const currentLine =
+        currentManifests.length > 0
+          ? MANIFEST.current.replace(
+              '{manifestList}',
+              buildManifestLines(currentManifests)
+            )
+          : MANIFEST.noCurrent;
+
+      if (entries.length === 0) {
+        sendMessage({
+          msg,
+          type: 'DEFAULT',
+          message: `${MANIFEST.emptyBench}\n\n${currentLine}`,
+          options: { parse_mode: 'Markdown' },
+        });
+        return;
+      }
+
+      sendMessage({
+        msg,
+        type: 'DEFAULT',
+        message: MANIFEST.instruction.replace('{current}', currentLine),
+        options: {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: buildMemberKeyboard({
+              entries,
+              callbackPrefix: MANIFEST_FIRST_PREFIX,
+              pageCallbackPrefix: MANIFEST_FIRST_PAGE_PREFIX,
+            }),
+          },
+        },
+      });
+    });
+
+    bot.onText(
+      /^\/manifest\s+(\d+)\s+(<3|❤️|❤|<\/3|💔)\s+(\d+)$/,
+      async (msg, match) => {
+        if (!requireAdmin(msg, { useSourceChat: true })) {
+          return;
+        }
+
+        const firstIndex = parseInt(match[1], 10);
+        const symbol = match[2];
+        const secondIndex = parseInt(match[3], 10);
+        await saveManifestPair({
+          firstIndex,
+          secondIndex,
+          relation: isSameTeamSymbol(symbol) ? 'same' : 'different',
+          symbol,
+          msg,
+        });
+      }
     );
+  }
 
-    if (typeof setManifest === 'function') {
-      await setManifest(nextManifests.length > 0 ? nextManifests : null);
-    }
+  if (registerRemoveCommands) {
+    bot.onText(/^\/removemanifest(?:\s+(?!\d+$).+)?$/, msg => {
+      if (!requireAdmin(msg, { useSourceChat: true })) {
+        return;
+      }
 
-    sendMessage({
-      msg,
-      type: 'DEFAULT',
-      message: MANIFEST.removeSuccess.replace(
-        '{manifest}',
-        buildManifestLine(removedManifest)
-      ),
-      options: { parse_mode: 'Markdown' },
-    });
-  });
+      const currentManifest =
+        typeof getManifest === 'function' ? getManifest() : null;
+      const manifests = getManifestList(currentManifest);
 
-  bot.onText(/^\/manifest$/, msg => {
-    if (!requireAdmin(msg, { useSourceChat: true })) {
-      return;
-    }
+      if (manifests.length === 0) {
+        sendMessage({
+          msg,
+          type: 'DEFAULT',
+          message: MANIFEST.noCurrent,
+        });
+        return;
+      }
 
-    const entries = Array.from(members.entries());
-    const currentManifest =
-      typeof getManifest === 'function' ? getManifest() : null;
-    const currentManifests = getManifestList(currentManifest);
-    const currentLine =
-      currentManifests.length > 0
-        ? MANIFEST.current.replace(
-            '{manifestList}',
-            buildManifestLines(currentManifests)
-          )
-        : MANIFEST.noCurrent;
-
-    if (entries.length === 0) {
       sendMessage({
         msg,
         type: 'DEFAULT',
-        message: `${MANIFEST.emptyBench}\n\n${currentLine}`,
-        options: { parse_mode: 'Markdown' },
-      });
-      return;
-    }
-
-    sendMessage({
-      msg,
-      type: 'DEFAULT',
-      message: MANIFEST.instruction.replace('{current}', currentLine),
-      options: {
-        parse_mode: 'Markdown',
-        reply_markup: {
-          inline_keyboard: buildMemberKeyboard({
-            entries,
-            callbackPrefix: MANIFEST_FIRST_PREFIX,
-            pageCallbackPrefix: MANIFEST_FIRST_PAGE_PREFIX,
-          }),
+        message: MANIFEST.removeInstruction,
+        options: {
+          reply_markup: {
+            inline_keyboard: buildRemoveManifestKeyboard(manifests),
+          },
         },
-      },
-    });
-  });
-
-  bot.onText(/^\/manifest\s+(\d+)\s+(<3|❤️|❤|<\/3|💔)\s+(\d+)$/, (msg, match) => {
-    if (!requireAdmin(msg, { useSourceChat: true })) {
-      return;
-    }
-
-    const firstIndex = parseInt(match[1], 10);
-    const symbol = match[2];
-    const secondIndex = parseInt(match[3], 10);
-    saveManifestPair({
-      firstIndex,
-      secondIndex,
-      relation: isSameTeamSymbol(symbol) ? 'same' : 'different',
-      symbol,
-      msg,
-    });
-  });
-
-  bot.onText(/^\/removemanifest(?:\s+(?!\d+$).+)?$/, msg => {
-    if (!requireAdmin(msg, { useSourceChat: true })) {
-      return;
-    }
-
-    const currentManifest =
-      typeof getManifest === 'function' ? getManifest() : null;
-    const manifests = getManifestList(currentManifest);
-
-    if (manifests.length === 0) {
-      sendMessage({
-        msg,
-        type: 'DEFAULT',
-        message: MANIFEST.noCurrent,
       });
-      return;
-    }
-
-    sendMessage({
-      msg,
-      type: 'DEFAULT',
-      message: MANIFEST.removeInstruction,
-      options: {
-        reply_markup: {
-          inline_keyboard: buildRemoveManifestKeyboard(manifests),
-        },
-      },
     });
-  });
+  }
 
-  bot.onText(/^\/manifest\s+(?!\d+\s+(?:<3|❤️|❤|<\/3|💔)\s+\d+$).+$/, msg => {
-    if (!requireAdmin(msg, { useSourceChat: true })) {
-      return;
-    }
+  if (registerManifestCommands) {
+    bot.onText(
+      /^\/manifest\s+(?!\d+\s+(?:<3|❤️|❤|<\/3|💔)\s+\d+$).+$/,
+      msg => {
+        if (!requireAdmin(msg, { useSourceChat: true })) {
+          return;
+        }
 
-    sendMessage({
-      msg,
-      type: 'DEFAULT',
-      message: MANIFEST.invalidSelection,
-      options: { parse_mode: 'Markdown' },
-    });
-  });
+        sendMessage({
+          msg,
+          type: 'DEFAULT',
+          message: MANIFEST.invalidSelection,
+          options: { parse_mode: 'Markdown' },
+        });
+      }
+    );
+  }
 };
 
 module.exports = manifestCommand;

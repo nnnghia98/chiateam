@@ -10,7 +10,36 @@ const {
 
 const bot = require('../../telegram-client');
 
-const voteCommand = ({ members, getActiveVote, setActiveVote }) => {
+const voteCommand = ({
+  members,
+  getActiveVote,
+  setActiveVote,
+  registerCreateCommand = true,
+  registerCountCommand = true,
+  registerClearCommand = true,
+  registerSyncCommand = true,
+}) => {
+  const registerCreateHandler = (pattern, handler) => {
+    if (registerCreateCommand) {
+      bot.onText(pattern, handler);
+    }
+  };
+  const registerCountHandler = (pattern, handler) => {
+    if (registerCountCommand) {
+      bot.onText(pattern, handler);
+    }
+  };
+  const registerClearHandler = (pattern, handler) => {
+    if (registerClearCommand) {
+      bot.onText(pattern, handler);
+    }
+  };
+  const registerSyncHandler = (pattern, handler) => {
+    if (registerSyncCommand) {
+      bot.onText(pattern, handler);
+    }
+  };
+
   bot.on('poll_answer', pollAnswer => {
     console.log('📊 [taovote] Poll answer received:', {
       pollId: pollAnswer.poll_id,
@@ -52,7 +81,7 @@ const voteCommand = ({ members, getActiveVote, setActiveVote }) => {
     );
   });
 
-  bot.onText(/^\/taovote$/, msg => {
+  registerCreateHandler(/^\/taovote$/, msg => {
     sendMessage({
       msg,
       type: 'DEFAULT',
@@ -63,7 +92,7 @@ const voteCommand = ({ members, getActiveVote, setActiveVote }) => {
     });
   });
 
-  bot.onText(/^\/taovote\s+(.+)$/, async (msg, match) => {
+  registerCreateHandler(/^\/taovote\s+(.+)$/, async (msg, match) => {
     if (!requireAdmin(msg)) {
       return;
     }
@@ -125,7 +154,7 @@ const voteCommand = ({ members, getActiveVote, setActiveVote }) => {
       });
   });
 
-  bot.onText(/^\/clearvote$/, msg => {
+  registerClearHandler(/^\/clearvote$/, msg => {
     if (!requireAdmin(msg)) {
       return;
     }
@@ -149,7 +178,7 @@ const voteCommand = ({ members, getActiveVote, setActiveVote }) => {
     });
   });
 
-  bot.onText(/^\/demvote$/, msg => {
+  registerCountHandler(/^\/demvote$/, msg => {
     const activeVote = getActiveVote();
     if (!activeVote) {
       sendMessage({
@@ -172,7 +201,7 @@ const voteCommand = ({ members, getActiveVote, setActiveVote }) => {
     });
   });
 
-  bot.onText(/^\/sync$/, msg => {
+  registerSyncHandler(/^\/sync$/, msg => {
     if (!requireAdmin(msg)) {
       return;
     }

@@ -6,32 +6,82 @@ const sanStrings = new Map();
 
 const bot = require('../../telegram-client');
 
-function sanCommand() {
-  bot.onText(/^\/san(?:\s+(.+))?$/, (msg, match) => {
-    const currentSan = sanStrings.get(CHAT_ID);
+function getSan() {
+  return sanStrings.get(CHAT_ID) || null;
+}
 
-    const input = match[1] && match[1].trim();
-    if (input) {
-      if (currentSan) {
-        sendMessage({
-          msg,
-          type: 'DEFAULT',
-          message: SAN.currentSan.replace('{value}', currentSan),
-        });
+function setSan(value) {
+  const venue = typeof value === 'string' ? value.trim() : '';
+
+  if (venue) {
+    sanStrings.set(CHAT_ID, venue);
+  } else {
+    sanStrings.delete(CHAT_ID);
+  }
+}
+
+function sanCommand({
+  getSan: readSan = getSan,
+  setSan: writeSan = setSan,
+  registerSanCommand = true,
+  registerClearCommand = true,
+} = {}) {
+  if (typeof readSan !== 'function' || typeof writeSan !== 'function') {
+    throw new TypeError(
+      'san command requires venue getter and setter functions.'
+    );
+  }
+
+  if (registerSanCommand) {
+    bot.onText(/^\/san(?:\s+(.+))?$/, async (msg, match) => {
+      const currentSan = readSan();
+
+      const input = match[1] && match[1].trim();
+      if (input) {
+        if (currentSan) {
+          sendMessage({
+            msg,
+            type: 'DEFAULT',
+            message: SAN.currentSan.replace('{value}', currentSan),
+          });
+        } else {
+          await writeSan(input);
+          sendMessage({
+            msg,
+            type: 'DEFAULT',
+            message: SAN.successSan.replace('{value}', input),
+          });
+        }
       } else {
-        sanStrings.set(CHAT_ID, input);
+        if (currentSan) {
+          sendMessage({
+            msg,
+            type: 'ANNOUNCEMENT',
+            message: SAN.currentAnnouncement.replace('{value}', currentSan),
+          });
+        } else {
+          sendMessage({
+            msg,
+            type: 'DEFAULT',
+            message: SAN.noSan,
+          });
+        }
+      }
+    });
+  }
+
+  if (registerClearCommand) {
+    bot.onText(/^\/clearsan$/, async msg => {
+      if (!requireAdmin(msg)) {
+        return;
+      }
+
+      if (readSan()) {
+        await writeSan(null);
         sendMessage({
           msg,
           type: 'DEFAULT',
-          message: SAN.successSan.replace('{value}', input),
-        });
-      }
-    } else {
-      if (currentSan) {
-        sendMessage({
-          msg,
-          type: 'ANNOUNCEMENT',
-          message: SAN.currentAnnouncement.replace('{value}', currentSan),
+          message: SAN.successDeleteSan,
         });
       } else {
         sendMessage({
@@ -40,34 +90,10 @@ function sanCommand() {
           message: SAN.noSan,
         });
       }
-    }
-  });
-
-  bot.onText(/^\/clearsan$/, msg => {
-    if (!requireAdmin(msg)) {
-      return;
-    }
-
-    if (sanStrings.has(CHAT_ID)) {
-      sanStrings.delete(CHAT_ID);
-      sendMessage({
-        msg,
-        type: 'DEFAULT',
-        message: SAN.successDeleteSan,
-      });
-    } else {
-      sendMessage({
-        msg,
-        type: 'DEFAULT',
-        message: SAN.noSan,
-      });
-    }
-  });
-}
-
-function getSan() {
-  return sanStrings.get(CHAT_ID) || null;
+    });
+  }
 }
 
 module.exports = sanCommand;
 module.exports.getSan = getSan;
+module.exports.setSan = setSan;

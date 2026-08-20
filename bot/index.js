@@ -1,39 +1,46 @@
 require('../config/load-env').loadEnv();
 
-const {
-  startCommand,
-  callbackQueryCommand,
-  addMeCommand,
-  addCommand,
-  benchCommand,
-  editBenchCommand,
-  chiateamCommand,
-  manifestCommand,
-  teamCommand,
-  clearBenchCommand,
-  tiensanCommand,
-  tiennuocCommand,
-  teamThuaCommand,
-  chiaTienCommand,
-  taoVoteCommand,
-  editStatsCommand,
-  playerCommand,
-  registerCommand,
-  playersCommand,
-  sanCommand,
-  addToTeamCommand,
-  clearTeamCommand,
-  meCommand,
-  matchCommand,
-  matchesCommand,
-  resetCommand,
-} = require('./commands');
+const { callbackQueryCommand, taoVoteCommand } = require('./commands');
 
 const maintenanceMessage = require('./commands/maintainance');
 const bot = require('./telegram-client');
 const { logCommandUsage } = require('./utils/command-logger');
 const { logEvent } = require('./utils/logger');
 const { initializeStorage } = require('./utils/storage');
+const { startBotRuntime } = require('../runtime/start-bot');
+const {
+  createApiStateRepository,
+} = require('../runtime/repositories/api-state-repository');
+const {
+  createCommandDefinitions,
+} = require('../runtime/create-command-definitions');
+const {
+  createTelegramBenchIdentityPolicy,
+} = require('../platforms/telegram/bench-identity-policy');
+const {
+  createTelegramAttendanceVotePublisher,
+} = require('../platforms/telegram/attendance-vote-publisher');
+const {
+  createTelegramAttendanceVoteController,
+} = require('../platforms/telegram/attendance-vote-controller');
+const {
+  createApiPlayerRepository,
+} = require('../runtime/repositories/api-player-repository');
+const {
+  createApiStatisticsRepository,
+} = require('../runtime/repositories/api-statistics-repository');
+const {
+  createApiMatchRepository,
+} = require('../runtime/repositories/api-match-repository');
+const {
+  createApiMatchSummaryGenerator,
+} = require('../runtime/repositories/api-match-summary-generator');
+const {
+  createTelegramPermissionPolicy,
+} = require('../platforms/telegram/permission-policy');
+const {
+  registerCallbackQueryHandler,
+} = require('./commands/common/callback-query');
 const {
   isMaintenanceModeEnabled,
   getMaintenanceUntil,
@@ -84,7 +91,12 @@ if (isMaintenanceMode) {
     }
   });
 
-  logEvent('bot', 'maintenance mode enabled', { until: maintenanceUntil }, 'warn');
+  logEvent(
+    'bot',
+    'maintenance mode enabled',
+    { until: maintenanceUntil },
+    'warn'
+  );
   return;
 }
 
@@ -98,78 +110,52 @@ if (bot) {
 async function bootstrapBot() {
   // Initialize persistent storage through the API before commands start.
   const storage = await initializeStorage();
-  const { bench: members, teamA, teamB, team3A, team3B, team3C } = storage;
-  const getTiensan = storage.getTiensan;
-  const setTiensan = storage.setTiensan;
-  const getTiennuoc = storage.getTiennuoc;
-  const setTiennuoc = storage.setTiennuoc;
-  const getTeamThua = storage.getTeamThua;
-  const setTeamThua = storage.setTeamThua;
+  const { bench: members } = storage;
   const getActiveVote = storage.getActiveVote;
   const setActiveVote = storage.setActiveVote;
-  const getManifest = storage.getManifest;
-  const setManifest = storage.setManifest;
-  const refreshFromSource = storage.refreshFromSource;
-  const resetAll = storage.resetAll;
+  const stateRepository = createApiStateRepository({
+    afterSave: snapshot => storage.syncFromSnapshot(snapshot),
+  });
+  const attendanceVotePublisher = createTelegramAttendanceVotePublisher({
+    bot,
+  });
+  const attendanceVoteController = createTelegramAttendanceVoteController({
+    bot,
+  });
+  const playerRepository = createApiPlayerRepository();
+  const statisticsRepository = createApiStatisticsRepository();
+  const matchRepository = createApiMatchRepository();
+  const matchSummaryGenerator = createApiMatchSummaryGenerator();
 
-  startCommand();
+  // New platform-independent commands use this runtime. Commands that are not
+  // registered here continue to use their legacy handlers below.
+  startBotRuntime({
+    bot,
+    stateRepository,
+    permissionPolicy: createTelegramPermissionPolicy(),
+    registerTelegramActionHandler: registerCallbackQueryHandler,
+    definitions: createCommandDefinitions({
+      benchIdentityPolicy: createTelegramBenchIdentityPolicy(),
+      votePublisher: attendanceVotePublisher,
+      voteController: attendanceVoteController,
+      playerRepository,
+      statisticsRepository,
+      matchRepository,
+      matchSummaryGenerator,
+    }),
+  });
 
-  addMeCommand({ members });
-  chiateamCommand({
+  // Keep only Telegram poll-answer ingestion as a temporary platform event.
+  // Every slash command is registered through the shared command runtime.
+  taoVoteCommand({
     members,
-    teamA,
-    teamB,
-    team3A,
-    team3B,
-    team3C,
-    getManifest,
+    getActiveVote,
+    setActiveVote,
+    registerCreateCommand: false,
+    registerCountCommand: false,
+    registerClearCommand: false,
+    registerSyncCommand: false,
   });
-  manifestCommand({ members, getManifest, setManifest });
-  benchCommand({ members, refreshFromSource });
-  editBenchCommand({ members });
-  clearBenchCommand({ members });
-  addCommand({ members });
-  teamCommand({
-    teamA,
-    teamB,
-    team3A,
-    team3B,
-    team3C,
-    refreshFromSource,
-  });
-  tiensanCommand(getTiensan, setTiensan);
-  tiennuocCommand(getTiennuoc, setTiennuoc);
-  teamThuaCommand({
-    getTiensan,
-    getTiennuoc,
-    getTeamThua,
-    setTeamThua,
-    teamA,
-    teamB,
-    team3A,
-    team3B,
-    team3C,
-  });
-  chiaTienCommand(getTiensan, getTiennuoc, getTeamThua, {
-    teamA,
-    teamB,
-    team3A,
-    team3B,
-    team3C,
-  });
-  taoVoteCommand({ members, getActiveVote, setActiveVote });
-  sanCommand();
-  editStatsCommand();
-  playerCommand();
-  registerCommand();
-  playersCommand();
-  addToTeamCommand({ members, teamA, teamB, team3A, team3B, team3C });
-  clearTeamCommand({ teamA, teamB, team3A, team3B, team3C });
-  meCommand();
-  matchCommand({ getTiensan, teamA, teamB, team3C });
-  matchesCommand();
-  resetCommand({ resetAll });
-
   logEvent('bot', 'running', {}, 'success');
 }
 

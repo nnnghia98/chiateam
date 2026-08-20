@@ -5,17 +5,42 @@ const { CALLBACK_QUERY } = require('../../utils/messages');
 const callbackQueryHandlers = [];
 
 function registerCallbackQueryHandler(handler) {
+  if (typeof handler !== 'function') {
+    throw new TypeError('Callback query handler must be a function.');
+  }
+
   callbackQueryHandlers.push(handler);
+
+  let registered = true;
+
+  return () => {
+    if (!registered) {
+      return;
+    }
+
+    const index = callbackQueryHandlers.indexOf(handler);
+
+    if (index >= 0) {
+      callbackQueryHandlers.splice(index, 1);
+    }
+
+    registered = false;
+  };
 }
 
 function logUnsupportedCallback(query) {
-  logEvent('telegram.callback', 'unsupported inline button', {
-    data: query.data,
-    user: `${query.from?.first_name || query.from?.username || 'Unknown'} (${query.from?.id || '-'})`,
-    chat: query.message?.chat?.id,
-    message: query.message?.message_id,
-    callback: query.id,
-  }, 'warn');
+  logEvent(
+    'telegram.callback',
+    'unsupported inline button',
+    {
+      data: query.data,
+      user: `${query.from?.first_name || query.from?.username || 'Unknown'} (${query.from?.id || '-'})`,
+      chat: query.message?.chat?.id,
+      message: query.message?.message_id,
+      callback: query.id,
+    },
+    'warn'
+  );
 }
 
 function handleUnsupportedCallback(query) {
@@ -39,11 +64,16 @@ function callbackQueryCommand() {
 
       await handleUnsupportedCallback(query);
     } catch (error) {
-      logEvent('telegram.callback', 'failed to answer callback', {
-        error: error.message,
-        callback: query.id,
-        data: query.data,
-      }, 'error');
+      logEvent(
+        'telegram.callback',
+        'failed to answer callback',
+        {
+          error: error.message,
+          callback: query.id,
+          data: query.data,
+        },
+        'error'
+      );
     }
   });
 }

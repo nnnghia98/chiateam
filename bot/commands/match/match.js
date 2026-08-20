@@ -22,7 +22,6 @@ const {
 } = require('../../../api/routes/players');
 const { getDisplayName, getUserId } = require('../../utils/team-member');
 const { isOnCooldown } = require('../../utils/cooldown');
-const sanCommand = require('../management/san');
 const { generateMatchSummary } = require('../../../api/services/ai-service');
 
 const bot = require('../../telegram-client');
@@ -128,9 +127,13 @@ function formatDateDisplay(isoDate) {
   return `${d}/${m}/${y}`;
 }
 
-function matchCommand({ getTiensan, teamA, teamB, team3C }) {
-  const getSan = sanCommand.getSan;
-
+function matchCommand({
+  getSan = () => null,
+  getTiensan,
+  teamA,
+  teamB,
+  team3C,
+}) {
   bot.onText(/^\/match(?:\s+(.+))?$/, async (msg, match) => {
     if (isOnCooldown(msg, '/match')) {
       return;
