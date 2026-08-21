@@ -21,6 +21,9 @@ test('API match repository maps neutral operations to current routes', async () 
     async setResult(...args) {
       calls.push(['result', ...args]);
     },
+    async syncPlayers(...args) {
+      calls.push(['sync', ...args]);
+    },
     async removeByDate(date) {
       calls.push(['delete', date]);
     },
@@ -44,6 +47,7 @@ test('API match repository maps neutral operations to current routes', async () 
   await repository.save(draft);
   await repository.updateScore('2026-08-06', 3, 1);
   await repository.applyResult('2026-08-06', 'HOME');
+  await repository.syncPlayerLinks('2026-08-06');
   await repository.deleteByDate('2026-08-06');
   await repository.list(10, 20);
   await repository.containsPlayer(1, 2);
@@ -56,6 +60,7 @@ test('API match repository maps neutral operations to current routes', async () 
     ['save', draft],
     ['score', '2026-08-06', 3, 1],
     ['result', '2026-08-06', 'HOME'],
+    ['sync', '2026-08-06'],
     ['delete', '2026-08-06'],
     ['list', 10, 20],
     ['contains', 1, 2],

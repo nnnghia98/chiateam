@@ -18,6 +18,7 @@ function createRepository(list) {
     async save() {},
     async updateScore() {},
     async applyResult() {},
+    async syncPlayerLinks() {},
     async deleteByDate() {},
     list,
     async containsPlayer() {},

@@ -52,6 +52,9 @@ function createMatches(overrides = {}) {
     async applyResult() {
       return { unchanged: false, winners: 0, losers: 0 };
     },
+    async syncPlayerLinks() {
+      return null;
+    },
     async deleteByDate() {
       return false;
     },
@@ -170,6 +173,10 @@ test('shared /match parser requires explicit actions', () => {
   assert.deepEqual(parseMatchRequest(['save', '13/08/2026'], NOW), {
     kind: 'save',
     date: '2026-08-13',
+  });
+  assert.deepEqual(parseMatchRequest(['sync'], NOW), {
+    kind: 'sync',
+    date: '2026-08-06',
   });
   assert.deepEqual(parseMatchRequest(['score', '3-1'], NOW), {
     kind: 'score',
@@ -290,6 +297,7 @@ test('independent /match protects every write before loading state', async () =>
   const winnerResult = await router.run(
     createContext(['winner', 'HOME'], '999')
   );
+  const syncResult = await router.run(createContext(['sync'], '999'));
 
   assert.equal(
     saveResult.result.messages[0].text,
@@ -299,7 +307,87 @@ test('independent /match protects every write before loading state', async () =>
     winnerResult.result.messages[0].text,
     MATCH_MESSAGES.permissionDenied
   );
+  assert.equal(
+    syncResult.result.messages[0].text,
+    MATCH_MESSAGES.permissionDenied
+  );
   assert.deepEqual(loads, []);
+});
+
+test('independent /match sync links later players and reapplies saved result', async () => {
+  const calls = [];
+  const { router } = createMatchRouter({
+    matches: createMatches({
+      async syncPlayerLinks(date) {
+        calls.push(['sync', date]);
+        return {
+          linked: 1,
+          alreadyLinked: 1,
+          unmatched: 1,
+          ambiguous: 0,
+          total: 3,
+          winnerSide: 'HOME',
+        };
+      },
+      async applyResult(date, winnerSide) {
+        calls.push(['result', date, winnerSide]);
+        return { unchanged: false, winners: 2, losers: 1 };
+      },
+    }),
+  });
+
+  const routed = await router.run(createContext(['sync', '13/08/2026']));
+
+  assert.deepEqual(calls, [
+    ['sync', '2026-08-13'],
+    ['result', '2026-08-13', 'HOME'],
+  ]);
+  assert.equal(routed.result.messages[0].channel, 'statistics');
+  assert.match(routed.result.messages[0].text, /Đã đồng bộ 1 cầu thủ/);
+  assert.match(routed.result.messages[0].text, /không khớp tên: 1/);
+  assert.match(routed.result.messages[0].text, /thắng\/thua/);
+});
+
+test('independent /match sync reports unchanged and unresolved players', async () => {
+  const unchanged = createMatchRouter({
+    matches: createMatches({
+      async syncPlayerLinks() {
+        return {
+          linked: 0,
+          alreadyLinked: 2,
+          unmatched: 0,
+          ambiguous: 0,
+          total: 2,
+          winnerSide: null,
+        };
+      },
+    }),
+  });
+  const unresolved = createMatchRouter({
+    matches: createMatches({
+      async syncPlayerLinks() {
+        return {
+          linked: 0,
+          alreadyLinked: 1,
+          unmatched: 1,
+          ambiguous: 1,
+          total: 3,
+          winnerSide: null,
+        };
+      },
+    }),
+  });
+
+  const unchangedResult = await unchanged.router.run(createContext(['sync']));
+  const unresolvedResult = await unresolved.router.run(createContext(['sync']));
+
+  assert.equal(
+    unchangedResult.result.messages[0].text,
+    MATCH_MESSAGES.syncUnchanged
+  );
+  assert.match(unresolvedResult.result.messages[0].text, /Chưa tìm thấy/);
+  assert.match(unresolvedResult.result.messages[0].text, /không khớp tên: 1/);
+  assert.match(unresolvedResult.result.messages[0].text, /trùng liên kết: 1/);
 });
 
 test('independent /match updates score and generates a summary', async () => {
