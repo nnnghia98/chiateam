@@ -71,7 +71,8 @@ Important rewritten command forms:
 - `/edit-stats NUMBER matches=N wins=N losses=N draws=N`.
 - `/match view|save|sync|score|winner|loser|goal|assist|mvp|delete ...` uses one explicit action.
 - `/match sync [dd/mm/yyyy]` links saved match entries to players who
-  registered later. It uses an exact name match and skips duplicate names.
+  registered later. It uses Telegram `user_id` and skips duplicate identities.
+  Older unlinked entries without a stored `user_id` must be saved again first.
 - `/match winner HOME [dd/mm/yyyy]` or `/match loser AWAY [dd/mm/yyyy]`
   updates registered player win/loss totals without double-counting the same result.
 - `/matches [LIMIT] [PAGE]` and `/players [PAGE]` support bounded pages.

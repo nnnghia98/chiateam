@@ -253,15 +253,22 @@ test('independent /match save loads only current lineup state', async () => {
       tiensan: 500000,
       teamA: [[1, { name: 'Alice', userId: 1 }]],
       teamB: [['guest:1', { name: 'Bob', memberId: 'guest:1' }]],
-      team3C: [],
+      team3C: [[3, { name: 'Old Name', userId: 3 }]],
     },
     players: createPlayers({
       async findByActor(actor) {
-        assert.equal(actor.externalId, '1');
-        return { id: 101, name: 'Alice', number: 10 };
+        if (actor.externalId === '1') {
+          return { id: 101, name: 'Alice', number: 10, user_id: 1 };
+        }
+
+        assert.equal(actor.externalId, '3');
+        return null;
       },
       async list() {
-        return [{ id: 102, name: 'Bob', number: 11 }];
+        return [
+          { id: 102, name: 'Bob', number: 11, user_id: 2 },
+          { id: 103, name: 'Old Name', number: 12, user_id: 999 },
+        ];
       },
     }),
     matches: createMatches({
@@ -280,9 +287,9 @@ test('independent /match save loads only current lineup state', async () => {
       matchDate: '2026-08-06',
       san: 'Sân A',
       tiensan: 500000,
-      homePlayers: [{ playerId: 101, displayName: 'Alice' }],
-      awayPlayers: [{ playerId: 102, displayName: 'Bob' }],
-      extraPlayers: [],
+      homePlayers: [{ playerId: 101, userId: 1, displayName: 'Alice' }],
+      awayPlayers: [{ playerId: 102, userId: 2, displayName: 'Bob' }],
+      extraPlayers: [{ playerId: null, userId: 3, displayName: 'Old Name' }],
     },
   ]);
   assert.equal(getSaveCount(), 0);
@@ -344,7 +351,7 @@ test('independent /match sync links later players and reapplies saved result', a
   ]);
   assert.equal(routed.result.messages[0].channel, 'statistics');
   assert.match(routed.result.messages[0].text, /Đã đồng bộ 1 cầu thủ/);
-  assert.match(routed.result.messages[0].text, /không khớp tên: 1/);
+  assert.match(routed.result.messages[0].text, /user_id.*chưa đăng ký: 1/);
   assert.match(routed.result.messages[0].text, /thắng\/thua/);
 });
 
@@ -386,8 +393,11 @@ test('independent /match sync reports unchanged and unresolved players', async (
     MATCH_MESSAGES.syncUnchanged
   );
   assert.match(unresolvedResult.result.messages[0].text, /Chưa tìm thấy/);
-  assert.match(unresolvedResult.result.messages[0].text, /không khớp tên: 1/);
-  assert.match(unresolvedResult.result.messages[0].text, /trùng liên kết: 1/);
+  assert.match(
+    unresolvedResult.result.messages[0].text,
+    /user_id.*chưa đăng ký: 1/
+  );
+  assert.match(unresolvedResult.result.messages[0].text, /Trùng user_id.*: 1/);
 });
 
 test('independent /match updates score and generates a summary', async () => {

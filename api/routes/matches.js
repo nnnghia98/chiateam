@@ -3,6 +3,7 @@ const { db } = require('../db/config');
 const MATCH_SIDES = new Set(['HOME', 'AWAY']);
 const PLAYER_RESULTS = new Set(['WIN', 'LOSE']);
 let matchResultSchemaPromise = null;
+let matchPlayerUserIdSchemaPromise = null;
 
 async function ensureMatchResultColumns() {
   if (!matchResultSchemaPromise) {
@@ -20,6 +21,28 @@ async function ensureMatchResultColumns() {
   }
 
   return matchResultSchemaPromise;
+}
+
+async function ensureMatchPlayerUserIdColumn() {
+  if (!matchPlayerUserIdSchemaPromise) {
+    matchPlayerUserIdSchemaPromise = (async () => {
+      await db.query(
+        'ALTER TABLE IF EXISTS match_players ADD COLUMN IF NOT EXISTS user_id BIGINT'
+      );
+      await db.query(
+        `UPDATE match_players mp
+         SET user_id = p.user_id
+         FROM players p
+         WHERE mp.player_id = p.id
+           AND mp.user_id IS DISTINCT FROM p.user_id`
+      );
+    })().catch(error => {
+      matchPlayerUserIdSchemaPromise = null;
+      throw error;
+    });
+  }
+
+  return matchPlayerUserIdSchemaPromise;
 }
 
 function buildMatchOutcomePlan(previousResults, lineup, winnerSide) {
@@ -116,29 +139,35 @@ function buildMatchOutcomePlan(previousResults, lineup, winnerSide) {
   };
 }
 
-function normalizeMatchPlayerName(value) {
-  return String(value ?? '')
-    .split(' (')[0]
-    .trim()
-    .toLowerCase();
+function normalizeUserId(value) {
+  const text = String(value ?? '').trim();
+
+  if (!/^-?\d+$/.test(text)) {
+    return null;
+  }
+
+  try {
+    const userId = BigInt(text);
+    return userId === 0n ? null : userId.toString();
+  } catch {
+    return null;
+  }
 }
 
 function buildMatchPlayerLinkPlan(matchPlayers, registeredPlayers) {
-  const playersByName = new Map();
+  const playersByUserId = new Map();
 
   for (const player of registeredPlayers || []) {
     const playerId = Number(player?.id);
-    const name = String(player?.name ?? '')
-      .trim()
-      .toLowerCase();
+    const userId = normalizeUserId(player?.user_id);
 
-    if (!Number.isInteger(playerId) || playerId <= 0 || !name) {
+    if (!Number.isInteger(playerId) || playerId <= 0 || !userId) {
       continue;
     }
 
-    const matches = playersByName.get(name) || [];
+    const matches = playersByUserId.get(userId) || [];
     matches.push({ id: playerId });
-    playersByName.set(name, matches);
+    playersByUserId.set(userId, matches);
   }
 
   const usedPlayerIds = new Set();
@@ -163,8 +192,8 @@ function buildMatchPlayerLinkPlan(matchPlayers, registeredPlayers) {
       continue;
     }
 
-    const name = normalizeMatchPlayerName(row?.display_name);
-    const candidates = name ? playersByName.get(name) || [] : [];
+    const userId = normalizeUserId(row?.user_id);
+    const candidates = userId ? playersByUserId.get(userId) || [] : [];
     if (candidates.length === 1) {
       const candidateId = candidates[0].id;
       candidateUseCounts.set(
@@ -180,8 +209,8 @@ function buildMatchPlayerLinkPlan(matchPlayers, registeredPlayers) {
       continue;
     }
 
-    const name = normalizeMatchPlayerName(row?.display_name);
-    const candidates = name ? playersByName.get(name) || [] : [];
+    const userId = normalizeUserId(row?.user_id);
+    const candidates = userId ? playersByUserId.get(userId) || [] : [];
 
     if (candidates.length === 0) {
       unmatched += 1;
@@ -304,6 +333,8 @@ async function createOrUpdateMatch({
   awayPlayers,
   extraPlayers = [],
 }) {
+  await ensureMatchPlayerUserIdColumn();
+
   const existing = await getMatchByDate(matchDate);
 
   let matchId;
@@ -332,8 +363,17 @@ async function createOrUpdateMatch({
 
   for (const p of allPlayers) {
     await db.query(
-      'INSERT INTO match_players (match_id, player_id, side, display_name) VALUES ($1, $2, $3, $4)',
-      [matchId, p.playerId || null, p.side, p.displayName || null]
+      `INSERT INTO match_players (
+         match_id, player_id, user_id, side, display_name
+       )
+       VALUES ($1, $2, $3, $4, $5)`,
+      [
+        matchId,
+        p.playerId || null,
+        p.userId || null,
+        p.side,
+        p.displayName || null,
+      ]
     );
   }
 
@@ -605,10 +645,13 @@ async function applyMatchOutcome(matchDate, winnerSide) {
 
 /**
  * Link unregistered saved lineup rows to players registered later.
- * Exact normalized names are required; duplicate names are left unchanged.
+ * Telegram user IDs are required; duplicate identities are left unchanged.
  */
 async function syncMatchPlayerLinks(matchDate) {
-  await ensureMatchResultColumns();
+  await Promise.all([
+    ensureMatchResultColumns(),
+    ensureMatchPlayerUserIdColumn(),
+  ]);
 
   const client = await db.connect();
   try {
@@ -629,7 +672,7 @@ async function syncMatchPlayerLinks(matchDate) {
     }
 
     const { rows: matchPlayers } = await client.query(
-      `SELECT id, player_id, display_name
+      `SELECT id, player_id, user_id
        FROM match_players
        WHERE match_id = $1
        ORDER BY id
@@ -637,7 +680,7 @@ async function syncMatchPlayerLinks(matchDate) {
       [match.id]
     );
     const { rows: registeredPlayers } = await client.query(
-      `SELECT id, name
+      `SELECT id, user_id
        FROM players
        ORDER BY id
        FOR SHARE`
@@ -751,6 +794,7 @@ module.exports = {
   applyMatchOutcome,
   buildMatchOutcomePlan,
   buildMatchPlayerLinkPlan,
+  ensureMatchPlayerUserIdColumn,
   ensureMatchResultColumns,
   getMatchByDate,
   isPlayerInMatch,

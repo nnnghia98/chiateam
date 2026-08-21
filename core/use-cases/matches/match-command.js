@@ -67,8 +67,8 @@ const MATCH_MESSAGES = Object.freeze({
   syncUpdated: '✅ Đã đồng bộ {linked} cầu thủ với bảng cầu thủ.',
   syncUnchanged: 'ℹ️ Tất cả cầu thủ trong trận đã liên kết với bảng cầu thủ.',
   syncNoLink: '⚠️ Chưa tìm thấy cầu thủ mới để liên kết.',
-  syncUnmatched: '• Chưa đăng ký hoặc không khớp tên: {unmatched}',
-  syncAmbiguous: '• Trùng tên hoặc trùng liên kết: {ambiguous}',
+  syncUnmatched: '• Thiếu user_id hoặc chưa đăng ký: {unmatched}',
+  syncAmbiguous: '• Trùng user_id hoặc trùng liên kết: {ambiguous}',
   syncResultUpdated: '📊 Đã đồng bộ lại thống kê thắng/thua.',
   syncResultPartial:
     '⚠️ Đã liên kết cầu thủ nhưng chưa đồng bộ được thắng/thua.',

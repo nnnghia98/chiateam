@@ -6,16 +6,17 @@ const {
   buildMatchPlayerLinkPlan,
 } = require('./matches');
 
-test('match player link plan matches later registrations by exact name', () => {
+test('match player link plan uses user_id after a registered name changes', () => {
   const plan = buildMatchPlayerLinkPlan(
     [
-      { id: 1, player_id: 10, display_name: 'Alice' },
-      { id: 2, player_id: null, display_name: '  BOB (guest) ' },
-      { id: 3, player_id: null, display_name: 'Unknown' },
+      { id: 1, player_id: 10, user_id: '100', display_name: 'Alice' },
+      { id: 2, player_id: null, user_id: '200', display_name: 'Old Bob' },
+      { id: 3, player_id: null, user_id: null, display_name: 'Unknown' },
     ],
     [
-      { id: 10, name: 'Alice' },
-      { id: 20, name: 'Bob' },
+      { id: 10, user_id: '100', name: 'New Alice' },
+      { id: 20, user_id: '200', name: 'New Bob' },
+      { id: 30, user_id: '300', name: 'Unknown' },
     ]
   );
 
@@ -28,20 +29,20 @@ test('match player link plan matches later registrations by exact name', () => {
   });
 });
 
-test('match player link plan skips duplicate names and reused players', () => {
+test('match player link plan skips duplicate identities and reused players', () => {
   const plan = buildMatchPlayerLinkPlan(
     [
-      { id: 1, player_id: 10, display_name: 'Alice' },
-      { id: 2, player_id: null, display_name: 'Alice' },
-      { id: 3, player_id: null, display_name: 'Sam' },
-      { id: 4, player_id: null, display_name: 'Chris' },
-      { id: 5, player_id: null, display_name: 'Chris' },
+      { id: 1, player_id: 10, user_id: '100' },
+      { id: 2, player_id: null, user_id: '100' },
+      { id: 3, player_id: null, user_id: '200' },
+      { id: 4, player_id: null, user_id: '300' },
+      { id: 5, player_id: null, user_id: '300' },
     ],
     [
-      { id: 10, name: 'Alice' },
-      { id: 20, name: 'Sam' },
-      { id: 21, name: 'Sam' },
-      { id: 30, name: 'Chris' },
+      { id: 10, user_id: '100' },
+      { id: 20, user_id: '200' },
+      { id: 21, user_id: '200' },
+      { id: 30, user_id: '300' },
     ]
   );
 

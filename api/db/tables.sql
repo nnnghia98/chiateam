@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS match_players (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     match_id INTEGER NOT NULL,
     player_id INTEGER,
+    user_id BIGINT,
     side TEXT NOT NULL,
     display_name TEXT,
     FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE,
