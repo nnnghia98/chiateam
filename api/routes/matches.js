@@ -116,6 +116,104 @@ function buildMatchOutcomePlan(previousResults, lineup, winnerSide) {
   };
 }
 
+function normalizeMatchPlayerName(value) {
+  return String(value ?? '')
+    .split(' (')[0]
+    .trim()
+    .toLowerCase();
+}
+
+function buildMatchPlayerLinkPlan(matchPlayers, registeredPlayers) {
+  const playersByName = new Map();
+
+  for (const player of registeredPlayers || []) {
+    const playerId = Number(player?.id);
+    const name = String(player?.name ?? '')
+      .trim()
+      .toLowerCase();
+
+    if (!Number.isInteger(playerId) || playerId <= 0 || !name) {
+      continue;
+    }
+
+    const matches = playersByName.get(name) || [];
+    matches.push({ id: playerId });
+    playersByName.set(name, matches);
+  }
+
+  const usedPlayerIds = new Set();
+  let alreadyLinked = 0;
+
+  for (const row of matchPlayers || []) {
+    const playerId = Number(row?.player_id);
+    if (Number.isInteger(playerId) && playerId > 0) {
+      alreadyLinked += 1;
+      usedPlayerIds.add(playerId);
+    }
+  }
+
+  const links = [];
+  let unmatched = 0;
+  let ambiguous = 0;
+  const candidateUseCounts = new Map();
+
+  for (const row of matchPlayers || []) {
+    const currentPlayerId = Number(row?.player_id);
+    if (Number.isInteger(currentPlayerId) && currentPlayerId > 0) {
+      continue;
+    }
+
+    const name = normalizeMatchPlayerName(row?.display_name);
+    const candidates = name ? playersByName.get(name) || [] : [];
+    if (candidates.length === 1) {
+      const candidateId = candidates[0].id;
+      candidateUseCounts.set(
+        candidateId,
+        (candidateUseCounts.get(candidateId) || 0) + 1
+      );
+    }
+  }
+
+  for (const row of matchPlayers || []) {
+    const currentPlayerId = Number(row?.player_id);
+    if (Number.isInteger(currentPlayerId) && currentPlayerId > 0) {
+      continue;
+    }
+
+    const name = normalizeMatchPlayerName(row?.display_name);
+    const candidates = name ? playersByName.get(name) || [] : [];
+
+    if (candidates.length === 0) {
+      unmatched += 1;
+      continue;
+    }
+
+    const candidate = candidates[0];
+    const matchPlayerId = Number(row?.id);
+    if (
+      candidates.length !== 1 ||
+      usedPlayerIds.has(candidate.id) ||
+      candidateUseCounts.get(candidate.id) !== 1 ||
+      !Number.isInteger(matchPlayerId) ||
+      matchPlayerId <= 0
+    ) {
+      ambiguous += 1;
+      continue;
+    }
+
+    links.push({ matchPlayerId, playerId: candidate.id });
+    usedPlayerIds.add(candidate.id);
+  }
+
+  return {
+    links,
+    alreadyLinked,
+    unmatched,
+    ambiguous,
+    total: Array.isArray(matchPlayers) ? matchPlayers.length : 0,
+  };
+}
+
 /**
  * Low-level repository for matches, match_players, and match_player_stats.
  * Migrated from SQLite (sqlite3 callbacks) to PostgreSQL (pg async/await).
@@ -506,6 +604,82 @@ async function applyMatchOutcome(matchDate, winnerSide) {
 }
 
 /**
+ * Link unregistered saved lineup rows to players registered later.
+ * Exact normalized names are required; duplicate names are left unchanged.
+ */
+async function syncMatchPlayerLinks(matchDate) {
+  await ensureMatchResultColumns();
+
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+
+    const { rows: matchRows } = await client.query(
+      `SELECT id, winner_side
+       FROM matches
+       WHERE match_date = $1
+       FOR UPDATE`,
+      [matchDate]
+    );
+    const match = matchRows[0];
+
+    if (!match) {
+      await client.query('COMMIT');
+      return null;
+    }
+
+    const { rows: matchPlayers } = await client.query(
+      `SELECT id, player_id, display_name
+       FROM match_players
+       WHERE match_id = $1
+       ORDER BY id
+       FOR UPDATE`,
+      [match.id]
+    );
+    const { rows: registeredPlayers } = await client.query(
+      `SELECT id, name
+       FROM players
+       ORDER BY id
+       FOR SHARE`
+    );
+    const plan = buildMatchPlayerLinkPlan(matchPlayers, registeredPlayers);
+    let linked = 0;
+
+    for (const link of plan.links) {
+      const result = await client.query(
+        `UPDATE match_players
+         SET player_id = $1
+         WHERE id = $2 AND match_id = $3 AND player_id IS NULL`,
+        [link.playerId, link.matchPlayerId, match.id]
+      );
+      linked += result.rowCount;
+    }
+
+    if (linked > 0) {
+      await client.query(
+        'UPDATE matches SET updated_at = NOW() WHERE id = $1',
+        [match.id]
+      );
+    }
+
+    await client.query('COMMIT');
+    return {
+      linked,
+      alreadyLinked: plan.alreadyLinked,
+      unmatched: plan.unmatched,
+      ambiguous: plan.ambiguous,
+      total: plan.total,
+      winnerSide: match.winner_side || null,
+    };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
  * Delete a match by date. Cascades to match_players and match_player_stats.
  */
 async function deleteMatchByDate(matchDate) {
@@ -576,6 +750,7 @@ async function updateMatchByDate(matchDate, updates) {
 module.exports = {
   applyMatchOutcome,
   buildMatchOutcomePlan,
+  buildMatchPlayerLinkPlan,
   ensureMatchResultColumns,
   getMatchByDate,
   isPlayerInMatch,
@@ -589,4 +764,5 @@ module.exports = {
   getMatchPlayerStats,
   addMatchPlayerStatDelta,
   setMatchMvp,
+  syncMatchPlayerLinks,
 };

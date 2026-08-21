@@ -30,6 +30,7 @@ const MATCH_SAVE_STATE_KEYS = Object.freeze([
 ]);
 const MATCH_WRITE_ACTIONS = new Set([
   'save',
+  'sync',
   'score',
   'winner',
   'loser',
@@ -44,6 +45,7 @@ const MATCH_MESSAGES = Object.freeze({
     '📋 Cách dùng /match:\n' +
     '• /match view [dd/mm/yyyy]\n' +
     '• /match save [dd/mm/yyyy] (admin)\n' +
+    '• /match sync [dd/mm/yyyy] (admin)\n' +
     '• /match score HOME-AWAY [dd/mm/yyyy] (admin)\n' +
     '• /match winner HOME|AWAY [dd/mm/yyyy] (admin)\n' +
     '• /match loser HOME|AWAY [dd/mm/yyyy] (admin)\n' +
@@ -62,6 +64,14 @@ const MATCH_MESSAGES = Object.freeze({
     '⚠️ Cần có team và ít nhất sân hoặc tiền sân trước khi lưu trận.',
   playerNotInMatch: '⚠️ Cầu thủ số {number} không có trong trận đấu này.',
   saved: '✅ Đã lưu trận đấu!',
+  syncUpdated: '✅ Đã đồng bộ {linked} cầu thủ với bảng cầu thủ.',
+  syncUnchanged: 'ℹ️ Tất cả cầu thủ trong trận đã liên kết với bảng cầu thủ.',
+  syncNoLink: '⚠️ Chưa tìm thấy cầu thủ mới để liên kết.',
+  syncUnmatched: '• Chưa đăng ký hoặc không khớp tên: {unmatched}',
+  syncAmbiguous: '• Trùng tên hoặc trùng liên kết: {ambiguous}',
+  syncResultUpdated: '📊 Đã đồng bộ lại thống kê thắng/thua.',
+  syncResultPartial:
+    '⚠️ Đã liên kết cầu thủ nhưng chưa đồng bộ được thắng/thua.',
   scoreUpdated: '✅ Đã cập nhật tỷ số!',
   resultUpdated:
     '✅ Đã cập nhật kết quả: {winner} thắng, {loser} thua.\n' +
@@ -137,7 +147,7 @@ function parseMatchRequest(args, now = () => new Date()) {
 
   const action = String(args[0]).trim().toLowerCase();
 
-  if (action === 'view' || action === 'save') {
+  if (action === 'view' || action === 'save' || action === 'sync') {
     if (args.length > 2) return { error: 'INVALID_ARGUMENTS' };
     const resolved = resolveRequestDate(args[1], now);
     return resolved.error ? resolved : { kind: action, date: resolved.date };
@@ -263,6 +273,39 @@ async function getOptionalSummary(generator, match) {
 
 function formatMoney(value) {
   return new Intl.NumberFormat('vi-VN').format(Number(value) || 0);
+}
+
+function buildMatchSyncMessage(outcome) {
+  const linked = Number(outcome.linked) || 0;
+  const unmatched = Number(outcome.unmatched) || 0;
+  const ambiguous = Number(outcome.ambiguous) || 0;
+  const lines = [];
+
+  if (linked > 0) {
+    lines.push(MATCH_MESSAGES.syncUpdated.replace('{linked}', String(linked)));
+  } else if (unmatched + ambiguous === 0) {
+    lines.push(MATCH_MESSAGES.syncUnchanged);
+  } else {
+    lines.push(MATCH_MESSAGES.syncNoLink);
+  }
+
+  if (unmatched > 0) {
+    lines.push(
+      MATCH_MESSAGES.syncUnmatched.replace('{unmatched}', String(unmatched))
+    );
+  }
+  if (ambiguous > 0) {
+    lines.push(
+      MATCH_MESSAGES.syncAmbiguous.replace('{ambiguous}', String(ambiguous))
+    );
+  }
+  if (outcome.resultSynced) {
+    lines.push(MATCH_MESSAGES.syncResultUpdated);
+  } else if (outcome.resultSyncFailed) {
+    lines.push(MATCH_MESSAGES.syncResultPartial);
+  }
+
+  return lines.join('\n');
 }
 
 function buildMatchSegments(match, date, summary = null, prefix = null) {
@@ -426,6 +469,36 @@ function createMatchCommand({
             code: 'MATCH_SAVED',
             match,
             date: request.date,
+          };
+        }
+
+        if (request.kind === 'sync') {
+          const sync = await matches.syncPlayerLinks(request.date);
+
+          if (!sync) {
+            return { changed: false, code: 'MATCH_MISSING' };
+          }
+
+          let resultSynced = false;
+          let resultSyncFailed = false;
+          if (sync.linked > 0 && ['HOME', 'AWAY'].includes(sync.winnerSide)) {
+            try {
+              const result = await matches.applyResult(
+                request.date,
+                sync.winnerSide
+              );
+              resultSynced = result.noRegisteredPlayers !== true;
+            } catch {
+              resultSyncFailed = true;
+            }
+          }
+
+          return {
+            changed: false,
+            code: 'MATCH_SYNCED',
+            ...sync,
+            resultSynced,
+            resultSyncFailed,
           };
         }
 
@@ -608,6 +681,12 @@ function createMatchCommand({
         return createTextResult(MATCH_MESSAGES.statPartial);
       }
 
+      if (outcome.code === 'MATCH_SYNCED') {
+        return createTextResult(buildMatchSyncMessage(outcome), [], {
+          channel: outcome.resultSynced ? 'statistics' : 'source',
+        });
+      }
+
       if (outcome.code === 'MATCH_RESULT_SCORE_CONFLICT') {
         return createTextResult(MATCH_MESSAGES.resultScoreConflict);
       }
@@ -688,6 +767,7 @@ module.exports = {
   MATCH_SAVE_STATE_KEYS,
   MATCH_WRITE_ACTIONS,
   buildMatchSegments,
+  buildMatchSyncMessage,
   createMatchCommand,
   hasSaveData,
   normalizeSaveState,

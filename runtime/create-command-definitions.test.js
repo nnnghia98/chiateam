@@ -54,6 +54,7 @@ function createDependencies() {
       async save() {},
       async updateScore() {},
       async applyResult() {},
+      async syncPlayerLinks() {},
       async deleteByDate() {},
       async list() {},
       async containsPlayer() {},

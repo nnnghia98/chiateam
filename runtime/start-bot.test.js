@@ -1621,6 +1621,9 @@ test('Telegram runtime routes the complete shared command catalog', async () => 
     async applyResult() {
       return { unchanged: false, winners: 1, losers: 0 };
     },
+    async syncPlayerLinks() {
+      return null;
+    },
     async deleteByDate() {
       return true;
     },

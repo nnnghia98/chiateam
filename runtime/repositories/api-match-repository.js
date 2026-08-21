@@ -8,6 +8,7 @@ const {
   isPlayerInMatch,
   listMatches,
   setMatchMvp,
+  syncMatchPlayerLinks,
   updateMatchResult,
 } = require('../../api/routes/matches');
 const { createMatchRepository } = require('../../core/ports/match-repository');
@@ -18,6 +19,7 @@ function createApiMatchRepository({
   saveMatch = createOrUpdateMatch,
   setScore = updateMatchResult,
   setResult = applyMatchOutcome,
+  syncPlayers = syncMatchPlayerLinks,
   removeByDate = deleteMatchByDate,
   getList = listMatches,
   hasPlayer = isPlayerInMatch,
@@ -39,6 +41,9 @@ function createApiMatchRepository({
     },
     applyResult(date, winnerSide) {
       return setResult(date, winnerSide);
+    },
+    syncPlayerLinks(date) {
+      return syncPlayers(date);
     },
     deleteByDate(date) {
       return removeByDate(date);

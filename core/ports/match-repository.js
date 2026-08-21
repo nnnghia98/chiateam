@@ -4,6 +4,7 @@ const MATCH_REPOSITORY_METHODS = Object.freeze([
   'save',
   'updateScore',
   'applyResult',
+  'syncPlayerLinks',
   'deleteByDate',
   'list',
   'containsPlayer',

@@ -1,7 +1,55 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { buildMatchOutcomePlan } = require('./matches');
+const {
+  buildMatchOutcomePlan,
+  buildMatchPlayerLinkPlan,
+} = require('./matches');
+
+test('match player link plan matches later registrations by exact name', () => {
+  const plan = buildMatchPlayerLinkPlan(
+    [
+      { id: 1, player_id: 10, display_name: 'Alice' },
+      { id: 2, player_id: null, display_name: '  BOB (guest) ' },
+      { id: 3, player_id: null, display_name: 'Unknown' },
+    ],
+    [
+      { id: 10, name: 'Alice' },
+      { id: 20, name: 'Bob' },
+    ]
+  );
+
+  assert.deepEqual(plan, {
+    links: [{ matchPlayerId: 2, playerId: 20 }],
+    alreadyLinked: 1,
+    unmatched: 1,
+    ambiguous: 0,
+    total: 3,
+  });
+});
+
+test('match player link plan skips duplicate names and reused players', () => {
+  const plan = buildMatchPlayerLinkPlan(
+    [
+      { id: 1, player_id: 10, display_name: 'Alice' },
+      { id: 2, player_id: null, display_name: 'Alice' },
+      { id: 3, player_id: null, display_name: 'Sam' },
+      { id: 4, player_id: null, display_name: 'Chris' },
+      { id: 5, player_id: null, display_name: 'Chris' },
+    ],
+    [
+      { id: 10, name: 'Alice' },
+      { id: 20, name: 'Sam' },
+      { id: 21, name: 'Sam' },
+      { id: 30, name: 'Chris' },
+    ]
+  );
+
+  assert.deepEqual(plan.links, []);
+  assert.equal(plan.alreadyLinked, 1);
+  assert.equal(plan.unmatched, 0);
+  assert.equal(plan.ambiguous, 4);
+});
 
 test('match outcome plan creates winner and loser changes for registered players', () => {
   const plan = buildMatchOutcomePlan(
