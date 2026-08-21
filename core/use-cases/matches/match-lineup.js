@@ -42,15 +42,24 @@ function findPlayerByName(displayName, allPlayers) {
   );
 }
 
+function getTelegramUserId(actor, player) {
+  const value =
+    actor?.platform === 'telegram' ? actor.externalId : player?.user_id;
+  const userId = Number(value);
+
+  return Number.isSafeInteger(userId) && userId !== 0 ? userId : null;
+}
+
 async function resolveLineupMember(member, allPlayers, playerRepository) {
   const displayName = getMemberName(member).trim() || 'Không rõ';
   const actor = getMemberActor(member);
-  let player = actor ? await playerRepository.findByActor(actor) : null;
-
-  player = player || findPlayerByName(displayName, allPlayers);
+  const player = actor
+    ? await playerRepository.findByActor(actor)
+    : findPlayerByName(displayName, allPlayers);
 
   return {
     playerId: player?.id ?? null,
+    userId: getTelegramUserId(actor, player),
     displayName,
   };
 }
@@ -91,5 +100,6 @@ module.exports = {
   buildMatchLineups,
   findPlayerByName,
   getMemberActor,
+  getTelegramUserId,
   resolveLineupMember,
 };
