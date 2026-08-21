@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS matches (
     tiensan INTEGER,
     home_score INTEGER,
     away_score INTEGER,
+    winner_side TEXT CHECK (winner_side IS NULL OR winner_side IN ('HOME', 'AWAY')),
     notes TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -52,6 +53,7 @@ CREATE TABLE IF NOT EXISTS match_player_stats (
     goals INTEGER DEFAULT 0,
     assists INTEGER DEFAULT 0,
     is_mvp INTEGER DEFAULT 0,
+    result TEXT CHECK (result IS NULL OR result IN ('WIN', 'LOSE')),
     FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE,
     FOREIGN KEY (player_id) REFERENCES players(id),
     UNIQUE(match_id, player_id)

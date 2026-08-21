@@ -69,7 +69,9 @@ Important rewritten command forms:
 - `/register NUMBER`, `/register add NAME NUMBER`, or
   `/register delete NUMBER`.
 - `/edit-stats NUMBER matches=N wins=N losses=N draws=N`.
-- `/match view|save|score|goal|assist|mvp|delete ...` uses one explicit action.
+- `/match view|save|score|winner|loser|goal|assist|mvp|delete ...` uses one explicit action.
+- `/match winner HOME [dd/mm/yyyy]` or `/match loser AWAY [dd/mm/yyyy]`
+  updates registered player win/loss totals without double-counting the same result.
 - `/matches [LIMIT] [PAGE]` and `/players [PAGE]` support bounded pages.
 
 Interactive commands that use inline keyboards:

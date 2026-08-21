@@ -9,6 +9,7 @@ const {
   ensureWorldCupPredictionTables,
 } = require('../services/world-cup-predictions-service');
 const { ensureMatchMediaTables } = require('../services/match-media-service');
+const { ensureMatchResultColumns } = require('../routes/matches');
 
 async function ensurePlayersAvatarColumn() {
   await db.query(
@@ -24,6 +25,7 @@ async function initDatabase() {
   try {
     const result = await db.query('SELECT NOW() AS now');
     await ensurePlayersAvatarColumn();
+    await ensureMatchResultColumns();
     await ensureStorageTable();
     await ensureCurrentMatchTable();
     await ensureWorldCupPredictionTables();
@@ -33,6 +35,7 @@ async function initDatabase() {
       result.rows[0].now
     );
     console.log('✅ Ensured players.avatar column exists');
+    console.log('✅ Ensured match result columns exist');
     console.log('✅ Ensured storage table exists');
     console.log('✅ Ensured current_match table exists');
     console.log('✅ Ensured World Cup prediction tables exist');
