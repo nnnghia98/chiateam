@@ -43,6 +43,7 @@ CREATE TABLE public.matches (
   tiensan integer,
   home_score integer,
   away_score integer,
+  winner_side text CHECK (winner_side IS NULL OR winner_side = ANY (ARRAY['HOME', 'AWAY'])),
   notes text,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
@@ -70,6 +71,7 @@ CREATE TABLE public.match_player_stats (
   goals integer DEFAULT 0,
   assists integer DEFAULT 0,
   is_mvp integer DEFAULT 0,
+  result text CHECK (result IS NULL OR result = ANY (ARRAY['WIN', 'LOSE'])),
   CONSTRAINT match_player_stats_pkey PRIMARY KEY (id),
   CONSTRAINT match_player_stats_match_id_player_id_key
     UNIQUE (match_id, player_id),

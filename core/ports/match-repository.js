@@ -3,6 +3,7 @@ const MATCH_REPOSITORY_METHODS = Object.freeze([
   'findWithPlayers',
   'save',
   'updateScore',
+  'applyResult',
   'deleteByDate',
   'list',
   'containsPlayer',

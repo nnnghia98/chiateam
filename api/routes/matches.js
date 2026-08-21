@@ -1,5 +1,121 @@
 const { db } = require('../db/config');
 
+const MATCH_SIDES = new Set(['HOME', 'AWAY']);
+const PLAYER_RESULTS = new Set(['WIN', 'LOSE']);
+let matchResultSchemaPromise = null;
+
+async function ensureMatchResultColumns() {
+  if (!matchResultSchemaPromise) {
+    matchResultSchemaPromise = (async () => {
+      await db.query(
+        'ALTER TABLE IF EXISTS matches ADD COLUMN IF NOT EXISTS winner_side TEXT'
+      );
+      await db.query(
+        'ALTER TABLE IF EXISTS match_player_stats ADD COLUMN IF NOT EXISTS result TEXT'
+      );
+    })().catch(error => {
+      matchResultSchemaPromise = null;
+      throw error;
+    });
+  }
+
+  return matchResultSchemaPromise;
+}
+
+function buildMatchOutcomePlan(previousResults, lineup, winnerSide) {
+  if (!MATCH_SIDES.has(winnerSide)) {
+    throw new TypeError('winnerSide must be HOME or AWAY');
+  }
+
+  const desiredByPlayerId = new Map();
+  for (const row of lineup || []) {
+    const playerId = Number(row.player_id);
+    const playerNumber = Number(row.number);
+    const side = String(row.side || '').toUpperCase();
+
+    if (
+      !Number.isInteger(playerId) ||
+      playerId <= 0 ||
+      !Number.isInteger(playerNumber) ||
+      playerNumber <= 0 ||
+      !MATCH_SIDES.has(side)
+    ) {
+      continue;
+    }
+
+    const existing = desiredByPlayerId.get(playerId);
+    if (existing && existing.side !== side) {
+      const error = new Error('A registered player is on both match sides.');
+      error.code = 'PLAYER_ON_BOTH_SIDES';
+      throw error;
+    }
+
+    desiredByPlayerId.set(playerId, {
+      playerId,
+      playerNumber,
+      side,
+      result: side === winnerSide ? 'WIN' : 'LOSE',
+    });
+  }
+
+  const previousByPlayerId = new Map();
+  for (const row of previousResults || []) {
+    const playerId = Number(row.player_id);
+    const playerNumber = Number(row.number);
+    const result = String(row.result || '').toUpperCase();
+
+    if (
+      Number.isInteger(playerId) &&
+      playerId > 0 &&
+      Number.isInteger(playerNumber) &&
+      playerNumber > 0 &&
+      PLAYER_RESULTS.has(result)
+    ) {
+      previousByPlayerId.set(playerId, {
+        playerId,
+        playerNumber,
+        result,
+      });
+    }
+  }
+
+  const changes = [];
+  const playerIds = new Set([
+    ...previousByPlayerId.keys(),
+    ...desiredByPlayerId.keys(),
+  ]);
+
+  for (const playerId of playerIds) {
+    const previous = previousByPlayerId.get(playerId) || null;
+    const next = desiredByPlayerId.get(playerId) || null;
+
+    if (
+      previous?.result === next?.result &&
+      previous?.playerNumber === next?.playerNumber
+    ) {
+      continue;
+    }
+
+    changes.push({
+      playerId,
+      previousPlayerNumber: previous?.playerNumber ?? null,
+      nextPlayerNumber: next?.playerNumber ?? null,
+      previousResult: previous?.result ?? null,
+      nextResult: next?.result ?? null,
+    });
+  }
+
+  const desiredResults = [...desiredByPlayerId.values()];
+
+  return {
+    changes,
+    desiredResults,
+    winners: desiredResults.filter(item => item.result === 'WIN').length,
+    losers: desiredResults.filter(item => item.result === 'LOSE').length,
+    unchanged: changes.length === 0,
+  };
+}
+
 /**
  * Low-level repository for matches, match_players, and match_player_stats.
  * Migrated from SQLite (sqlite3 callbacks) to PostgreSQL (pg async/await).
@@ -9,7 +125,10 @@ const { db } = require('../db/config');
  * Get match by date (YYYY-MM-DD).
  */
 async function getMatchByDate(matchDate) {
-  const { rows } = await db.query('SELECT * FROM matches WHERE match_date = $1', [matchDate]);
+  const { rows } = await db.query(
+    'SELECT * FROM matches WHERE match_date = $1',
+    [matchDate]
+  );
   return rows[0] || null;
 }
 
@@ -79,7 +198,14 @@ async function getMatchWithPlayers(matchDate) {
 /**
  * Create or update a match and its players.
  */
-async function createOrUpdateMatch({ matchDate, san, tiensan, homePlayers, awayPlayers, extraPlayers = [] }) {
+async function createOrUpdateMatch({
+  matchDate,
+  san,
+  tiensan,
+  homePlayers,
+  awayPlayers,
+  extraPlayers = [],
+}) {
   const existing = await getMatchByDate(matchDate);
 
   let matchId;
@@ -159,7 +285,10 @@ async function addMatchPlayerStatDelta(matchId, playerId, stat, delta) {
  * Set MVP for a match. Clears previous MVP and sets the given player.
  */
 async function setMatchMvp(matchId, playerId) {
-  await db.query('UPDATE match_player_stats SET is_mvp = 0 WHERE match_id = $1', [matchId]);
+  await db.query(
+    'UPDATE match_player_stats SET is_mvp = 0 WHERE match_id = $1',
+    [matchId]
+  );
   await db.query(
     `INSERT INTO match_player_stats (match_id, player_id, goals, assists, is_mvp)
      VALUES ($1, $2, 0, 0, 1)
@@ -182,10 +311,207 @@ async function updateMatchResult(matchDate, homeScore, awayScore) {
 }
 
 /**
+ * Apply one HOME/AWAY result to registered players in a saved match.
+ * Stored per-match outcomes make this idempotent and allow later corrections.
+ */
+async function applyMatchOutcome(matchDate, winnerSide) {
+  const normalizedWinner = String(winnerSide || '').toUpperCase();
+  if (!MATCH_SIDES.has(normalizedWinner)) {
+    throw new TypeError('winnerSide must be HOME or AWAY');
+  }
+
+  await ensureMatchResultColumns();
+
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+
+    const { rows: matchRows } = await client.query(
+      `SELECT id, winner_side
+       FROM matches
+       WHERE match_date = $1
+       FOR UPDATE`,
+      [matchDate]
+    );
+    const match = matchRows[0];
+    if (!match) {
+      const error = new Error('Match not found');
+      error.code = 'MATCH_NOT_FOUND';
+      throw error;
+    }
+
+    const { rows: lineup } = await client.query(
+      `SELECT mp.player_id, mp.side, p.number
+       FROM match_players mp
+       JOIN players p ON p.id = mp.player_id
+       WHERE mp.match_id = $1 AND mp.side IN ('HOME', 'AWAY')`,
+      [match.id]
+    );
+    const { rows: previousResults } = await client.query(
+      `SELECT stats.player_id, stats.result, p.number
+       FROM match_player_stats stats
+       JOIN players p ON p.id = stats.player_id
+       WHERE stats.match_id = $1 AND stats.result IS NOT NULL
+       FOR UPDATE`,
+      [match.id]
+    );
+    const plan = buildMatchOutcomePlan(
+      previousResults,
+      lineup,
+      normalizedWinner
+    );
+
+    if (plan.desiredResults.length === 0 && plan.changes.length === 0) {
+      await client.query('COMMIT');
+      return {
+        unchanged: true,
+        winners: 0,
+        losers: 0,
+        noRegisteredPlayers: true,
+      };
+    }
+
+    const unchanged = match.winner_side === normalizedWinner && plan.unchanged;
+    if (unchanged) {
+      await client.query('COMMIT');
+      return {
+        unchanged: true,
+        winners: plan.winners,
+        losers: plan.losers,
+      };
+    }
+
+    const deltasByNumber = new Map();
+    for (const change of plan.changes) {
+      if (change.previousResult) {
+        const delta = deltasByNumber.get(change.previousPlayerNumber) || {
+          matches: 0,
+          wins: 0,
+          losses: 0,
+        };
+        delta.matches -= 1;
+        delta.wins -= change.previousResult === 'WIN' ? 1 : 0;
+        delta.losses -= change.previousResult === 'LOSE' ? 1 : 0;
+        deltasByNumber.set(change.previousPlayerNumber, delta);
+      }
+      if (change.nextResult) {
+        const delta = deltasByNumber.get(change.nextPlayerNumber) || {
+          matches: 0,
+          wins: 0,
+          losses: 0,
+        };
+        delta.matches += 1;
+        delta.wins += change.nextResult === 'WIN' ? 1 : 0;
+        delta.losses += change.nextResult === 'LOSE' ? 1 : 0;
+        deltasByNumber.set(change.nextPlayerNumber, delta);
+      }
+    }
+
+    const playerNumbers = [...deltasByNumber.keys()].sort(
+      (left, right) => left - right
+    );
+    let leaderboardByNumber = new Map();
+    if (playerNumbers.length > 0) {
+      await client.query(
+        `INSERT INTO leaderboard (
+           player_number, total_match, total_win, total_lose, total_draw,
+           goal, assist, winrate, updated_at
+         )
+         SELECT player_number, 0, 0, 0, 0, 0, 0, 0, NOW()
+         FROM unnest($1::integer[]) AS input(player_number)
+         ON CONFLICT (player_number) DO NOTHING`,
+        [playerNumbers]
+      );
+      const { rows } = await client.query(
+        `SELECT player_number, total_match, total_win, total_lose, total_draw
+         FROM leaderboard
+         WHERE player_number = ANY($1)
+         ORDER BY player_number
+         FOR UPDATE`,
+        [playerNumbers]
+      );
+      leaderboardByNumber = new Map(
+        rows.map(row => [Number(row.player_number), row])
+      );
+    }
+
+    for (const [playerNumber, delta] of deltasByNumber) {
+      const current = leaderboardByNumber.get(playerNumber) || {};
+      const totalMatch = Number(current.total_match || 0) + delta.matches;
+      const totalWin = Number(current.total_win || 0) + delta.wins;
+      const totalLose = Number(current.total_lose || 0) + delta.losses;
+      const totalDraw = Number(current.total_draw || 0);
+
+      if (
+        [totalMatch, totalWin, totalLose, totalDraw].some(value => value < 0)
+      ) {
+        const error = new Error('Stored leaderboard totals are inconsistent.');
+        error.code = 'INVALID_LEADERBOARD_TOTALS';
+        throw error;
+      }
+
+      const winrate =
+        totalMatch > 0 ? Math.round((totalWin / totalMatch) * 1000) / 1000 : 0;
+      await client.query(
+        `INSERT INTO leaderboard (
+           player_number, total_match, total_win, total_lose, total_draw,
+           goal, assist, winrate, updated_at
+         )
+         VALUES ($1, $2, $3, $4, $5, 0, 0, $6, NOW())
+         ON CONFLICT (player_number) DO UPDATE SET
+           total_match = EXCLUDED.total_match,
+           total_win = EXCLUDED.total_win,
+           total_lose = EXCLUDED.total_lose,
+           total_draw = EXCLUDED.total_draw,
+           winrate = EXCLUDED.winrate,
+           updated_at = NOW()`,
+        [playerNumber, totalMatch, totalWin, totalLose, totalDraw, winrate]
+      );
+    }
+
+    await client.query(
+      'UPDATE match_player_stats SET result = NULL WHERE match_id = $1',
+      [match.id]
+    );
+    for (const item of plan.desiredResults) {
+      await client.query(
+        `INSERT INTO match_player_stats (
+           match_id, player_id, goals, assists, is_mvp, result
+         )
+         VALUES ($1, $2, 0, 0, 0, $3)
+         ON CONFLICT (match_id, player_id) DO UPDATE SET result = $3`,
+        [match.id, item.playerId, item.result]
+      );
+    }
+    await client.query(
+      `UPDATE matches
+       SET winner_side = $1, updated_at = NOW()
+       WHERE id = $2`,
+      [normalizedWinner, match.id]
+    );
+
+    await client.query('COMMIT');
+    return {
+      unchanged: false,
+      winners: plan.winners,
+      losers: plan.losers,
+      noRegisteredPlayers: plan.desiredResults.length === 0,
+    };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
  * Delete a match by date. Cascades to match_players and match_player_stats.
  */
 async function deleteMatchByDate(matchDate) {
-  const result = await db.query('DELETE FROM matches WHERE match_date = $1', [matchDate]);
+  const result = await db.query('DELETE FROM matches WHERE match_date = $1', [
+    matchDate,
+  ]);
   return result.rowCount > 0;
 }
 
@@ -248,6 +574,9 @@ async function updateMatchByDate(matchDate, updates) {
 }
 
 module.exports = {
+  applyMatchOutcome,
+  buildMatchOutcomePlan,
+  ensureMatchResultColumns,
   getMatchByDate,
   isPlayerInMatch,
   getMatchWithPlayers,

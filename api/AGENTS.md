@@ -65,9 +65,9 @@ Default port resolution order: `API_PORT` → `UI_API_PORT` → `PORT` → `8787
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | `players`            | `id`, `user_id` (Telegram ID, negative = placeholder), `number` (shirt), `name`, `username`, `avatar`                      |
 | `leaderboard`        | `player_number` (FK → players.number), `total_match`, `total_win`, `total_lose`, `total_draw`, `winrate`, `goal`, `assist` |
-| `matches`            | `id`, `match_date` (unique, YYYY-MM-DD), `san`, `tiensan`, `home_score`, `away_score`, `notes`                             |
+| `matches`            | `id`, `match_date` (unique, YYYY-MM-DD), `san`, `tiensan`, `home_score`, `away_score`, `winner_side`, `notes`              |
 | `match_players`      | `match_id`, `player_id` (nullable for guests), `side` (`HOME`/`AWAY`/`EXTRA`), `display_name`                              |
-| `match_player_stats` | `match_id`, `player_id`, `goals`, `assists`, `is_mvp`                                                                      |
+| `match_player_stats` | `match_id`, `player_id`, `goals`, `assists`, `is_mvp`, `result`                                                            |
 
 ---
 

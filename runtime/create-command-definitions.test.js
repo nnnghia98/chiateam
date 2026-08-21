@@ -53,6 +53,7 @@ function createDependencies() {
       async findWithPlayers() {},
       async save() {},
       async updateScore() {},
+      async applyResult() {},
       async deleteByDate() {},
       async list() {},
       async containsPlayer() {},

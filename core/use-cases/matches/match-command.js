@@ -31,6 +31,8 @@ const MATCH_SAVE_STATE_KEYS = Object.freeze([
 const MATCH_WRITE_ACTIONS = new Set([
   'save',
   'score',
+  'winner',
+  'loser',
   'goal',
   'assist',
   'mvp',
@@ -43,6 +45,8 @@ const MATCH_MESSAGES = Object.freeze({
     '• /match view [dd/mm/yyyy]\n' +
     '• /match save [dd/mm/yyyy] (admin)\n' +
     '• /match score HOME-AWAY [dd/mm/yyyy] (admin)\n' +
+    '• /match winner HOME|AWAY [dd/mm/yyyy] (admin)\n' +
+    '• /match loser HOME|AWAY [dd/mm/yyyy] (admin)\n' +
     '• /match goal NUMBER COUNT [dd/mm/yyyy] (admin)\n' +
     '• /match assist NUMBER COUNT [dd/mm/yyyy] (admin)\n' +
     '• /match mvp NUMBER [dd/mm/yyyy] (admin)\n' +
@@ -50,6 +54,7 @@ const MATCH_MESSAGES = Object.freeze({
   permissionDenied: '⛔ Chỉ admin mới có quyền thay đổi trận đấu.',
   invalidDate: '⚠️ Ngày không hợp lệ. Dùng định dạng dd/mm/yyyy.',
   invalidScore: '⚠️ Tỷ số không hợp lệ. Ví dụ: 3-1.',
+  invalidSide: '⚠️ Team phải là HOME hoặc AWAY.',
   invalidPlayer: '⚠️ Số áo không hợp lệ hoặc chưa đăng ký.',
   invalidCount: '⚠️ Số bàn hoặc kiến tạo phải là số nguyên dương.',
   noMatch: '📭 Chưa có trận đấu cho ngày này.',
@@ -58,6 +63,17 @@ const MATCH_MESSAGES = Object.freeze({
   playerNotInMatch: '⚠️ Cầu thủ số {number} không có trong trận đấu này.',
   saved: '✅ Đã lưu trận đấu!',
   scoreUpdated: '✅ Đã cập nhật tỷ số!',
+  resultUpdated:
+    '✅ Đã cập nhật kết quả: {winner} thắng, {loser} thua.\n' +
+    '📊 {wins} cầu thủ thắng, {losses} cầu thủ thua.',
+  resultUnchanged:
+    'ℹ️ Kết quả đã là {winner} thắng, {loser} thua. Không cộng lại thống kê.',
+  resultScoreConflict:
+    '⚠️ Team thắng không khớp với tỷ số đã lưu. Hãy cập nhật tỷ số trước.',
+  resultScoreDraw:
+    '⚠️ Tỷ số đã lưu là hòa nên không thể chọn team thắng hoặc thua.',
+  noRegisteredPlayers:
+    '⚠️ Trận đấu không có cầu thủ đã đăng ký để cập nhật thống kê.',
   goalUpdated: '✅ Đã cập nhật bàn thắng!',
   assistUpdated: '✅ Đã cập nhật kiến tạo!',
   mvpUpdated: '✅ Đã cập nhật MVP!',
@@ -94,6 +110,26 @@ function resolveRequestDate(value, now) {
   return date ? { date } : { error: 'INVALID_DATE' };
 }
 
+function getOppositeSide(side) {
+  return side === 'HOME' ? 'AWAY' : 'HOME';
+}
+
+function getScoreWinner(match) {
+  if (match?.home_score == null || match?.away_score == null) {
+    return null;
+  }
+
+  const homeScore = Number(match.home_score);
+  const awayScore = Number(match.away_score);
+
+  if (!Number.isFinite(homeScore) || !Number.isFinite(awayScore)) {
+    return null;
+  }
+
+  if (homeScore === awayScore) return 'DRAW';
+  return homeScore > awayScore ? 'HOME' : 'AWAY';
+}
+
 function parseMatchRequest(args, now = () => new Date()) {
   if (!Array.isArray(args) || args.length === 0) {
     return { kind: 'help' };
@@ -117,6 +153,31 @@ function parseMatchRequest(args, now = () => new Date()) {
     return resolved.error
       ? resolved
       : { kind: 'score', date: resolved.date, score };
+  }
+
+  if (action === 'winner' || action === 'loser') {
+    if (args.length < 2 || args.length > 3) {
+      return { error: 'INVALID_ARGUMENTS' };
+    }
+
+    const selectedSide = String(args[1]).trim().toUpperCase();
+    if (!['HOME', 'AWAY'].includes(selectedSide)) {
+      return { error: 'INVALID_SIDE' };
+    }
+
+    const resolved = resolveRequestDate(args[2], now);
+    if (resolved.error) return resolved;
+
+    const winner =
+      action === 'winner' ? selectedSide : getOppositeSide(selectedSide);
+
+    return {
+      kind: 'result',
+      action,
+      date: resolved.date,
+      winner,
+      loser: getOppositeSide(winner),
+    };
   }
 
   if (action === 'goal' || action === 'assist') {
@@ -224,6 +285,9 @@ function buildMatchSegments(match, date, summary = null, prefix = null) {
     segments.push({
       text: `\n\n📊 Kết quả: ${match.home_score} - ${match.away_score}`,
     });
+  }
+  if (['HOME', 'AWAY'].includes(match.winner_side)) {
+    segments.push({ text: `\n🏆 Team thắng: ${match.winner_side}` });
   }
 
   const addTeam = (label, players) => {
@@ -385,6 +449,42 @@ function createMatchCommand({
           };
         }
 
+        if (request.kind === 'result') {
+          const match = await matches.findWithPlayers(request.date);
+
+          if (!match) {
+            return { changed: false, code: 'MATCH_MISSING' };
+          }
+
+          const scoreWinner = getScoreWinner(match);
+          if (scoreWinner === 'DRAW') {
+            return { changed: false, code: 'MATCH_RESULT_SCORE_DRAW' };
+          }
+          if (scoreWinner && scoreWinner !== request.winner) {
+            return { changed: false, code: 'MATCH_RESULT_SCORE_CONFLICT' };
+          }
+
+          const result = await matches.applyResult(
+            request.date,
+            request.winner
+          );
+
+          if (result.noRegisteredPlayers) {
+            return { changed: false, code: 'MATCH_RESULT_NO_PLAYERS' };
+          }
+
+          return {
+            changed: false,
+            code: result.unchanged
+              ? 'MATCH_RESULT_UNCHANGED'
+              : 'MATCH_RESULT_UPDATED',
+            winner: request.winner,
+            loser: request.loser,
+            wins: result.winners,
+            losses: result.losers,
+          };
+        }
+
         if (request.kind === 'delete') {
           const deleted = await matches.deleteByDate(request.date);
 
@@ -459,6 +559,10 @@ function createMatchCommand({
         return createTextResult(MATCH_MESSAGES.invalidScore);
       }
 
+      if (outcome.code === 'INVALID_SIDE') {
+        return createTextResult(MATCH_MESSAGES.invalidSide);
+      }
+
       if (outcome.code === 'INVALID_PLAYER') {
         return createTextResult(MATCH_MESSAGES.invalidPlayer);
       }
@@ -502,6 +606,38 @@ function createMatchCommand({
 
       if (outcome.code === 'MATCH_STAT_PARTIAL') {
         return createTextResult(MATCH_MESSAGES.statPartial);
+      }
+
+      if (outcome.code === 'MATCH_RESULT_SCORE_CONFLICT') {
+        return createTextResult(MATCH_MESSAGES.resultScoreConflict);
+      }
+
+      if (outcome.code === 'MATCH_RESULT_SCORE_DRAW') {
+        return createTextResult(MATCH_MESSAGES.resultScoreDraw);
+      }
+
+      if (outcome.code === 'MATCH_RESULT_NO_PLAYERS') {
+        return createTextResult(MATCH_MESSAGES.noRegisteredPlayers);
+      }
+
+      if (outcome.code === 'MATCH_RESULT_UPDATED') {
+        return createTextResult(
+          MATCH_MESSAGES.resultUpdated
+            .replace('{winner}', outcome.winner)
+            .replace('{loser}', outcome.loser)
+            .replace('{wins}', outcome.wins)
+            .replace('{losses}', outcome.losses),
+          [],
+          { channel: 'statistics' }
+        );
+      }
+
+      if (outcome.code === 'MATCH_RESULT_UNCHANGED') {
+        return createTextResult(
+          MATCH_MESSAGES.resultUnchanged
+            .replace('{winner}', outcome.winner)
+            .replace('{loser}', outcome.loser)
+        );
       }
 
       if (outcome.code === 'MATCH_DELETED') {
@@ -555,6 +691,8 @@ module.exports = {
   createMatchCommand,
   hasSaveData,
   normalizeSaveState,
+  getOppositeSide,
+  getScoreWinner,
   parseMatchRequest,
   parseScore,
 };

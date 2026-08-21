@@ -541,8 +541,9 @@ Migration progress:
 - [x] `/edit-stats` — admin-only named fields replace totals with validation
       and a before/after result.
 - [x] `/match` — explicit read and admin-write actions use shared match,
-      player, statistics, and optional summary ports; only `save` loads
-      next-match state.
+      player, statistics, and optional summary ports; `winner` and `loser`
+      update saved-match player totals safely, and only `save` loads next-match
+      state.
 - [x] `/matches` — bounded recent-match pagination through the match port.
 - [x] `/reset` — admin-only confirmed atomic reset with best-effort poll close.
 

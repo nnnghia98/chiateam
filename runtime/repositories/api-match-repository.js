@@ -1,5 +1,6 @@
 const {
   addMatchPlayerStatDelta,
+  applyMatchOutcome,
   createOrUpdateMatch,
   deleteMatchByDate,
   getMatchByDate,
@@ -16,6 +17,7 @@ function createApiMatchRepository({
   getWithPlayers = getMatchWithPlayers,
   saveMatch = createOrUpdateMatch,
   setScore = updateMatchResult,
+  setResult = applyMatchOutcome,
   removeByDate = deleteMatchByDate,
   getList = listMatches,
   hasPlayer = isPlayerInMatch,
@@ -34,6 +36,9 @@ function createApiMatchRepository({
     },
     updateScore(date, homeScore, awayScore) {
       return setScore(date, homeScore, awayScore);
+    },
+    applyResult(date, winnerSide) {
+      return setResult(date, winnerSide);
     },
     deleteByDate(date) {
       return removeByDate(date);
