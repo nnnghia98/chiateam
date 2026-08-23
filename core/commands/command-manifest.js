@@ -228,7 +228,7 @@ const COMMAND_MANIFEST = Object.freeze(
     {
       name: 'reset',
       category: 'Admin',
-      usage: '/reset confirm',
+      usage: '/reset',
       description: 'Reset toàn bộ dữ liệu trận kế tiếp',
       permission: 'admin',
     },

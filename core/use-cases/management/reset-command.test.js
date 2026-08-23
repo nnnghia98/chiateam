@@ -12,7 +12,6 @@ const {
   RESET_MESSAGES,
   RESET_STATE_KEYS,
   createResetCommand,
-  parseResetRequest,
 } = require('./reset-command');
 
 function createContext(args = [], actorId = '123') {
@@ -78,29 +77,10 @@ function createResetRouter({ isAdmin = true, loadError, saveError } = {}) {
   return { router, state, loads, saves, closes };
 }
 
-test('shared /reset parser supports confirmation and cancel', () => {
-  assert.deepEqual(parseResetRequest([]), { kind: 'confirm' });
-  assert.deepEqual(parseResetRequest(['CONFIRM']), { kind: 'reset' });
-  assert.deepEqual(parseResetRequest(['cancel']), { kind: 'cancel' });
-  assert.equal(parseResetRequest(['now']), null);
-});
-
-test('independent /reset asks before loading or changing state', async () => {
-  const { router, loads, saves, closes } = createResetRouter();
-
-  const routed = await router.run(createContext());
-
-  assert.equal(routed.result.messages[0].text, RESET_MESSAGES.confirmation);
-  assert.equal(routed.result.messages[0].actions.length, 2);
-  assert.deepEqual(loads, []);
-  assert.deepEqual(saves, []);
-  assert.deepEqual(closes, []);
-});
-
-test('independent /reset closes vote and saves one full reset', async () => {
+test('independent /reset immediately closes vote and saves one full reset', async () => {
   const { router, state, loads, saves, closes } = createResetRouter();
 
-  const routed = await router.run(createContext(['confirm']));
+  const routed = await router.run(createContext());
 
   assert.deepEqual(loads, [RESET_STATE_KEYS]);
   assert.equal(closes.length, 1);
@@ -114,9 +94,25 @@ test('independent /reset closes vote and saves one full reset', async () => {
   assert.equal(routed.result.messages[0].text, RESET_MESSAGES.success);
 });
 
-test('independent /reset handles cancel, permission, and storage errors', async () => {
-  const current = createResetRouter();
+test('independent /reset is admin-only and rejects arguments', async () => {
+  const invalid = createResetRouter();
   const denied = createResetRouter({ isAdmin: false });
+
+  const invalidResult = await invalid.router.run(createContext(['confirm']));
+  const deniedResult = await denied.router.run(createContext([], '999'));
+
+  assert.equal(invalidResult.result.messages[0].text, RESET_MESSAGES.usage);
+  assert.deepEqual(invalid.loads, []);
+  assert.deepEqual(invalid.saves, []);
+  assert.equal(
+    deniedResult.result.messages[0].text,
+    RESET_MESSAGES.permissionDenied
+  );
+  assert.deepEqual(denied.loads, []);
+  assert.deepEqual(denied.saves, []);
+});
+
+test('independent /reset handles storage errors', async () => {
   const loadFailure = createResetRouter({
     loadError: new Error('storage unavailable'),
   });
@@ -124,19 +120,9 @@ test('independent /reset handles cancel, permission, and storage errors', async 
     saveError: new Error('storage unavailable'),
   });
 
-  const cancel = await current.router.run(createContext(['cancel']));
-  const deniedResult = await denied.router.run(
-    createContext(['confirm'], '999')
-  );
-  const loadResult = await loadFailure.router.run(createContext(['confirm']));
-  const saveResult = await saveFailure.router.run(createContext(['confirm']));
+  const loadResult = await loadFailure.router.run(createContext());
+  const saveResult = await saveFailure.router.run(createContext());
 
-  assert.equal(cancel.result.messages[0].text, RESET_MESSAGES.cancelled);
-  assert.equal(
-    deniedResult.result.messages[0].text,
-    RESET_MESSAGES.permissionDenied
-  );
-  assert.deepEqual(denied.loads, []);
   assert.equal(loadResult.result.messages[0].text, RESET_MESSAGES.loadError);
   assert.equal(saveResult.result.messages[0].text, RESET_MESSAGES.saveError);
 });

@@ -545,7 +545,7 @@ Migration progress:
       update saved-match player totals safely, and only `save` loads next-match
       state.
 - [x] `/matches` — bounded recent-match pagination through the match port.
-- [x] `/reset` — admin-only confirmed atomic reset with best-effort poll close.
+- [x] `/reset` — admin-only immediate atomic reset with best-effort poll close.
 
 Phase 4 result: all 33 approved commands (34 names including `/mf`) now run
 through one shared registry. The Telegram poll-answer listener remains as a

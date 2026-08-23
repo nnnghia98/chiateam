@@ -65,7 +65,8 @@ part of the supported bot runtime.
 
 Important rewritten command forms:
 
-- `/clearvote confirm` and `/reset confirm` require confirmation.
+- `/clearvote confirm` requires confirmation.
+- `/reset` runs immediately and is admin-only.
 - `/register NUMBER`, `/register add NAME NUMBER`, or
   `/register delete NUMBER`.
 - `/edit-stats NUMBER matches=N wins=N losses=N draws=N`.
@@ -87,7 +88,6 @@ Interactive commands that use inline keyboards:
 - `/removemanifest`
 - `/clearmanifests`
 - `/clearvote`
-- `/reset`
 
 These commands are admin-only when they show or handle inline keyboard actions.
 Inline keyboards show at most 10 players or manifest entries per page. Their

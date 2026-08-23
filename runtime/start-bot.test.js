@@ -1690,7 +1690,7 @@ test('Telegram runtime routes the complete shared command catalog', async () => 
     '/matches',
     '/sync',
     '/clearvote confirm',
-    '/reset confirm',
+    '/reset',
   ];
 
   for (const command of commands) {
