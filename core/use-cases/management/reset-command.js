@@ -37,11 +37,8 @@ const RESET_CHANGES = Object.freeze({
 });
 
 const RESET_MESSAGES = Object.freeze({
-  usage: '⚠️ Dùng /reset, /reset confirm hoặc /reset cancel.',
+  usage: '⚠️ Dùng /reset.',
   permissionDenied: '⛔ Chỉ admin mới có quyền reset dữ liệu.',
-  confirmation:
-    '⚠️ Reset toàn bộ dữ liệu trận kế tiếp?\nDùng /reset confirm để xác nhận.',
-  cancelled: '✅ Đã hủy reset.',
   success:
     '🔄 ĐÃ RESET TOÀN BỘ DỮ LIỆU TRẬN KẾ TIẾP\n\n' +
     'Đã xóa bench, team, manifest, sân, phí, kết quả và vote.',
@@ -50,29 +47,6 @@ const RESET_MESSAGES = Object.freeze({
   loadError: '❌ Không thể tải dữ liệu hiện tại từ API.',
   saveError: '❌ Không thể reset dữ liệu. Vui lòng thử lại.',
 });
-
-function parseResetRequest(args) {
-  if (!Array.isArray(args) || args.length === 0) {
-    return { kind: 'confirm' };
-  }
-
-  if (args.length !== 1) return null;
-  const action = String(args[0]).toLowerCase();
-  if (action === 'confirm') return { kind: 'reset' };
-  if (action === 'cancel') return { kind: 'cancel' };
-  return null;
-}
-
-function createResetActions() {
-  return [
-    {
-      id: 'reset_confirm',
-      label: '✅ Xác nhận',
-      command: '/reset confirm',
-    },
-    { id: 'reset_cancel', label: 'Hủy', command: '/reset cancel' },
-  ];
-}
 
 function cloneResetChanges() {
   return {
@@ -93,31 +67,21 @@ function createResetCommand({ voteController } = {}) {
     name: 'reset',
     aliases: [],
     instruction: {
-      usage: '/reset [confirm|cancel]',
-      description: 'Reset all next-match state after confirmation',
+      usage: '/reset',
+      description: 'Reset all next-match state immediately',
       permission: 'admin',
     },
     stateKeys: [],
     resolveStateKeys: context =>
-      String(context.args[0] ?? '').toLowerCase() === 'confirm'
-        ? RESET_STATE_KEYS
-        : [],
+      context.args.length === 0 ? RESET_STATE_KEYS : [],
     condition: async (context, state) => {
-      const request = parseResetRequest(context.args);
+      if (context.args.length > 0) {
+        return { ok: false, code: 'INVALID_REQUEST' };
+      }
 
-      return request
-        ? { ok: true, request, activeVote: state.activeVote ?? null }
-        : { ok: false, code: 'INVALID_REQUEST' };
+      return { ok: true, activeVote: state.activeVote ?? null };
     },
     action: async (context, state, condition) => {
-      if (condition.request.kind === 'confirm') {
-        return { changed: false, code: 'CONFIRMATION_REQUIRED' };
-      }
-
-      if (condition.request.kind === 'cancel') {
-        return { changed: false, code: 'RESET_CANCELLED' };
-      }
-
       let closeFailed = false;
 
       if (condition.activeVote) {
@@ -151,17 +115,6 @@ function createResetCommand({ voteController } = {}) {
         return createTextResult(RESET_MESSAGES.saveError);
       }
 
-      if (outcome.code === 'CONFIRMATION_REQUIRED') {
-        return createTextResult(
-          RESET_MESSAGES.confirmation,
-          createResetActions()
-        );
-      }
-
-      if (outcome.code === 'RESET_CANCELLED') {
-        return createTextResult(RESET_MESSAGES.cancelled);
-      }
-
       return createTextResult(
         outcome.code === 'RESET_DONE_CLOSE_FAILED'
           ? RESET_MESSAGES.successCloseFailed
@@ -178,7 +131,5 @@ module.exports = {
   RESET_MESSAGES,
   RESET_STATE_KEYS,
   cloneResetChanges,
-  createResetActions,
   createResetCommand,
-  parseResetRequest,
 };

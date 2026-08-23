@@ -181,7 +181,7 @@ apply to the final behavior, including sub-actions.
 | `/edit-stats`     | Rewrite   | Admin                                         | Explicit named fields or admin-site form                                      | Validation, before/after, or saved result                                |
 | `/match`          | Rewrite   | Player read; admin write                      | Explicit `view`, `save`, `score`, `goal`, `assist`, `mvp`, or `delete` action | Action-specific condition and result                                     |
 | `/matches`        | Keep      | Player                                        | Optional limit/page                                                           | Empty state or recent match list                                         |
-| `/reset`          | Rewrite   | Admin                                         | Confirmation                                                                  | Cancelled or completed reset summary                                     |
+| `/reset`          | Rewrite   | Admin                                         | No arguments; immediate reset                                                 | Completed reset summary                                                  |
 
 ## Plain-Text Fallbacks
 
