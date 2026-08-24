@@ -46,7 +46,7 @@ function loadCommand(mockBot) {
   return require(commandPath);
 }
 
-test('legacy vote handlers leave migrated commands to shared runtime', () => {
+test('legacy vote handlers leave migrated commands to shared runtime', async () => {
   const mock = createMockBot();
   const voteCommand = loadCommand(mock.bot);
   let activeVote = {
@@ -91,7 +91,7 @@ test('legacy vote handlers leave migrated commands to shared runtime', () => {
   );
   assert.ok(pollAnswerHandler);
 
-  pollAnswerHandler.handler({
+  await pollAnswerHandler.handler({
     poll_id: 'poll-123',
     user: { id: 999, first_name: 'Alice' },
     option_ids: [2],
@@ -103,4 +103,55 @@ test('legacy vote handlers leave migrated commands to shared runtime', () => {
     options: [2],
   });
   assert.equal(activeVote.totalVoters, 1);
+});
+
+test('poll answers load the latest API vote instead of stale memory', async () => {
+  const mock = createMockBot();
+  const voteCommand = loadCommand(mock.bot);
+  const latestVote = {
+    id: 'poll-456',
+    question: 'Sân B 20h',
+    options: ['0', '+1', '+2', '+3', '+4'],
+    totalVoters: 1,
+    votes: {
+      1707444945: {
+        id: 1707444945,
+        name: 'Tien',
+        options: [1],
+      },
+    },
+  };
+  let savedVote = null;
+
+  voteCommand({
+    members: new Map(),
+    getActiveVote: () => null,
+    setActiveVote: () => {},
+    getLatestActiveVote: async () => latestVote,
+    persistActiveVote: async value => {
+      savedVote = value;
+    },
+    registerCreateCommand: false,
+    registerCountCommand: false,
+    registerClearCommand: false,
+    registerSyncCommand: false,
+  });
+
+  const pollAnswerHandler = mock.eventHandlers.find(
+    ({ event }) => event === 'poll_answer'
+  );
+
+  await pollAnswerHandler.handler({
+    poll_id: 'poll-456',
+    user: { id: 8429266599, first_name: 'Kane' },
+    option_ids: [1],
+  });
+
+  assert.deepEqual(savedVote.votes['8429266599'], {
+    id: 8429266599,
+    name: 'Kane',
+    options: [1],
+  });
+  assert.equal(savedVote.totalVoters, 2);
+  assert.equal(latestVote.votes['8429266599'], undefined);
 });

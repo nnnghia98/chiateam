@@ -151,6 +151,12 @@ async function bootstrapBot() {
     members,
     getActiveVote,
     setActiveVote,
+    getLatestActiveVote: async () => {
+      const state = await stateRepository.load(['activeVote']);
+      return state.activeVote;
+    },
+    persistActiveVote: activeVote =>
+      stateRepository.save({ activeVote }),
     registerCreateCommand: false,
     registerCountCommand: false,
     registerClearCommand: false,

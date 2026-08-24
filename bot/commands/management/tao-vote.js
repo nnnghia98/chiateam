@@ -14,6 +14,8 @@ const voteCommand = ({
   members,
   getActiveVote,
   setActiveVote,
+  getLatestActiveVote = getActiveVote,
+  persistActiveVote = setActiveVote,
   registerCreateCommand = true,
   registerCountCommand = true,
   registerClearCommand = true,
@@ -40,7 +42,7 @@ const voteCommand = ({
     }
   };
 
-  bot.on('poll_answer', pollAnswer => {
+  bot.on('poll_answer', async pollAnswer => {
     console.log('📊 [taovote] Poll answer received:', {
       pollId: pollAnswer.poll_id,
       userId: pollAnswer.user.id,
@@ -48,37 +50,45 @@ const voteCommand = ({
       options: pollAnswer.option_ids,
     });
 
-    const activeVote = getActiveVote();
-    if (!activeVote) {
-      console.log('⚠️ [taovote] No active vote, ignoring poll answer');
-      return;
+    try {
+      const activeVote = await getLatestActiveVote();
+      if (!activeVote) {
+        console.log('⚠️ [taovote] No active vote, ignoring poll answer');
+        return;
+      }
+
+      if (pollAnswer.poll_id !== activeVote.id) {
+        console.log('⚠️ [taovote] Poll ID mismatch, ignoring poll answer');
+        return;
+      }
+
+      const userId = pollAnswer.user.id;
+      const userName =
+        pollAnswer.user.first_name || pollAnswer.user.username || 'Unknown';
+      const nextActiveVote = {
+        ...activeVote,
+        votes: {
+          ...(activeVote.votes || {}),
+          [userId]: {
+            id: userId,
+            name: userName,
+            options: pollAnswer.option_ids,
+          },
+        },
+      };
+
+      nextActiveVote.totalVoters = Object.values(
+        nextActiveVote.votes
+      ).filter(isComingVote).length;
+
+      await persistActiveVote(nextActiveVote);
+
+      console.log(
+        `✅ [taovote] Vote recorded for ${userName}, total voters: ${nextActiveVote.totalVoters}`
+      );
+    } catch (error) {
+      console.error('❌ [taovote] Failed to persist poll answer:', error);
     }
-
-    if (pollAnswer.poll_id !== activeVote.id) {
-      console.log('⚠️ [taovote] Poll ID mismatch, ignoring poll answer');
-      return;
-    }
-
-    const userId = pollAnswer.user.id;
-    const userName =
-      pollAnswer.user.first_name || pollAnswer.user.username || 'Unknown';
-
-    activeVote.votes[userId] = {
-      id: userId,
-      name: userName,
-      options: pollAnswer.option_ids,
-    };
-
-    activeVote.totalVoters = Object.values(activeVote.votes).filter(
-      isComingVote
-    ).length;
-
-    // Save updated vote back to storage
-    setActiveVote(activeVote);
-
-    console.log(
-      `✅ [taovote] Vote recorded for ${userName}, total voters: ${activeVote.totalVoters}`
-    );
   });
 
   registerCreateHandler(/^\/taovote$/, msg => {
