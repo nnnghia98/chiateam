@@ -105,6 +105,37 @@ test('vote sync creates stable voter and guest identities', () => {
   ]);
 });
 
+test('vote sync keeps Zalo identity inside a Telegram-created vote', () => {
+  const result = syncVoteToBench(
+    {
+      ...createVote(),
+      votes: {
+        'zalo:user-2': {
+          id: 'user-2',
+          platform: 'zalo',
+          name: 'Minh',
+          choice: '+2',
+        },
+      },
+    },
+    []
+  );
+
+  assert.deepEqual(result.bench, [
+    [
+      'zalo:user-2',
+      {
+        name: 'Minh',
+        identity: { platform: 'zalo', externalId: 'user-2' },
+      },
+    ],
+    [
+      'vote-guest:zalo:user-2:1',
+      { name: 'Minh 1', memberId: 'vote-guest:zalo:user-2:1' },
+    ],
+  ]);
+});
+
 test('independent /sync saves one atomic bench update', async () => {
   const { router, saves } = createSyncRouter();
 

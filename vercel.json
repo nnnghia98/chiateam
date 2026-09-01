@@ -1,0 +1,15 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "functions": {
+    "api/zalo-webhook.mjs": {
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/webhook/zalo",
+      "destination": "/api/zalo-webhook"
+    }
+  ]
+}

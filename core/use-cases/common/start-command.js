@@ -4,17 +4,22 @@ const {
 const { createRichTextResult } = require('../../contracts/command-result');
 const { COMMAND_MANIFEST } = require('../../commands/command-manifest');
 
-function buildStartHelpSegments(manifest = COMMAND_MANIFEST) {
-  const segments = [
-    { text: '👋 CHIATEAM BOT', bold: true },
-    { text: '\n\n' },
-    { text: 'BẮT ĐẦU NHANH', bold: true },
-    { text: '\n/addme — Tự thêm mình vào bench\n' },
-    { text: '/bench — Xem bench hiện tại\n' },
-    { text: '/chiateam — Chia team (admin)\n' },
-    { text: '/team — Xem team hiện tại\n' },
-  ];
+function buildStartHelpSegments(
+  manifest = COMMAND_MANIFEST,
+  { includeQuickStart = true } = {}
+) {
+  const segments = [{ text: '👋 CHIATEAM BOT', bold: true }, { text: '\n\n' }];
   let currentCategory = null;
+
+  if (includeQuickStart) {
+    segments.push(
+      { text: 'BẮT ĐẦU NHANH', bold: true },
+      { text: '\n/addme — Tự thêm mình vào bench\n' },
+      { text: '/bench — Xem bench hiện tại\n' },
+      { text: '/chiateam — Chia team (admin)\n' },
+      { text: '/team — Xem team hiện tại\n' }
+    );
+  }
 
   manifest.forEach(entry => {
     if (entry.name === 'start') {
@@ -50,7 +55,10 @@ function buildStartHelpSegments(manifest = COMMAND_MANIFEST) {
   return segments;
 }
 
-function createStartCommand({ manifest = COMMAND_MANIFEST } = {}) {
+function createStartCommand({
+  manifest = COMMAND_MANIFEST,
+  includeQuickStart = true,
+} = {}) {
   return createCommandDefinition({
     name: 'start',
     aliases: [],
@@ -62,10 +70,14 @@ function createStartCommand({ manifest = COMMAND_MANIFEST } = {}) {
     stateKeys: [],
     condition: async () => ({ ok: true }),
     action: async () => ({ changed: false, code: 'START_HELP' }),
-    reply: async () =>
-      createRichTextResult(buildStartHelpSegments(manifest), [], {
+    reply: async () => {
+      const segments = buildStartHelpSegments(manifest, {
+        includeQuickStart,
+      });
+      return createRichTextResult(segments, [], {
         channel: 'main',
-      }),
+      });
+    },
   });
 }
 

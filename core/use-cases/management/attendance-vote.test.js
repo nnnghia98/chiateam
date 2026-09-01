@@ -33,6 +33,27 @@ test('attendance vote normalizes legacy and platform-neutral choices', () => {
   );
 });
 
+test('attendance vote keeps each voter platform for mixed adapters', () => {
+  const normalized = normalizeAttendanceVote({
+    platform: 'telegram',
+    question: 'Sân A 20h',
+    options: ATTENDANCE_VOTE_OPTIONS,
+    votes: {
+      1: { id: 1, name: 'Alice', options: [1] },
+      'zalo:user-2': {
+        id: 'user-2',
+        platform: 'zalo',
+        name: 'Minh',
+        choice: '+2',
+      },
+    },
+  });
+
+  assert.equal(normalized.voters[0].platform, 'telegram');
+  assert.equal(normalized.voters[1].platform, 'zalo');
+  assert.equal(normalized.voters[1].id, 'user-2');
+});
+
 test('attendance vote ignores retracted and malformed voter choices', () => {
   const normalized = normalizeAttendanceVote({
     question: 'Sân A 20h',
