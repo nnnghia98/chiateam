@@ -29,6 +29,7 @@ const {
 } = require('./matches');
 const { updatePlayerStats } = require('./leaderboard');
 const defaultMatchMediaService = require('../services/match-media-service');
+const defaultTwoNikeService = require('../services/two-nike-service');
 const {
   createWebhookEventService,
 } = require('../services/webhook-event-service');
@@ -624,6 +625,7 @@ function normalizeManualPredictionMatchStatus(rawStatus) {
 function createUiApiServer({
   getStatus,
   matchMediaService = defaultMatchMediaService,
+  twoNikeService = defaultTwoNikeService,
   webhookEventService = defaultWebhookEventService,
 } = {}) {
   const startedAt = new Date().toISOString();
@@ -749,6 +751,58 @@ function createUiApiServer({
         );
       } catch (e) {
         return sendJson(res, 400, { error: 'Invalid JSON payload' }, headers);
+      }
+    }
+
+    if (path === '/api/2nikes' && req.method === 'GET') {
+      if (!requireAuthenticated(req, res, headers)) return;
+
+      try {
+        const result = await twoNikeService.listTwoNikes(
+          url.searchParams.get('videoId')
+        );
+        if (!result.ok) {
+          return sendJson(
+            res,
+            400,
+            { error: result.code || 'INVALID_REQUEST' },
+            headers
+          );
+        }
+        return sendJson(res, 200, { twoNikes: result.twoNikes }, headers);
+      } catch (error) {
+        console.error('Error listing 2nikes:', error);
+        return sendJson(res, 500, { error: 'Failed to list 2nikes' }, headers);
+      }
+    }
+
+    if (path === '/api/2nikes' && req.method === 'POST') {
+      if (!requireAuthenticated(req, res, headers)) return;
+
+      let payload;
+      try {
+        payload = (await readJson(req)) || {};
+      } catch (error) {
+        return sendJson(res, 400, { error: 'INVALID_PAYLOAD' }, headers);
+      }
+
+      try {
+        const result = await twoNikeService.createTwoNike(
+          payload,
+          getAdminActorId(req)
+        );
+        if (!result.ok) {
+          return sendJson(
+            res,
+            400,
+            { error: result.code || 'INVALID_REQUEST' },
+            headers
+          );
+        }
+        return sendJson(res, 201, { twoNike: result.twoNike }, headers);
+      } catch (error) {
+        console.error('Error creating 2nike:', error);
+        return sendJson(res, 500, { error: 'Failed to create 2nike' }, headers);
       }
     }
 
