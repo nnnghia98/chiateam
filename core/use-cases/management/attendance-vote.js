@@ -1,5 +1,13 @@
 const ATTENDANCE_VOTE_OPTIONS = Object.freeze(['0', '+1', '+2', '+3', '+4']);
 
+function normalizeVotePlatform(value, fallback = 'telegram') {
+  return (
+    String(value ?? fallback)
+      .trim()
+      .toLowerCase() || fallback
+  );
+}
+
 function getChoiceIndex(vote, options) {
   if (!vote || typeof vote !== 'object' || Array.isArray(vote)) {
     return null;
@@ -19,7 +27,7 @@ function getChoiceIndex(vote, options) {
     : null;
 }
 
-function normalizeVoter(vote, key, options) {
+function normalizeVoter(vote, key, options, defaultPlatform) {
   if (!vote || typeof vote !== 'object' || Array.isArray(vote)) {
     return null;
   }
@@ -34,6 +42,7 @@ function normalizeVoter(vote, key, options) {
   return Object.freeze({
     id: String(vote.id ?? key),
     name,
+    platform: normalizeVotePlatform(vote.platform, defaultPlatform),
     choiceIndex,
     choice: options[choiceIndex],
     partySize: choiceIndex,
@@ -65,8 +74,9 @@ function normalizeAttendanceVote(value) {
     return null;
   }
 
+  const defaultPlatform = normalizeVotePlatform(value.platform);
   const voters = Object.entries(votes)
-    .map(([key, vote]) => normalizeVoter(vote, key, options))
+    .map(([key, vote]) => normalizeVoter(vote, key, options, defaultPlatform))
     .filter(Boolean);
 
   return Object.freeze({
@@ -74,6 +84,7 @@ function normalizeAttendanceVote(value) {
     question,
     options: Object.freeze(options),
     voters: Object.freeze(voters),
+    platform: defaultPlatform,
   });
 }
 

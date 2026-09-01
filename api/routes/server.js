@@ -30,6 +30,9 @@ const {
 const { updatePlayerStats } = require('./leaderboard');
 const defaultMatchMediaService = require('../services/match-media-service');
 const {
+  createWebhookEventService,
+} = require('../services/webhook-event-service');
+const {
   isMaintenanceModeEnabled,
   getMaintenanceUntil,
 } = require('../../config/maintenance');
@@ -58,6 +61,7 @@ const {
 const DEFAULT_PORT = Number(
   process.env.API_PORT || process.env.UI_API_PORT || process.env.PORT || 8787
 );
+const defaultWebhookEventService = createWebhookEventService();
 
 function logRequest(req, res) {
   const startedAt = Date.now();
@@ -620,6 +624,7 @@ function normalizeManualPredictionMatchStatus(rawStatus) {
 function createUiApiServer({
   getStatus,
   matchMediaService = defaultMatchMediaService,
+  webhookEventService = defaultWebhookEventService,
 } = {}) {
   const startedAt = new Date().toISOString();
   const maintenanceMode = isMaintenanceModeEnabled();
@@ -1646,6 +1651,41 @@ function createUiApiServer({
           res,
           500,
           { error: 'Failed to update leaderboard entry' },
+          headers
+        );
+      }
+    }
+
+    // Webhook Event API
+    if (path.startsWith('/api/webhook-events/') && req.method === 'POST') {
+      if (!requireAdmin(req, res, headers)) return;
+
+      const operation = path.slice('/api/webhook-events/'.length);
+
+      if (!['claim', 'complete', 'release'].includes(operation)) {
+        return sendJson(res, 404, { error: 'Not found' }, headers);
+      }
+
+      try {
+        const payload = (await readJson(req)) || {};
+        const result = await webhookEventService[operation](payload);
+
+        if (!result.ok) {
+          return sendJson(
+            res,
+            400,
+            { error: result.code || 'INVALID_WEBHOOK_EVENT' },
+            headers
+          );
+        }
+
+        return sendJson(res, 200, result, headers);
+      } catch (error) {
+        console.error(`Error handling webhook event ${operation}:`, error);
+        return sendJson(
+          res,
+          500,
+          { error: 'Failed to update webhook event' },
           headers
         );
       }

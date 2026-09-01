@@ -9,6 +9,7 @@ const {
   ensureWorldCupPredictionTables,
 } = require('../services/world-cup-predictions-service');
 const { ensureMatchMediaTables } = require('../services/match-media-service');
+const { ensureWebhookEventsTable } = require('../routes/webhook-events');
 const {
   ensureMatchPlayerUserIdColumn,
   ensureMatchResultColumns,
@@ -34,6 +35,7 @@ async function initDatabase() {
     await ensureCurrentMatchTable();
     await ensureWorldCupPredictionTables();
     await ensureMatchMediaTables();
+    await ensureWebhookEventsTable();
     console.log(
       '✅ Supabase connection successful. Server time:',
       result.rows[0].now
@@ -45,6 +47,7 @@ async function initDatabase() {
     console.log('✅ Ensured current_match table exists');
     console.log('✅ Ensured World Cup prediction tables exist');
     console.log('✅ Ensured match media tables exist');
+    console.log('✅ Ensured webhook event table exists');
   } catch (err) {
     console.error('❌ Failed to connect to Supabase:', err);
     throw err;

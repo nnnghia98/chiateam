@@ -549,47 +549,62 @@ Migration progress:
 
 Phase 4 result: all 33 approved commands (34 names including `/mf`) now run
 through one shared registry. The Telegram poll-answer listener remains as a
-platform event; no legacy slash handler is initialized. The full automated
-suite passes 349 tests.
+platform event; no legacy slash handler is initialized. The Phase 4 automated
+checkpoint passes 360 tests.
 
-### Phase 5: Add the Small Admin Site
+### Phase 5: Integrate the Existing Admin Site
 
-Effort: Medium
+Effort: Small to Medium
+
+Decision:
+
+- [x] Reuse the existing `chiateam-admin` site instead of creating another
+      admin site inside the API.
+- [x] Keep the admin site and API as separate processes.
+- [x] Continue using the server-side admin proxy and internal API token.
 
 Owner checkpoint:
 
-- [ ] Notify the project owner before creating any settings-site UI.
+- [x] The owner approved reuse of the existing admin site on 2026-09-01.
+- [ ] Notify the owner before creating any new runtime-settings UI.
 
-Serve a small admin site from the existing API, for example at `/admin`.
+Phase 4 compatibility work:
 
-First version pages:
+- [x] Add `san`, `manifest`, and the expanded `activeVote` contract to the
+      admin bot-storage types.
+- [x] Preserve external string or numeric user IDs and unknown player or vote
+      metadata during storage round trips.
+- [x] Merge admin edits into the latest complete bot storage before calling the
+      full-replacement `POST /api/bot-storage` endpoint.
+- [x] Preserve Phase 4 storage fields during viewer-only player renames.
+- [x] Accept `winner_side` in match responses while omitting it from match
+      create and update payloads.
+- [x] Keep `/winner`, `/loser`, and immediate `/reset` command references
+      compatible with the migrated bot.
 
-- [ ] Runtime status.
-- [ ] Enabled platform.
-- [ ] Allowed chat or conversation.
-- [ ] Admin users.
-- [ ] Basic football settings.
-- [ ] Maintenance mode.
+Verification:
 
-Security rules:
+- [x] Admin compatibility tests pass: 9 of 9.
+- [x] Admin TypeScript check passes.
+- [x] Admin production build passes on 2026-09-01.
+- [x] Live admin storage round-trip test passed on 2026-09-01.
 
-- [ ] Bind to localhost by default for local installations.
-- [ ] Require authentication when remote access is enabled.
-- [ ] Do not place internal API tokens in frontend source code.
-- [ ] Keep platform tokens in environment variables at first.
-- [ ] Do not write platform tokens to the bot-state JSON mirror.
-- [ ] Persist runtime settings in a dedicated settings store.
+Deferred until the owner explicitly approves new settings UI:
 
-Runtime changes:
-
-- [ ] Add one command that starts the API and bot together.
-- [ ] Keep Docker services separate internally if that remains easier to operate.
-- [ ] Show the admin URL after startup.
+- Runtime status and maintenance controls.
+- Enabled platform and allowed conversation settings.
+- Admin-user management and a dedicated runtime-settings store.
+- A combined command for starting the API and bot. Local development currently
+  keeps them in separate terminal shells.
 
 Exit criteria:
 
-- A new user can see status and edit safe settings in one place.
-- The settings are persistent and used by the runtime.
+- [x] Existing admin workflows continue to work with Phase 4 API responses.
+- [x] Saving next-match data does not erase unrelated bot storage fields.
+- [x] The live storage round-trip test passes.
+
+Phase 5 result: complete. The existing admin site is compatible with the Phase 4
+API, and no new runtime-settings UI was created.
 
 ### Phase 6: Prove a Second Adapter
 
@@ -597,27 +612,78 @@ Effort: Medium to Large
 
 Choose either Zalo or Messenger. Do not build both together.
 
-Start with the minimum command set:
+Decision:
+
+- [x] Zalo was selected as the second adapter on 2026-09-01.
+- [x] Start with a separate local polling process so the existing Telegram bot
+      and API processes do not change.
+- [x] Use Zalo as an announcement-first player adapter. Do not expose admin or
+      roster/team mutation commands in this checkpoint.
+- [x] Use a text poll because the current Zalo Bot API does not provide a native
+      poll-send method.
+- [ ] Connect the production webhook only after the owner passes the live Zalo
+      command checkpoint.
+- [x] The owner chose a dedicated Vercel webhook before starting Messenger.
+- [x] Keep Messenger deferred until the Zalo webhook is deployed and tested.
+
+Restricted command set:
 
 ```text
 /start
-/addme
+/poll
+/vote 0|1|2|3|4
+/demvote
 /bench
-/chiateam
 /team
 ```
 
-- [ ] Confirm the platform's current API and account requirements.
-- [ ] Add webhook verification and event idempotency when required.
-- [ ] Translate platform events into the common context.
-- [ ] Translate common results into platform messages.
-- [ ] Add text fallbacks for missing buttons, polls, or topics.
-- [ ] Add adapter contract tests.
+`/vote` is the only Zalo command in this checkpoint that changes state. It
+writes a platform-qualified voter into the active vote shared with Telegram.
+All admin commands, including `/chiateam`, are not registered on Zalo.
+
+- [x] Confirm the platform's current API and account requirements.
+- [x] Add webhook secret verification and in-process message ID idempotency.
+- [x] Add PostgreSQL-backed message claims for serverless idempotency.
+- [x] Add authenticated API routes for claim, completion, and release.
+- [x] Add an isolated Vercel Node.js function without polling startup.
+- [x] Translate Zalo text events into the common context.
+- [x] Translate common results into Zalo text and Markdown messages.
+- [x] Add text fallbacks for missing buttons, polls, and topics.
+- [x] Add adapter contract tests.
+
+Current checkpoint:
+
+- [x] A standalone yarn dev:zalo polling process is available.
+- [x] The adapter registers only /start, /poll, /vote, /demvote, /bench, and
+      /team.
+- [x] `/addme`, `/chiateam`, and every other admin or mutation command are
+      hidden and unhandled on Zalo.
+- [x] The six commands use shared use cases and the existing API state
+      repository.
+- [x] Mixed Telegram and Zalo votes keep separate platform identities and can
+      still be synchronized to the bench by Telegram admin flow.
+- [x] Automated restricted-command checkpoint passes: 26 of 26.
+- [x] Webhook and event-lifecycle checkpoint passes: 28 of 28.
+- [x] Full repository regression suite passes: 413 of 413.
+- [x] Historical live test: create/configure the Zalo bot and pass `/start`,
+      `/addme`, and `/bench` before the announcement-first restriction.
+- [ ] Owner live test: `/start` lists only the six restricted commands.
+- [ ] Owner live test: `/poll`, `/vote`, and `/demvote` share the active vote
+      with Telegram.
+- [ ] Owner live test: `/bench` and `/team` remain read-only.
+- [ ] Owner live test: `/addme` and `/chiateam` cause no response or state
+      change.
+- [x] Add the production webhook function and deployment configuration.
+- [ ] Deploy the API claim routes and the Vercel webhook.
+- [ ] Register the stable production HTTPS webhook with Zalo.
+- [ ] Stop the local Zalo polling shell after registration succeeds.
 
 Exit criteria:
 
-- Telegram and the second platform use the same football use cases.
-- No second-platform checks are added inside core use cases.
+- [x] Telegram and Zalo use the same football use cases.
+- [x] No Zalo checks are added inside core use cases.
+- [x] Zalo exposes no admin commands in its registry or `/start` help.
+- [ ] The owner passes the live restricted-command test on Zalo.
 
 ### Phase 7: Prepare the Open-Source Release
 

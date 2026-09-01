@@ -45,4 +45,16 @@ module.exports = {
     exports: 'readonly',
     global: 'readonly',
   },
+  overrides: [
+    {
+      files: ['*.mjs'],
+      parserOptions: {
+        ecmaVersion: 2022,
+        sourceType: 'module',
+      },
+      globals: {
+        Response: 'readonly',
+      },
+    },
+  ],
 };

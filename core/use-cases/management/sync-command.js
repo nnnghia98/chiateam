@@ -71,7 +71,8 @@ function syncVoteToBench(activeVote, bench) {
   const comingVoters = vote.voters.filter(voter => voter.partySize > 0);
 
   comingVoters.forEach(voter => {
-    const voterEntry = createVoterEntry(voter, platform);
+    const voterPlatform = voter.platform || platform;
+    const voterEntry = createVoterEntry(voter, voterPlatform);
     const voterKey = String(voterEntry[0]);
     const voterIdentity = getMemberIdentity(voterEntry[1]);
 
@@ -85,7 +86,7 @@ function syncVoteToBench(activeVote, bench) {
     }
 
     for (let index = 1; index < voter.partySize; index += 1) {
-      const guestEntry = createVoteGuestEntry(voter, platform, index);
+      const guestEntry = createVoteGuestEntry(voter, voterPlatform, index);
       const guestKey = String(guestEntry[0]);
 
       if (usedKeys.has(guestKey)) {
