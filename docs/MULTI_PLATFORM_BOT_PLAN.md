@@ -1,6 +1,6 @@
 # Multi-Platform Bot Refactor Plan
 
-Status: In progress — command catalog approved
+Status: In progress — Zalo webhook deployed and live verification underway
 
 ## Goal
 
@@ -621,8 +621,8 @@ Decision:
       roster/team mutation commands in this checkpoint.
 - [x] Use a text poll because the current Zalo Bot API does not provide a native
       poll-send method.
-- [ ] Connect the production webhook only after the owner passes the live Zalo
-      command checkpoint.
+- [x] Connect the production webhook after automated checks and deployed
+      endpoint verification pass.
 - [x] The owner chose a dedicated Vercel webhook before starting Messenger.
 - [x] Keep Messenger deferred until the Zalo webhook is deployed and tested.
 
@@ -674,9 +674,15 @@ Current checkpoint:
 - [ ] Owner live test: `/addme` and `/chiateam` cause no response or state
       change.
 - [x] Add the production webhook function and deployment configuration.
-- [ ] Deploy the API claim routes and the Vercel webhook.
-- [ ] Register the stable production HTTPS webhook with Zalo.
+- [x] Deploy the API claim routes and the Vercel webhook. Railway health and
+      route protection, plus Vercel health and secret protection, are verified.
+- [x] Register the stable production HTTPS webhook with Zalo. The owner
+      confirmed live webhook delivery on 2026-09-01.
 - [ ] Stop the local Zalo polling shell after registration succeeds.
+
+Phase 6 deployment checkpoint: the API claim routes and Vercel webhook are
+live, the production URL is registered, and webhook delivery is confirmed.
+The restricted-command live checks remain before Phase 6 is complete.
 
 Exit criteria:
 
