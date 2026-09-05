@@ -1,0 +1,84 @@
+const { COMMAND_MANIFEST } = require('../core/commands/command-manifest');
+const {
+  createStartCommand,
+} = require('../core/use-cases/common/start-command');
+const { createBenchCommand } = require('../core/use-cases/bench/bench-command');
+const {
+  createDemvoteCommand,
+} = require('../core/use-cases/management/demvote-command');
+const {
+  createPollCommand,
+} = require('../core/use-cases/management/poll-command');
+const {
+  createVoteCommand,
+} = require('../core/use-cases/management/vote-command');
+const { createTeamCommand } = require('../core/use-cases/teams/team-command');
+
+const MESSENGER_COMMAND_NAMES = Object.freeze([
+  'start',
+  'poll',
+  'vote',
+  'demvote',
+  'bench',
+  'team',
+]);
+
+function requireSharedManifestEntry(name) {
+  const entry = COMMAND_MANIFEST.find(candidate => candidate.name === name);
+
+  if (!entry) {
+    throw new Error(`Missing shared command manifest entry: ${name}`);
+  }
+
+  return entry;
+}
+
+const MESSENGER_COMMAND_MANIFEST = Object.freeze(
+  [
+    requireSharedManifestEntry('start'),
+    {
+      name: 'poll',
+      aliases: [],
+      category: 'Vote',
+      usage: '/poll',
+      description: 'Xem vote đang mở',
+      permission: 'player',
+    },
+    {
+      name: 'vote',
+      aliases: [],
+      category: 'Vote',
+      usage: '/vote 0|1|2|3|4',
+      description: 'Bình chọn hoặc đổi lựa chọn',
+      permission: 'player',
+    },
+    requireSharedManifestEntry('demvote'),
+    requireSharedManifestEntry('bench'),
+    requireSharedManifestEntry('team'),
+  ].map(entry =>
+    Object.freeze({
+      ...entry,
+      aliases: Object.freeze([...(entry.aliases || [])]),
+    })
+  )
+);
+
+function createMessengerCommandDefinitions() {
+  return Object.freeze([
+    createStartCommand({
+      manifest: MESSENGER_COMMAND_MANIFEST,
+      includeQuickStart: false,
+    }),
+    createPollCommand(),
+    createVoteCommand(),
+    createDemvoteCommand(),
+    createBenchCommand(),
+    createTeamCommand(),
+  ]);
+}
+
+module.exports = {
+  MESSENGER_COMMAND_MANIFEST,
+  MESSENGER_COMMAND_NAMES,
+  createMessengerCommandDefinitions,
+};

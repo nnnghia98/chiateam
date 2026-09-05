@@ -1,8 +1,9 @@
-# Upload only the Zalo webhook function and its shared runtime dependencies.
+# Upload only the platform webhook functions and shared runtime dependencies.
 /*
 !/api
 /api/*
 !/api/zalo-webhook.mjs
+!/api/messenger-webhook.mjs
 !/bot
 /bot/*
 !/bot/utils
@@ -18,11 +19,21 @@
 !/platforms/zalo/formatter.js
 !/platforms/zalo/permission-policy.js
 !/platforms/zalo/webhook.js
+!/platforms/messenger
+/platforms/messenger/*
+!/platforms/messenger/adapter.js
+!/platforms/messenger/client.js
+!/platforms/messenger/formatter.js
+!/platforms/messenger/permission-policy.js
+!/platforms/messenger/webhook.js
 !/runtime
 /runtime/*
 !/runtime/create-zalo-command-definitions.js
 !/runtime/create-zalo-webhook-application.js
 !/runtime/start-zalo-bot.js
+!/runtime/create-messenger-command-definitions.js
+!/runtime/create-messenger-webhook-application.js
+!/runtime/start-messenger-bot.js
 !/runtime/repositories
 /runtime/repositories/*
 !/runtime/repositories/api-state-repository.js

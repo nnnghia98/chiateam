@@ -1,7 +1,8 @@
 # Zalo Adapter
 
-Status: announcement-first webhook implementation ready for Phase 6. Vercel
-deployment and Zalo registration are still pending.
+Status: Phase 6 complete. The production Vercel webhook is registered, live
+delivery is confirmed, and the restricted-command checklist passed on
+2026-09-02. Local polling is stopped.
 
 The Zalo adapter currently reuses the shared football core for:
 
@@ -80,6 +81,8 @@ Live checklist:
 9. Send `/demvote`. The Zalo voter must appear in the shared result.
 10. Send `/bench` and `/team`. Both must remain read-only.
 
+Live checkpoint: all steps passed against the production webhook on 2026-09-02.
+
 `/vote 0` records that the user will not attend. Sending another `/vote` value
 changes that user's choice.
 
@@ -141,7 +144,7 @@ region close to the existing API and PostgreSQL region.
    `{"ok":true,"service":"zalo-webhook"}`.
 5. Test the Preview, then deploy Production. Do not register a changing Preview
    URL with Zalo.
-6. Put the stable production URL in local `.env.production`:
+6. Put the stable production URL in the local environment's `.env`:
 
    ```dotenv
    ZALO_WEBHOOK_URL=https://your-vercel-project.vercel.app/webhook/zalo
