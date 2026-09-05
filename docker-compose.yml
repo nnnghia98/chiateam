@@ -7,7 +7,7 @@ services:
     command: ["node", "api/index.js"]
     restart: unless-stopped
     env_file:
-      - .env.production
+      - .env
     environment:
       NODE_ENV: production
       API_PORT: 8787
@@ -37,7 +37,7 @@ services:
     command: ["node", "bot/index.js"]
     restart: unless-stopped
     env_file:
-      - .env.production
+      - .env
     environment:
       NODE_ENV: production
       BOT_API_BASE_URL: http://api:8787

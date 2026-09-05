@@ -1,6 +1,6 @@
 ## Sprint 10 – Architecture Separation & Code Organization (chiateam-bot)
 
-**Period**: 2026, Sprint 10  
+**Period**: 2026, Sprint 10
 **Area**: Separate bot handler from API/data layer into independent modules for better maintainability and deployment flexibility.
 
 ### Goals
@@ -120,7 +120,7 @@ bot/
 
 ## Google AI Integration (Mid-Sprint Addition)
 
-**Period**: 2026, Sprint 10 (Days 3-5)  
+**Period**: 2026, Sprint 10 (Days 3-5)
 **Area**: Integrate Google Gemini AI for intelligent bot assistance and automated match commentary
 
 ### Goals

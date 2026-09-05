@@ -14,6 +14,35 @@ The admin UI lives in a separate repository:
 ../chiateam-admin
 ```
 
+## Quick Start
+
+Use Node.js 22, Yarn 1, and a PostgreSQL database. Bootstrap the project once:
+
+```bash
+yarn setup
+```
+
+This copies `.env.example` to `.env` only when `.env` does not exist, then
+installs the locked dependencies. Add your own values to `.env` before running
+the application.
+
+For a fresh database, run `api/db/postgres-schema.sql` once, then verify the
+connection and runtime tables:
+
+```bash
+yarn init-db
+```
+
+Start the API and Telegram bot together:
+
+```bash
+yarn dev:all
+```
+
+This command does not start Zalo or Messenger delivery. Both platforms use
+separate webhook deployments. See `docs/DATABASE_SETUP.md` for database
+details.
+
 ## Project Layout
 
 ```text
@@ -33,7 +62,8 @@ Important entrypoints:
 
 - `bot/index.js` starts the Telegram bot.
 - `api/index.js` starts the HTTP API.
-- `config/load-env.js` loads the env file selected by `ENV_FILE`.
+- `api/messenger-webhook.mjs` handles the Messenger webhook entrypoint.
+- `config/load-env.js` loads the root `.env` file.
 - `bot/utils/storage.js` manages the bot's persistent runtime state.
 
 ## Runtime Surfaces
@@ -63,6 +93,18 @@ Known commands registered by the active bot runtime:
 
 Standalone AI, old leaderboard-update, and unsupported World Cup names are not
 part of the supported bot runtime.
+
+### Supported Platforms
+
+- Telegram is the primary adapter and runs the full command catalog.
+- Zalo uses the production webhook and exposes only `/start`, `/zalosay`,
+  `/poll`, `/vote`, `/demvote`, `/bench`, and `/team`.
+- Zalo roster and team mutation commands are intentionally disabled.
+- Messenger has a local webhook MVP with only `/start`, `/poll`,
+  `/vote 0|1|2|3|4`, `/demvote`, `/bench`, and `/team`.
+- Messenger `/vote` is the only write command. Admin, registration, roster,
+  and team mutation commands are not available. Delivery is webhook-only.
+- One installation manages one football community.
 
 Important rewritten command forms:
 
@@ -177,18 +219,15 @@ cutovers, or manual resets. On first DB-backed read, the API seeds an empty
 
 ## Environment Setup
 
-This project uses root env files only:
+Every environment owns one root `.env` file with its own values. Runtime and
+Docker commands always load `.env`; they do not select environment-suffixed
+files. `NODE_ENV` may still identify development or production behavior, but it
+does not change which env file is loaded.
 
-- `.env` for local development and local Docker
-- `.env.production` for production and VPS Docker
-
-Do not reintroduce `.env.local` runtime paths.
-
-Create the files from the templates:
+`yarn setup` creates the file safely. To create it manually instead, run:
 
 ```bash
 cp .env.example .env
-cp .env.production.example .env.production
 ```
 
 Required or commonly used variables:
@@ -199,6 +238,13 @@ BOT_OWNER_ID
 BOT_ADMIN_IDS
 ZALO_BOT_TOKEN
 ZALO_BOT_OWNER_ID
+MESSENGER_PAGE_ID
+MESSENGER_PAGE_ACCESS_TOKEN
+MESSENGER_APP_SECRET
+MESSENGER_VERIFY_TOKEN
+MESSENGER_GRAPH_API_VERSION
+MESSENGER_ADMIN_IDS
+MESSENGER_WEBHOOK_URL
 CHAT_ID
 MAIN_THREAD_ID
 ANNOUNCEMENT_THREAD_ID
@@ -228,21 +274,30 @@ continues.
 ## Install
 
 ```bash
-yarn install
+yarn setup
 ```
+
+If `.env` already exists and only dependencies are needed, run
+`yarn install --frozen-lockfile`.
 
 ## Local Development
 
-Start the bot:
+Start the API and Telegram bot together:
 
 ```bash
-yarn dev:bot
+yarn dev:all
 ```
 
-Start the API:
+Or start each process in its own terminal. Start the API first:
 
 ```bash
 yarn dev:api
+```
+
+Then start the bot:
+
+```bash
+yarn dev:bot
 ```
 
 `yarn dev` maps to `yarn dev:bot`.
@@ -268,11 +323,10 @@ yarn start:api
 
 `yarn start` maps to `yarn start:bot`.
 
-The production scripts load `.env.production` by setting:
+The production scripts load `.env` and keep the runtime mode as:
 
 ```text
 NODE_ENV=production
-ENV_FILE=.env.production
 ```
 
 ## Database Checks
@@ -283,6 +337,10 @@ tables exist:
 ```bash
 yarn init-db
 ```
+
+For a fresh database, apply `api/db/postgres-schema.sql` before this command.
+See `docs/DATABASE_SETUP.md` for fresh setup, existing database checks, and
+backup rules.
 
 Drop scripts exist for development cleanup, but they are destructive:
 
@@ -295,11 +353,10 @@ environment and backup plan are confirmed.
 
 ## Tests
 
-There is no package-level test script yet. Run the full Node test suite
-directly:
+Run the full Node test suite:
 
 ```bash
-node --test
+yarn test
 ```
 
 Focused examples:
@@ -396,9 +453,17 @@ status, and settings routes available while maintenance mode is enabled.
 - `docs/DEPLOY_VPS_DOCKER.md` - VPS Docker deployment
 - `docs/DEPLOY_RENDER.md` and `docs/RAILWAY_SETUP.md` - older platform notes
 - `docs/MIGRATION.md` - migration history
+- `docs/DATABASE_SETUP.md` - fresh database setup and migration safety
+- `docs/ADAPTER_DEVELOPMENT.md` - platform adapter boundaries and workflow
+- `docs/MESSENGER_ADAPTER.md` - Messenger webhook MVP and Meta setup
+- `docs/TROUBLESHOOTING.md` - common local, API, state, and Zalo problems
+- `docs/RELEASE.md` - release checklist and versioning policy
 - `docs/JSON_STORAGE.md` - bot state storage notes
 - `docs/AI_INTEGRATION.md` - AI integration notes; verify against current command wiring before enabling standalone AI commands
 - `docs/HTTP_TEST_EXAMPLES.md` - sample API calls
+
+See `SECURITY.md` to report a security issue. Never commit `.env`, tokens,
+database credentials, production storage, or database files.
 
 Historical sprint notes in `2026/` may describe older layouts. Treat the root
 scripts, `bot/index.js`, `api/index.js`, and current env examples as the active

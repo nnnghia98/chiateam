@@ -1,6 +1,6 @@
 # Multi-Platform Bot Refactor Plan
 
-Status: In progress — Zalo webhook deployed and live verification underway
+Status: In progress — Phase 7 complete locally; Phase 8 Messenger MVP complete locally
 
 ## Goal
 
@@ -57,7 +57,7 @@ Football rules and Telegram behavior are currently mixed inside command files.
 
 ```mermaid
 flowchart LR
-    P["Telegram now<br/>Zalo and Messenger later"]
+    P["Telegram, Zalo, and Messenger webhook"]
 
     subgraph A["Thin platform adapter"]
         I["Convert platform event<br/>to common input"]
@@ -676,22 +676,23 @@ Current checkpoint:
 - [x] Full repository regression suite passes: 423 of 423.
 - [x] Historical live test: create/configure the Zalo bot and pass `/start`,
       `/addme`, and `/bench` before the announcement-first restriction.
-- [ ] Owner live test: `/start` lists only the seven restricted commands.
-- [ ] Owner live test: `/poll`, `/vote`, and `/demvote` share the active vote
+- [x] Owner live test: `/start` lists only the seven restricted commands.
+- [x] Owner live test: `/poll`, `/vote`, and `/demvote` share the active vote
       with Telegram.
-- [ ] Owner live test: `/bench` and `/team` remain read-only.
-- [ ] Owner live test: `/addme` and `/chiateam` cause no response or state
+- [x] Owner live test: `/bench` and `/team` remain read-only.
+- [x] Owner live test: `/addme` and `/chiateam` cause no response or state
       change.
 - [x] Add the production webhook function and deployment configuration.
 - [x] Deploy the API claim routes and the Vercel webhook. Railway health and
       route protection, plus Vercel health and secret protection, are verified.
 - [x] Register the stable production HTTPS webhook with Zalo. The owner
       confirmed live webhook delivery on 2026-09-01.
-- [ ] Stop the local Zalo polling shell after registration succeeds.
+- [x] Stop the local Zalo polling shell after registration succeeds.
 
-Phase 6 deployment checkpoint: the API claim routes and Vercel webhook are
-live, the production URL is registered, and webhook delivery is confirmed.
-The restricted-command live checks remain before Phase 6 is complete.
+Phase 6 result: complete. The API claim routes and Vercel webhook are live, the
+production URL is registered, webhook delivery is confirmed, and the owner
+passed the full restricted-command live checklist on 2026-09-02. No local Zalo
+polling process remains active.
 
 Exit criteria:
 
@@ -699,22 +700,51 @@ Exit criteria:
 - [x] No Zalo checks are added inside core use cases.
 - [x] Zalo exposes only the approved admin `/zalosay` command in its
       registry and `/start` help.
-- [ ] The owner passes the live restricted-command test on Zalo.
+- [x] The owner passes the live restricted-command test on Zalo.
 
 ### Phase 7: Prepare the Open-Source Release
 
 Effort: Medium
 
-- [ ] Add a root `LICENSE` file.
-- [ ] Add `CONTRIBUTING.md`.
-- [ ] Add `SECURITY.md`.
-- [ ] Review Git history and tracked files for secrets.
-- [ ] Complete `.env.example` with safe values and comments.
-- [ ] Add a one-command local setup.
-- [ ] Add database initialization and migration instructions.
-- [ ] Add adapter development documentation.
-- [ ] Add a troubleshooting section.
-- [ ] Add a release checklist and versioning policy.
+- [x] Add a root `LICENSE` file.
+- [x] Add `CONTRIBUTING.md`.
+- [x] Add `SECURITY.md`.
+- [x] Review Git history and tracked files for secrets. The 2026-09-02 audit
+      found old credentials and private bot data in reachable history.
+- [x] Complete `.env.example` with safe values and comments.
+- [x] Add a one-command local setup.
+- [x] Add database initialization and migration instructions.
+- [x] Add adapter development documentation.
+- [x] Add a troubleshooting section.
+- [x] Add a release checklist and versioning policy.
+
+Verification checkpoint:
+
+- [x] Full repository suite passes: 431 of 431.
+- [x] New setup, combined-launcher, and env-loader tests pass: 8 of 8.
+- [x] ESLint, Prettier, `git diff --check`, and both Docker Compose config
+      checks pass.
+- [x] The current tracked tree uses safe placeholders instead of known live
+      credentials or private deployment URLs.
+
+Release blockers:
+
+- [ ] Resolve remaining credential-security blockers before release without
+      changing deployed environment values.
+- [x] Rewrite all local reachable Git history to remove old env files,
+      production bot storage, database files containing private data,
+      hardcoded tokens, and sensitive documentation revisions. A restricted
+      backup was created first on 2026-09-02. No remote was changed.
+- [x] Scan a fresh local clone of the rewritten history for secrets and private
+      data. Only documented placeholder database URLs remain.
+- [ ] Coordinate and replace the remote history after security review and
+      approval from every repository user.
+- [ ] Run the documented setup and application start from that clean clone with
+      non-production test configuration.
+
+Phase 7 status: implementation, documentation, and local history cleanup are
+ready. The repository must not be released publicly until the remaining
+security blockers above are complete.
 
 Exit criteria:
 
@@ -807,18 +837,54 @@ The first milestone is complete when:
 
 The first open-source multi-platform release is complete when:
 
-- [ ] All active Telegram football commands use the shared core.
-- [ ] One second platform supports the minimum command set.
+- [x] All active Telegram football commands use the shared core.
+- [x] One second platform supports the minimum command set.
 - [ ] The local admin site manages safe runtime settings.
-- [ ] One command starts the local application.
-- [ ] Setup, security, contribution, and adapter documentation exist.
+- [x] One command starts the local application.
+- [x] Setup, security, contribution, and adapter documentation exist.
 - [ ] A clean installation passes tests and starts without private project data.
 
-## Recommended First Action
+### Phase 8: Add the Messenger Webhook MVP
 
-Start with Phase 0 and Phase 1. Approve the command catalog before creating the
-independent command runtime in Phase 2. Then select one retained command for
-Phase 3 and refactor it without linking it to another command.
+Effort: Medium
 
-Do not migrate commands marked for removal. Do not build the admin site or a
-second adapter until the independent command pattern is useful and simple.
+The local Messenger implementation is complete. Meta app setup, configuration,
+deployment, webhook subscription, and live tests are still pending.
+
+Restricted command set:
+
+```text
+/start
+/poll
+/vote 0|1|2|3|4
+/demvote
+/bench
+/team
+```
+
+`/vote` is the only Messenger command that writes shared state. Admin,
+registration, roster, and team mutation commands are not registered. Messenger
+delivery is webhook-only.
+
+Current checkpoint:
+
+- [x] Add the Messenger adapter, formatter, client, and webhook handler.
+- [x] Add the Vercel entrypoint at `/webhook/messenger`.
+- [x] Add signed webhook verification and event idempotency.
+- [x] Reuse the shared command runtime and API-backed state repository.
+- [x] Add local adapter, runtime, webhook, and entrypoint tests.
+- [x] Pass the Messenger-focused suite: 28 of 28.
+- [x] Pass the full repository regression suite: 459 of 459.
+- [ ] Create and configure the Meta app, Page, permissions, and credentials.
+- [ ] Deploy the webhook and configure its environment in the deployment
+      provider.
+- [ ] Subscribe the Page to Messenger webhooks and verify the callback.
+- [ ] Run the live Messenger command and retry tests.
+
+See [`docs/MESSENGER_ADAPTER.md`](MESSENGER_ADAPTER.md) for setup and testing.
+
+## Current Next Action
+
+Set up the Meta app and Messenger Page. When the owner provides the new
+Messenger values, add them only to the deployment provider, deploy the webhook,
+and run the live checks. Keep the existing root `.env` values unchanged.
