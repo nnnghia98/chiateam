@@ -50,9 +50,10 @@ docs(root): add git commit conventions
 
 ## Environment File Rules
 
-- Development commands and local Docker use the root `.env` file.
-- Production commands and VPS Docker use `.env.production`.
-- Do not reintroduce `.env.local`-based runtime paths unless the user explicitly asks for them.
+- Every environment owns one root `.env` file with its own values.
+- Runtime and Docker commands must load `.env`; do not select another file with `ENV_FILE`.
+- Do not add environment-suffixed runtime files such as `.env.production` or `.env.local`.
+- `NODE_ENV` may describe the runtime mode, but it must not select the env file.
 
 ---
 

@@ -12,45 +12,41 @@ In your Railway project dashboard, go to **Variables** tab and add these:
 
 ```
 NODE_ENV=production
-BOT_OWNER_ID=972455114
-BOT_ADMIN_IDS=972455114
-TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
-CHAT_ID=your_chat_id_here
-DEFAULT_THREAD_ID=1
-MAIN_THREAD_ID=61684
-ANNOUNCEMENT_THREAD_ID=61897
-VIP_THREAD_ID=63171
-STATISTICS_THREAD_ID=73073
+BOT_OWNER_ID=your_bot_owner_id
+BOT_ADMIN_IDS=your_admin_id_1,your_admin_id_2
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+ZALO_BOT_TOKEN=your_zalo_bot_token
+ZALO_BOT_OWNER_ID=your_zalo_owner_id
+CHAT_ID=your_chat_id
+DEFAULT_THREAD_ID=
+MAIN_THREAD_ID=your_main_thread_id
+ANNOUNCEMENT_THREAD_ID=your_announcement_thread_id
+VIP_THREAD_ID=your_vip_thread_id
+STATISTICS_THREAD_ID=your_statistics_thread_id
 API_PORT=8787
-INTERNAL_API_AUTH_TOKEN=change-this-shared-internal-token
+INTERNAL_API_AUTH_TOKEN=replace_with_a_random_secret
 BOT_STATE_FILE=/data/bot/storage.json
 ```
 
 ### Database (Supabase PostgreSQL)
 
 ```
-DATABASE_URL=postgresql://postgres.pgpdacbrwyzvwxraqwcb:chamhet@123!@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres
+DATABASE_URL=postgresql://postgres:[password].[project-ref].supabase.co:5432/postgres
 ```
 
 ### Supabase Storage (Player Avatars)
 
 ```
-SUPABASE_URL=https://your-project-ref.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here
+SUPABASE_URL=https://[project-ref].supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 SUPABASE_STORAGE_BUCKET=player-avatars
 ```
 
 ### Optional Variables
 
 ```
-GEMINI_API_KEY=your_gemini_api_key_here
-ADMIN_UI_URL=your_admin_app_url_here
-```
-
-### Environment Identifier (for logging)
-
-```
-ENV_FILE=railway
+GEMINI_API_KEY=your_gemini_api_key
+ADMIN_UI_URL=https://admin.example.com
 ```
 
 ## 2. Deploy Settings in Railway
@@ -128,7 +124,7 @@ After deployment, check:
 
 - Railway will show deployment logs
 - Your bot should start and connect to Telegram
-- Check logs for: `🔧 Environment file loaded: railway`
+- Check logs for startup errors or missing required variables
 
 ## 6. Webhook Configuration (if using API)
 

@@ -4,12 +4,19 @@
   "functions": {
     "api/zalo-webhook.mjs": {
       "maxDuration": 30
+    },
+    "api/messenger-webhook.mjs": {
+      "maxDuration": 30
     }
   },
   "rewrites": [
     {
       "source": "/webhook/zalo",
       "destination": "/api/zalo-webhook"
+    },
+    {
+      "source": "/webhook/messenger",
+      "destination": "/api/messenger-webhook"
     }
   ]
 }
