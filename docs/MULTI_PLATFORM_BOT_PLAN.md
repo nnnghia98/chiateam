@@ -619,6 +619,10 @@ Decision:
       and API processes do not change.
 - [x] Use Zalo as an announcement-first player adapter. Do not expose admin or
       roster/team mutation commands in this checkpoint.
+- [x] After the checkpoint, add one admin-only `/zalosay` command for
+      direct bot messages; keep all roster/team mutation commands hidden.
+- [x] Allow Telegram admins to use `/zalosay` to send through the Zalo Bot API
+      without starting a second Zalo polling or webhook consumer.
 - [x] Use a text poll because the current Zalo Bot API does not provide a native
       poll-send method.
 - [x] Connect the production webhook after automated checks and deployed
@@ -630,6 +634,7 @@ Restricted command set:
 
 ```text
 /start
+/zalosay MESSAGE (alias: /say, admin only)
 /poll
 /vote 0|1|2|3|4
 /demvote
@@ -639,7 +644,8 @@ Restricted command set:
 
 `/vote` is the only Zalo command in this checkpoint that changes state. It
 writes a platform-qualified voter into the active vote shared with Telegram.
-All admin commands, including `/chiateam`, are not registered on Zalo.
+`/zalosay` sends a direct bot message without changing state. Other admin
+commands, including `/chiateam`, are not registered on Zalo.
 
 - [x] Confirm the platform's current API and account requirements.
 - [x] Add webhook secret verification and in-process message ID idempotency.
@@ -654,20 +660,23 @@ All admin commands, including `/chiateam`, are not registered on Zalo.
 Current checkpoint:
 
 - [x] A standalone yarn dev:zalo polling process is available.
-- [x] The adapter registers only /start, /poll, /vote, /demvote, /bench, and
-      /team.
+- [x] The adapter registers /start, /zalosay, /poll, /vote, /demvote,
+      /bench, and /team.
 - [x] `/addme`, `/chiateam`, and every other admin or mutation command are
-      hidden and unhandled on Zalo.
-- [x] The six commands use shared use cases and the existing API state
+      hidden and unhandled on Zalo, except for admin-only `/zalosay`.
+- [x] The seven commands use shared use cases and the existing API state
       repository.
+- [x] Telegram `/zalosay` publishes only to the private recipient in
+      `ZALO_BOT_OWNER_ID` and returns a source-chat confirmation without
+      changing stored state.
 - [x] Mixed Telegram and Zalo votes keep separate platform identities and can
       still be synchronized to the bench by Telegram admin flow.
 - [x] Automated restricted-command checkpoint passes: 26 of 26.
 - [x] Webhook and event-lifecycle checkpoint passes: 28 of 28.
-- [x] Full repository regression suite passes: 413 of 413.
+- [x] Full repository regression suite passes: 423 of 423.
 - [x] Historical live test: create/configure the Zalo bot and pass `/start`,
       `/addme`, and `/bench` before the announcement-first restriction.
-- [ ] Owner live test: `/start` lists only the six restricted commands.
+- [ ] Owner live test: `/start` lists only the seven restricted commands.
 - [ ] Owner live test: `/poll`, `/vote`, and `/demvote` share the active vote
       with Telegram.
 - [ ] Owner live test: `/bench` and `/team` remain read-only.
@@ -688,7 +697,8 @@ Exit criteria:
 
 - [x] Telegram and Zalo use the same football use cases.
 - [x] No Zalo checks are added inside core use cases.
-- [x] Zalo exposes no admin commands in its registry or `/start` help.
+- [x] Zalo exposes only the approved admin `/zalosay` command in its
+      registry and `/start` help.
 - [ ] The owner passes the live restricted-command test on Zalo.
 
 ### Phase 7: Prepare the Open-Source Release

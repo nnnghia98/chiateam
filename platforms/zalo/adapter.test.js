@@ -81,11 +81,10 @@ test('Zalo adapter creates a platform-neutral context', () => {
   assert.deepEqual(adapter.capabilities, ZALO_CAPABILITIES);
 });
 
-test('Zalo adapter renders rich text and falls back from actions to commands', async () => {
+test('Zalo adapter renders rich text and replies to the source chat', async () => {
   const client = new MockZaloClient();
   const adapter = createZaloAdapter({
     client,
-    channelConfig: { channels: { main: 'main-chat' } },
     router: {
       async run() {
         return {
@@ -109,7 +108,7 @@ test('Zalo adapter renders rich text and falls back from actions to commands', a
   assert.equal(await adapter.handleUpdate(createUpdate('/start')), true);
   assert.deepEqual(client.sentMessages, [
     {
-      chatId: 'main-chat',
+      chatId: 'chat-1',
       text: '**Choose**\n\n1. View team — /team',
       options: { parse_mode: 'markdown' },
     },

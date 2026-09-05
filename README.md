@@ -51,6 +51,7 @@ Known commands registered by the active bot runtime:
 | Area              | Commands                                                                       |
 | ----------------- | ------------------------------------------------------------------------------ |
 | Help              | `/start`                                                                       |
+| Zalo messaging    | `/zalosay`, `/say`                                                             |
 | Bench             | `/addme`, `/add`, `/bench`, `/editbench`, `/clearbench`                        |
 | Teams             | `/chiateam`, `/team`, `/addtoteam`, `/clearteam`                               |
 | Team constraints  | `/manifest`, `/mf`, `/manifests`, `/removemanifest`, `/clearmanifests`         |
@@ -65,6 +66,9 @@ part of the supported bot runtime.
 
 Important rewritten command forms:
 
+- `/zalosay MESSAGE` sends a Zalo message from Telegram. It is admin-only and
+  requires `ZALO_BOT_TOKEN` and `ZALO_BOT_OWNER_ID` on the Telegram bot
+  service. The message goes to the owner's private Zalo chat.
 - `/clearvote confirm` requires confirmation.
 - `/reset` runs immediately and is admin-only.
 - `/register NUMBER`, `/register add NAME NUMBER`, or
@@ -193,6 +197,8 @@ Required or commonly used variables:
 TELEGRAM_BOT_TOKEN
 BOT_OWNER_ID
 BOT_ADMIN_IDS
+ZALO_BOT_TOKEN
+ZALO_BOT_OWNER_ID
 CHAT_ID
 MAIN_THREAD_ID
 ANNOUNCEMENT_THREAD_ID

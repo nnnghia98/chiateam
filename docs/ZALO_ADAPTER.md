@@ -7,6 +7,7 @@ The Zalo adapter currently reuses the shared football core for:
 
 ```text
 /start
+/zalosay MESSAGE (alias: /say, admin only)
 /poll
 /vote 0|1|2|3|4
 /demvote
@@ -14,9 +15,13 @@ The Zalo adapter currently reuses the shared football core for:
 /team
 ```
 
-Only `/vote` changes state. `/poll`, `/demvote`, `/bench`, and `/team` are
-read-only. Admin and team-management commands are not registered, so commands
-such as `/addme` and `/chiateam` are hidden and cause no bot action.
+Only `/vote` changes state. `/zalosay` sends its text through the Zalo Bot
+API without changing stored state. A Telegram admin can also run `/zalosay`;
+the Telegram process uses a non-polling Zalo client to post to
+the private recipient in `ZALO_BOT_OWNER_ID`, then confirms delivery in
+Telegram. Other commands are read-only. Roster and
+team-management commands are not registered, so commands such as `/addme` and
+`/chiateam` are hidden and cause no bot action.
 
 Zalo has no native poll-send method in its current Bot API. `/poll` renders the
 active Telegram-created vote as text choices, and `/vote` stores the Zalo
@@ -38,11 +43,11 @@ ZALO_BOT_OWNER_ID=...
 ZALO_BOT_ADMIN_IDS=...
 ```
 
-ZALO_BOT_OWNER_ID and ZALO_BOT_ADMIN_IDS are reserved for a later checkpoint.
-The restricted command set does not register admin commands.
-
-Optional ZALO\_\*\_CHAT_ID values route core result channels to fixed Zalo
-conversations. If they are empty, the bot replies to the source conversation.
+`ZALO_BOT_OWNER_ID` and `ZALO_BOT_ADMIN_IDS` control who may run
+`/zalosay` in Zalo. `ZALO_BOT_OWNER_ID` is also the private recipient when
+Telegram runs `/zalosay`. The owner must open a private chat with the bot
+before receiving messages. Telegram authorization uses `BOT_OWNER_ID` and
+`BOT_ADMIN_IDS`.
 
 Official references:
 
@@ -60,14 +65,20 @@ yarn dev:zalo
 
 Live checklist:
 
-1. Send `/start`. It must list only `/start`, `/poll`, `/vote`, `/demvote`,
+1. Send `/start`. It must list `/zalosay`, `/poll`, `/vote`, `/demvote`,
    `/bench`, and `/team`.
-2. Send `/addme` and `/chiateam`. The bot must not reply or change state.
-3. Create an active vote from the Telegram admin flow with `/taovote QUESTION`.
-4. Send `/poll` in Zalo. It must show the question and five text choices.
-5. Send `/vote 2`. It must confirm two attendees.
-6. Send `/demvote`. The Zalo voter must appear in the shared result.
-7. Send `/bench` and `/team`. Both must remain read-only.
+2. As a configured admin, send `/zalosay Hello team`. The bot must post
+   `Hello team` in the same Zalo chat.
+3. As a Telegram admin, send `/zalosay Hello from Telegram`. The Zalo bot must
+   post only `Hello from Telegram` to the owner's private Zalo chat, and
+   Telegram must show a short success confirmation.
+4. As a non-admin, send `/zalosay Hello team`. The bot must deny it.
+5. Send `/addme` and `/chiateam`. The bot must not reply or change state.
+6. Create an active vote from the Telegram admin flow with `/taovote QUESTION`.
+7. Send `/poll` in Zalo. It must show the question and five text choices.
+8. Send `/vote 2`. It must confirm two attendees.
+9. Send `/demvote`. The Zalo voter must appear in the shared result.
+10. Send `/bench` and `/team`. Both must remain read-only.
 
 `/vote 0` records that the user will not attend. Sending another `/vote` value
 changes that user's choice.
@@ -107,14 +118,14 @@ Set these values in both Preview and Production:
 
 ```dotenv
 ZALO_BOT_TOKEN=...
+ZALO_BOT_OWNER_ID=...
 ZALO_WEBHOOK_SECRET=...
 BOT_API_BASE_URL=https://your-public-api.example.com
 INTERNAL_API_AUTH_TOKEN=...
 ```
 
 `BOT_API_BASE_URL` must be the public HTTPS address of the existing API. The
-internal token must match the API deployment. Add optional `ZALO_*_CHAT_ID`
-values only when messages must go to fixed Zalo conversations.
+internal token must match the API deployment.
 
 Use the Node.js runtime. In the Vercel project settings, choose a function
 region close to the existing API and PostgreSQL region.
@@ -145,7 +156,7 @@ region close to the existing API and PostgreSQL region.
    ```
 
 8. After registration succeeds, stop the local `yarn dev:zalo` polling shell.
-9. Repeat the six-command live checklist from the Local Test section.
+9. Repeat the live checklist from the Local Test section.
 
 Zalo tests the HTTPS URL and secret during `setWebhook`. Polling and webhook
 delivery cannot run together.

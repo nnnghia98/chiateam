@@ -26,6 +26,8 @@ In Render dashboard → your service → **Environment** tab, add all vars:
 | --------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | `NODE_ENV`                  | `production`                                                                                                                |
 | `TELEGRAM_BOT_TOKEN`        | your token                                                                                                                  |
+| `ZALO_BOT_TOKEN`            | Zalo bot token used by Telegram `/zalosay`                                                                                  |
+| `ZALO_BOT_OWNER_ID`         | private Zalo recipient for Telegram `/zalosay`                                                                              |
 | `BOT_OWNER_ID`              | your Telegram ID                                                                                                            |
 | `BOT_ADMIN_IDS`             | comma-separated IDs                                                                                                         |
 | `CHAT_ID`                   | group chat ID                                                                                                               |
