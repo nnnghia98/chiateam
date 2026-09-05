@@ -1,5 +1,8 @@
 const { COMMAND_MANIFEST } = require('../core/commands/command-manifest');
 const {
+  createAnnouncementCommand,
+} = require('../core/use-cases/common/announcement-command');
+const {
   createStartCommand,
 } = require('../core/use-cases/common/start-command');
 const { createBenchCommand } = require('../core/use-cases/bench/bench-command');
@@ -16,6 +19,7 @@ const { createTeamCommand } = require('../core/use-cases/teams/team-command');
 
 const ZALO_COMMAND_NAMES = Object.freeze([
   'start',
+  'zalosay',
   'poll',
   'vote',
   'demvote',
@@ -36,6 +40,7 @@ function requireSharedManifestEntry(name) {
 const ZALO_COMMAND_MANIFEST = Object.freeze(
   [
     requireSharedManifestEntry('start'),
+    requireSharedManifestEntry('zalosay'),
     {
       name: 'poll',
       aliases: [],
@@ -69,6 +74,7 @@ function createZaloCommandDefinitions() {
       manifest: ZALO_COMMAND_MANIFEST,
       includeQuickStart: false,
     }),
+    createAnnouncementCommand(),
     createPollCommand(),
     createVoteCommand(),
     createDemvoteCommand(),

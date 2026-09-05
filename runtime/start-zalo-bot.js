@@ -11,7 +11,6 @@ function startZaloBotRuntime({
   definitions = [],
   stateRepository = createApiStateRepository(),
   permissionPolicy,
-  zaloChannelConfig,
   listenForClientEvents = true,
   onError,
 } = {}) {
@@ -31,7 +30,6 @@ function startZaloBotRuntime({
   const adapter = createZaloAdapter({
     client,
     router,
-    channelConfig: zaloChannelConfig,
     onError,
   });
 
