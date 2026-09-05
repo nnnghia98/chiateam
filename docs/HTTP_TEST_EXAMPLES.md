@@ -216,7 +216,7 @@ req.end();
 
 ### Custom Port
 
-Set in your `.env.dev`:
+Set in your `.env`:
 
 ```bash
 TEST_SERVER_PORT=3002

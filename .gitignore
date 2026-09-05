@@ -21,10 +21,8 @@ logs/
 
 # Environment files
 .env
-.env.dev
-.env.test
-.env.local
-.env.production
+.env.*
+!.env.example
 
 # Package manager artifacts
 .yarn-integrity

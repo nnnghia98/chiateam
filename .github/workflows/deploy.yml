@@ -110,8 +110,8 @@ jobs:
             mkdir -p api/data/bot
             mkdir -p backups/bot-storage
 
-            if [ ! -f ".env.production" ]; then
-              echo "Missing .env.production in \$APP_DIR. Create it before deploy."
+            if [ ! -f ".env" ]; then
+              echo "Missing .env in \$APP_DIR. Create it before deploy."
               exit 1
             fi
 
@@ -127,10 +127,15 @@ jobs:
 
             printf '%s' "${GHCR_TOKEN_B64}" | base64 -d | \$DOCKER_CMD login ghcr.io -u "${GHCR_USERNAME}" --password-stdin
 
-            printf '%s\n' "APP_IMAGE=${APP_IMAGE}:${IMAGE_TAG}" > .env.deploy
+            APP_IMAGE_VALUE="${APP_IMAGE}:${IMAGE_TAG}"
+            if grep -q '^APP_IMAGE=' .env; then
+              sed -i "s|^APP_IMAGE=.*|APP_IMAGE=\${APP_IMAGE_VALUE}|" .env
+            else
+              printf '\nAPP_IMAGE=%s\n' "\$APP_IMAGE_VALUE" >> .env
+            fi
 
-            \$DOCKER_CMD compose --env-file .env.deploy pull
-            \$DOCKER_CMD compose --env-file .env.deploy up -d --remove-orphans --no-build
+            \$DOCKER_CMD compose --env-file .env pull
+            \$DOCKER_CMD compose --env-file .env up -d --remove-orphans --no-build
 
             curl -fsS http://127.0.0.1:8787/healthz >/dev/null
           EOF

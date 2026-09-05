@@ -8,7 +8,7 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "https://api-production-6834.up.railway.app",
+      "value": "http://localhost:8787",
       "type": "string"
     },
     {

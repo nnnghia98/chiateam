@@ -35,7 +35,7 @@ Set these in repo settings:
 ## Required VPS Prerequisites
 
 - Docker Engine + Docker Compose plugin installed
-- `.env.production` present at `APP_DIR/.env.production`
+- `.env` present at `APP_DIR/.env` with the VPS values
 - Network/firewall allows port `8787` (API) as needed
 
 ## Deploy Flow
@@ -47,14 +47,14 @@ On push to `main` (or manual `workflow_dispatch`), workflow:
 2. Uploads `docker-compose.yml` to VPS.
 3. Backs up `api/data/bot/storage.json` on VPS.
 4. Stops/removes old PM2 process `chiateam` if present.
-5. Pulls image tags for current commit and runs:
-   - `docker compose --env-file .env.deploy up -d --remove-orphans --no-build`
+5. Updates `APP_IMAGE` in the VPS `.env` for the rollout and runs:
+   - `docker compose --env-file .env up -d --remove-orphans --no-build`
 6. Verifies health:
    - `http://127.0.0.1:8787/healthz`
 
 ## One-time Cutover Checklist
 
-1. Ensure `.env.production` is created in `APP_DIR` with production values.
+1. Ensure `.env` is created in `APP_DIR` with the VPS values.
 2. Ensure GHCR pull credentials are valid.
 3. Back up PostgreSQL table `storage` through your database provider before a risky rollout.
 4. Run workflow manually once (`workflow_dispatch`) to cut over.
