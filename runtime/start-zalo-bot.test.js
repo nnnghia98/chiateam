@@ -99,10 +99,14 @@ test('Zalo runtime exposes only announcement and player actions', async () => {
     true
   );
   const help = client.sentMessages.at(-1).text;
-  ['/poll', '/vote', '/demvote', '/bench', '/team'].forEach(command => {
-    assert.match(help, new RegExp(command));
-  });
-  assert.doesNotMatch(help, /\/addme|\/chiateam|\/register|\(admin\)/);
+  ['/zalosay', '/poll', '/vote', '/demvote', '/bench', '/team'].forEach(
+    command => {
+      assert.match(help, new RegExp(command));
+    }
+  );
+  assert.match(help, /alias: \/say/);
+  assert.match(help, /\/zalosay \[MESSAGE\].*\(admin\)/);
+  assert.doesNotMatch(help, /\/addme|\/chiateam|\/register/);
 
   assert.equal(
     await runtime.adapter.handleUpdate(
@@ -167,6 +171,69 @@ test('Zalo runtime exposes only announcement and player actions', async () => {
 
   runtime.stop();
   assert.equal(client.listenerCount('message'), 0);
+});
+
+test('Zalo runtime sends admin announcements as direct bot messages', async () => {
+  const client = new MockZaloClient();
+  let loadCount = 0;
+  let saveCount = 0;
+  const runtime = startZaloBotRuntime({
+    client,
+    stateRepository: createStateRepository({
+      async load() {
+        loadCount += 1;
+        return {};
+      },
+      async save() {
+        saveCount += 1;
+        return {};
+      },
+    }),
+    permissionPolicy: createZaloPermissionPolicy({
+      env: { ZALO_BOT_OWNER_ID: 'owner' },
+    }),
+    definitions: createZaloCommandDefinitions(),
+  });
+
+  assert.equal(
+    await runtime.adapter.handleUpdate(
+      createUpdate('/zalosay Hello team', 'player', 'Player', 'message-1')
+    ),
+    true
+  );
+  assert.deepEqual(client.sentMessages.at(-1), {
+    chatId: 'zalo-chat',
+    text: '⛔ Chỉ admin mới có quyền gửi thông báo.',
+    options: {},
+  });
+
+  assert.equal(
+    await runtime.adapter.handleUpdate(
+      createUpdate('/say Hello team', 'owner', 'Owner', 'message-2')
+    ),
+    true
+  );
+  assert.deepEqual(client.sentMessages.at(-1), {
+    chatId: 'zalo-chat',
+    text: 'Hello team',
+    options: {},
+  });
+
+  assert.equal(
+    await runtime.adapter.handleUpdate(
+      createUpdate('/zalosay', 'owner', 'Owner', 'message-3')
+    ),
+    true
+  );
+  assert.deepEqual(client.sentMessages.at(-1), {
+    chatId: 'zalo-chat',
+    text: '⚠️ Cách dùng: /zalosay [nội dung].',
+    options: {},
+  });
+  assert.equal(loadCount, 0);
+  assert.equal(saveCount, 0);
+
+  runtime.stop();
 });
 
 test('Zalo runtime can skip client listeners for webhook delivery', () => {

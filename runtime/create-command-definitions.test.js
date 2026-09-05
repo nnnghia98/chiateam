@@ -11,6 +11,9 @@ const {
 const {
   createAttendanceVotePublisher,
 } = require('../core/ports/attendance-vote-publisher');
+const {
+  createAnnouncementPublisher,
+} = require('../core/ports/announcement-publisher');
 const { createMatchRepository } = require('../core/ports/match-repository');
 const {
   createMatchSummaryGenerator,
@@ -23,6 +26,9 @@ const { createCommandDefinitions } = require('./create-command-definitions');
 
 function createDependencies() {
   return {
+    announcementPublisher: createAnnouncementPublisher({
+      async publish() {},
+    }),
     votePublisher: createAttendanceVotePublisher({
       async publish() {
         return { id: 'poll-1', platform: 'telegram' };
@@ -82,5 +88,5 @@ test('shared runtime definitions match the approved command manifest', () => {
     COMMAND_MANIFEST.map(entry => entry.name)
   );
   assert.deepEqual(supportedNames.sort(), listSupportedCommandNames().sort());
-  assert.equal(definitions.length, 33);
+  assert.equal(definitions.length, 34);
 });

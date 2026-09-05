@@ -1,6 +1,12 @@
 const {
   createStartCommand,
 } = require('../core/use-cases/common/start-command');
+const {
+  createAnnouncementCommand,
+} = require('../core/use-cases/common/announcement-command');
+const {
+  assertAnnouncementPublisher,
+} = require('../core/ports/announcement-publisher');
 const { createAddCommand } = require('../core/use-cases/bench/add-command');
 const { createAddmeCommand } = require('../core/use-cases/bench/addme-command');
 const { createBenchCommand } = require('../core/use-cases/bench/bench-command');
@@ -89,6 +95,7 @@ const {
 } = require('../core/use-cases/matches/matches-command');
 
 function createCommandDefinitions({
+  announcementPublisher,
   benchIdentityPolicy,
   votePublisher,
   voteController,
@@ -97,8 +104,13 @@ function createCommandDefinitions({
   matchRepository,
   matchSummaryGenerator,
 } = {}) {
+  const activeAnnouncementPublisher = assertAnnouncementPublisher(
+    announcementPublisher
+  );
+
   return Object.freeze([
     createStartCommand(),
+    createAnnouncementCommand({ publisher: activeAnnouncementPublisher }),
     createAddmeCommand({ identityPolicy: benchIdentityPolicy }),
     createAddCommand(),
     createBenchCommand(),
