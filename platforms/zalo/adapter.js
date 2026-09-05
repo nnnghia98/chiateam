@@ -14,23 +14,6 @@ const ZALO_CAPABILITIES = Object.freeze({
   threads: false,
 });
 
-function createZaloChannelConfig(env = process.env) {
-  const channels = {};
-
-  for (const [channel, envName] of [
-    ['default', 'ZALO_DEFAULT_CHAT_ID'],
-    ['main', 'ZALO_MAIN_CHAT_ID'],
-    ['announcement', 'ZALO_ANNOUNCEMENT_CHAT_ID'],
-    ['vip', 'ZALO_VIP_CHAT_ID'],
-    ['statistics', 'ZALO_STATISTICS_CHAT_ID'],
-  ]) {
-    const value = String(env[envName] ?? '').trim();
-    if (value) channels[channel] = value;
-  }
-
-  return Object.freeze({ channels: Object.freeze(channels) });
-}
-
 function parseZaloCommandText(text) {
   if (typeof text !== 'string') {
     return null;
@@ -53,7 +36,6 @@ function createZaloAdapter({
   client,
   router,
   formatter = formatZaloMessage,
-  channelConfig = createZaloChannelConfig(),
   interactionTtlMs = DEFAULT_INTERACTION_TTL_MS,
   eventTtlMs = DEFAULT_EVENT_TTL_MS,
   now = Date.now,
@@ -178,14 +160,13 @@ function createZaloAdapter({
   async function sendResult(context, result) {
     for (const message of result.messages) {
       const rendered = formatter(message);
-      const targetChatId =
-        message.channel === 'source'
-          ? context.conversation.externalId
-          : channelConfig.channels?.[message.channel] ||
-            context.conversation.externalId;
 
       for (const chunk of splitZaloText(rendered.text)) {
-        await client.sendMessage(targetChatId, chunk, rendered.options);
+        await client.sendMessage(
+          context.conversation.externalId,
+          chunk,
+          rendered.options
+        );
       }
 
       rememberInput(context, message.input);
@@ -323,6 +304,5 @@ module.exports = {
   DEFAULT_INTERACTION_TTL_MS,
   ZALO_CAPABILITIES,
   createZaloAdapter,
-  createZaloChannelConfig,
   parseZaloCommandText,
 };

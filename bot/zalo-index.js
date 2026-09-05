@@ -1,7 +1,6 @@
 require('../config/load-env').loadEnv();
 
 const { createZaloBotClient } = require('../platforms/zalo/client');
-const { createZaloChannelConfig } = require('../platforms/zalo/adapter');
 const {
   createZaloPermissionPolicy,
 } = require('../platforms/zalo/permission-policy');
@@ -33,14 +32,12 @@ async function bootstrapZaloBot({
   }),
   stateRepository = createApiStateRepository(),
   permissionPolicy = createZaloPermissionPolicy({ env }),
-  channelConfig = createZaloChannelConfig(env),
 } = {}) {
   const botInfo = await client.getMe();
   const runtime = startZaloBotRuntime({
     client,
     stateRepository,
     permissionPolicy,
-    zaloChannelConfig: channelConfig,
     definitions: createZaloCommandDefinitions(),
     onError: error =>
       logEvent('zalo', 'command error', { error: error.message }, 'error'),

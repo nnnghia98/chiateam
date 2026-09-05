@@ -3,6 +3,13 @@ const assert = require('node:assert/strict');
 const { EventEmitter } = require('node:events');
 
 const { createStateRepository } = require('../core/ports/state-repository');
+const {
+  createAnnouncementPublisher,
+} = require('../core/ports/announcement-publisher');
+const {
+  ANNOUNCEMENT_MESSAGES,
+  createAnnouncementCommand,
+} = require('../core/use-cases/common/announcement-command');
 const { createAddCommand } = require('../core/use-cases/bench/add-command');
 const { createAddmeCommand } = require('../core/use-cases/bench/addme-command');
 const { createBenchCommand } = require('../core/use-cases/bench/bench-command');
@@ -148,6 +155,66 @@ test('bot runtime routes migrated /bench and leaves legacy commands alone', asyn
 
   runtime.stop();
   assert.equal(bot.listenerCount('message'), 0);
+});
+
+test('Telegram admin uses /zalosay to publish only through Zalo', async () => {
+  const bot = new MockTelegramBot();
+  const published = [];
+  let loadCount = 0;
+  let saveCount = 0;
+  const announcementPublisher = createAnnouncementPublisher({
+    async publish(message, context) {
+      published.push({
+        message,
+        platform: context.actor.platform,
+        actorId: context.actor.externalId,
+      });
+    },
+  });
+  const runtime = startBotRuntime({
+    bot,
+    stateRepository: createStateRepository({
+      async load() {
+        loadCount += 1;
+        return {};
+      },
+      async save() {
+        saveCount += 1;
+        return {};
+      },
+    }),
+    permissionPolicy: createTelegramPermissionPolicy({
+      env: { BOT_OWNER_ID: '123' },
+    }),
+    definitions: [
+      createAnnouncementCommand({ publisher: announcementPublisher }),
+    ],
+  });
+
+  assert.equal(
+    await runtime.adapter.handleEvent(createEvent('/zalosay Hello Zalo')),
+    true
+  );
+  assert.equal(
+    await runtime.adapter.handleEvent(
+      createEvent('/zalosay Blocked', { id: 999, first_name: 'Other' })
+    ),
+    true
+  );
+
+  assert.deepEqual(published, [
+    { message: 'Hello Zalo', platform: 'telegram', actorId: '123' },
+  ]);
+  assert.equal(bot.sentMessages[0].text, ANNOUNCEMENT_MESSAGES.success);
+  assert.equal(bot.sentMessages[0].chatId, '456');
+  assert.equal(
+    bot.sentMessages[1].text,
+    ANNOUNCEMENT_MESSAGES.permissionDenied
+  );
+  assert.equal(loadCount, 0);
+  assert.equal(saveCount, 0);
+
+  runtime.stop();
 });
 
 test('bot runtime saves /addme with Telegram-compatible identity', async () => {
@@ -1650,6 +1717,9 @@ test('Telegram runtime routes the complete shared command catalog', async () => 
   });
   const votePublisher = createTelegramAttendanceVotePublisher({ bot });
   const voteController = createTelegramAttendanceVoteController({ bot });
+  const announcementPublisher = createAnnouncementPublisher({
+    async publish() {},
+  });
   const runtime = startBotRuntime({
     bot,
     stateRepository,
@@ -1657,6 +1727,7 @@ test('Telegram runtime routes the complete shared command catalog', async () => 
       env: { BOT_OWNER_ID: '123' },
     }),
     definitions: createCommandDefinitions({
+      announcementPublisher,
       benchIdentityPolicy: createTelegramBenchIdentityPolicy(),
       votePublisher,
       voteController,

@@ -141,21 +141,23 @@ CREATE TABLE match_player_stats (
 
 ## Environment Variables
 
-| Variable                      | Where      | Purpose                     |
-| ----------------------------- | ---------- | --------------------------- |
-| `TELEGRAM_BOT_TOKEN`          | Render.com | Telegram bot token          |
-| `BOT_OWNER_ID`                | Render.com | Owner Telegram ID           |
-| `BOT_ADMIN_IDS`               | Render.com | Admin IDs (comma-separated) |
-| `CHAT_ID`                     | Render.com | Main group chat ID          |
-| `MAIN_THREAD_ID`              | Render.com | Thread IDs                  |
-| `ANNOUNCEMENT_THREAD_ID`      | Render.com | Thread IDs                  |
-| `VIP_THREAD_ID`               | Render.com | Thread IDs                  |
-| `STATISTICS_THREAD_ID`        | Render.com | Thread IDs                  |
-| `DATABASE_URL`                | Render.com | Supabase connection string  |
-| `GEMINI_API_KEY`              | Render.com | Google AI Studio key        |
-| `ADMIN_UI_URL`                | Render.com | Admin app URL (for CORS)    |
-| `INTERNAL_API_AUTH_TOKEN`     | Shared     | Trusted proxy-to-API auth   |
-| `API_INTERNAL_URL`            | Admin host | Server-side API base URL    |
+| Variable                  | Where      | Purpose                     |
+| ------------------------- | ---------- | --------------------------- |
+| `TELEGRAM_BOT_TOKEN`      | Render.com | Telegram bot token          |
+| `ZALO_BOT_TOKEN`          | Render.com | Zalo sender token           |
+| `ZALO_BOT_OWNER_ID`       | Render.com | Private Zalo recipient      |
+| `BOT_OWNER_ID`            | Render.com | Owner Telegram ID           |
+| `BOT_ADMIN_IDS`           | Render.com | Admin IDs (comma-separated) |
+| `CHAT_ID`                 | Render.com | Main group chat ID          |
+| `MAIN_THREAD_ID`          | Render.com | Thread IDs                  |
+| `ANNOUNCEMENT_THREAD_ID`  | Render.com | Thread IDs                  |
+| `VIP_THREAD_ID`           | Render.com | Thread IDs                  |
+| `STATISTICS_THREAD_ID`    | Render.com | Thread IDs                  |
+| `DATABASE_URL`            | Render.com | Supabase connection string  |
+| `GEMINI_API_KEY`          | Render.com | Google AI Studio key        |
+| `ADMIN_UI_URL`            | Render.com | Admin app URL (for CORS)    |
+| `INTERNAL_API_AUTH_TOKEN` | Shared     | Trusted proxy-to-API auth   |
+| `API_INTERNAL_URL`        | Admin host | Server-side API base URL    |
 
 > `DATABASE_NAME`, `DB_PATH`, `DB_DIR` are **no longer needed**.
 
@@ -163,15 +165,15 @@ CREATE TABLE match_player_stats (
 
 ## Operational Access (vs Old SSH)
 
-| Task        | Old (SSH)              | New                                   |
-| ----------- | ---------------------- | ------------------------------------- |
-| View logs   | `ssh → pm2 logs`       | Render.com Dashboard → Logs tab       |
-| Env vars    | `.env` on server       | Render.com Dashboard → Environment    |
-| DB browse   | sqlite3 CLI            | Supabase Table Editor                 |
-| DB export   | `sqlite3 .dump`        | Supabase → Settings → Download backup |
-| DB import   | Manual                 | Supabase SQL Editor                   |
-| Public IP   | Static `15.152.155.89` | Render.com auto-assigned HTTPS URL    |
-| Admin UI logs | `docker logs`        | Vercel dashboard                      |
+| Task          | Old (SSH)              | New                                   |
+| ------------- | ---------------------- | ------------------------------------- |
+| View logs     | `ssh → pm2 logs`       | Render.com Dashboard → Logs tab       |
+| Env vars      | `.env` on server       | Render.com Dashboard → Environment    |
+| DB browse     | sqlite3 CLI            | Supabase Table Editor                 |
+| DB export     | `sqlite3 .dump`        | Supabase → Settings → Download backup |
+| DB import     | Manual                 | Supabase SQL Editor                   |
+| Public IP     | Static `15.152.155.89` | Render.com auto-assigned HTTPS URL    |
+| Admin UI logs | `docker logs`          | Vercel dashboard                      |
 
 ---
 

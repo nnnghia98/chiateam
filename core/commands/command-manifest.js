@@ -8,6 +8,14 @@ const COMMAND_MANIFEST = Object.freeze(
       permission: 'player',
     },
     {
+      name: 'zalosay',
+      aliases: ['say'],
+      category: 'Thông báo',
+      usage: '/zalosay [MESSAGE]',
+      description: 'Gửi tin nhắn trực tiếp đến Zalo',
+      permission: 'admin',
+    },
+    {
       name: 'addme',
       category: 'Bench',
       usage: '/addme',

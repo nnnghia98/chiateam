@@ -1,5 +1,4 @@
 const { createZaloBotClient } = require('../platforms/zalo/client');
-const { createZaloChannelConfig } = require('../platforms/zalo/adapter');
 const {
   createZaloPermissionPolicy,
 } = require('../platforms/zalo/permission-policy');
@@ -31,7 +30,6 @@ function createZaloWebhookApplication({
   stateRepository,
   eventRepository,
   permissionPolicy,
-  channelConfig,
   definitions = createZaloCommandDefinitions(),
   secretToken,
   onError = error => console.error('❌ [zalo.webhook.command]', error),
@@ -46,7 +44,6 @@ function createZaloWebhookApplication({
     client: activeClient,
     stateRepository: stateRepository || createApiStateRepository(),
     permissionPolicy: permissionPolicy || createZaloPermissionPolicy({ env }),
-    zaloChannelConfig: channelConfig || createZaloChannelConfig(env),
     definitions,
     listenForClientEvents: false,
     onError,
