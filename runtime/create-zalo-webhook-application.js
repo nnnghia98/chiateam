@@ -30,7 +30,8 @@ function createZaloWebhookApplication({
   stateRepository,
   eventRepository,
   permissionPolicy,
-  definitions = createZaloCommandDefinitions(),
+  definitions,
+  subscriptionRepository,
   secretToken,
   onError = error => console.error('❌ [zalo.webhook.command]', error),
 } = {}) {
@@ -44,7 +45,8 @@ function createZaloWebhookApplication({
     client: activeClient,
     stateRepository: stateRepository || createApiStateRepository(),
     permissionPolicy: permissionPolicy || createZaloPermissionPolicy({ env }),
-    definitions,
+    definitions:
+      definitions || createZaloCommandDefinitions({ subscriptionRepository }),
     listenForClientEvents: false,
     onError,
   });

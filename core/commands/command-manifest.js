@@ -12,7 +12,7 @@ const COMMAND_MANIFEST = Object.freeze(
       aliases: ['say'],
       category: 'Thông báo',
       usage: '/zalosay [MESSAGE]',
-      description: 'Gửi tin nhắn trực tiếp đến Zalo',
+      description: 'Soạn và xác nhận thông báo đến tất cả người đăng ký trên Zalo',
       permission: 'admin',
     },
     {

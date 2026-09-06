@@ -883,8 +883,28 @@ Current checkpoint:
 
 See [`docs/MESSENGER_ADAPTER.md`](MESSENGER_ADAPTER.md) for setup and testing.
 
+### Zalo Broadcast Extension (2026-09-06)
+
+Implemented locally; not yet deployed or live-tested.
+
+- [x] Add private-chat `/subscribe` and `/unsubscribe` on Zalo.
+- [x] Change Telegram `/zalosay` to preview all subscribers and require a
+      one-use confirmation from the same admin/chat/topic.
+- [x] Keep subscribers and delivery progress in separate, private PostgreSQL
+      tables, without changing football state or its JSON mirror.
+- [x] Report delivery counts and stop safely on uncertain results without
+      automatic retries.
+- [x] Pass 485 tests, including isolated PostgreSQL and HTTP integration checks.
+- [ ] Deploy the API, Vercel webhook, and Telegram bot, in that order.
+- [ ] Run a small, approved live broadcast with consenting subscribers.
+
+See [Zalo broadcast setup](ZALO_BROADCAST.md) for commands and failure handling.
+
 ## Current Next Action
 
-Set up the Meta app and Messenger Page. When the owner provides the new
-Messenger values, add them only to the deployment provider, deploy the webhook,
-and run the live checks. Keep the existing root `.env` values unchanged.
+Deploy and live-check the Zalo broadcast extension. Keep existing `.env` values
+unchanged; no new variable is needed.
+
+Messenger's Meta app and Page setup remain pending. When the owner provides
+the new Messenger values, add them only to the deployment provider, deploy the
+webhook, and run the live checks.

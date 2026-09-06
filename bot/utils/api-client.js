@@ -1,7 +1,8 @@
 const http = require('http');
 const https = require('https');
 
-const DEFAULT_API_PORT = process.env.API_PORT || process.env.UI_API_PORT || 8787;
+const DEFAULT_API_PORT =
+  process.env.API_PORT || process.env.UI_API_PORT || 8787;
 
 function normalizeBaseUrl(rawUrl) {
   if (!rawUrl) {
@@ -65,7 +66,7 @@ function parseResponseBody(rawBody) {
   }
 }
 
-function requestJson(pathname, { method = 'GET', body } = {}) {
+function requestJson(pathname, { method = 'GET', body, timeoutMs = 0 } = {}) {
   const baseUrl = getApiBaseUrl();
   const url = new URL(pathname, `${baseUrl}/`);
   const client = url.protocol === 'https:' ? https : http;
@@ -88,6 +89,10 @@ function requestJson(pathname, { method = 'GET', body } = {}) {
         let rawBody = '';
 
         res.setEncoding('utf8');
+        res.on('error', reject);
+        res.on('aborted', () =>
+          reject(new Error('Internal API response was interrupted.'))
+        );
         res.on('data', chunk => {
           rawBody += chunk;
         });
@@ -110,6 +115,15 @@ function requestJson(pathname, { method = 'GET', body } = {}) {
     );
 
     req.on('error', reject);
+
+    if (timeoutMs > 0) {
+      const timer = setTimeout(() => {
+        const error = new Error('Internal API request timed out.');
+        error.code = 'API_TIMEOUT';
+        req.destroy(error);
+      }, timeoutMs);
+      req.once('close', () => clearTimeout(timer));
+    }
 
     if (requestBody !== null) {
       req.write(requestBody);

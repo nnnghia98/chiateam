@@ -9,6 +9,8 @@ The Zalo adapter currently reuses the shared football core for:
 ```text
 /start
 /zalosay MESSAGE (alias: /say, admin only)
+/subscribe (private chat only)
+/unsubscribe (private chat only)
 /poll
 /vote 0|1|2|3|4
 /demvote
@@ -16,11 +18,11 @@ The Zalo adapter currently reuses the shared football core for:
 /team
 ```
 
-Only `/vote` changes state. `/zalosay` sends its text through the Zalo Bot
-API without changing stored state. A Telegram admin can also run `/zalosay`;
-the Telegram process uses a non-polling Zalo client to post to
-the private recipient in `ZALO_BOT_OWNER_ID`, then confirms delivery in
-Telegram. Other commands are read-only. Roster and
+Only `/vote` changes football state. `/subscribe` and `/unsubscribe` store
+announcement preferences separately. Zalo `/zalosay` sends its text to the
+current conversation. Telegram `/zalosay` now previews and confirms a broadcast
+to opted-in Zalo subscribers, not the single owner chat. See
+[broadcast setup and recovery](ZALO_BROADCAST.md). Other commands are read-only. Roster and
 team-management commands are not registered, so commands such as `/addme` and
 `/chiateam` are hidden and cause no bot action.
 
@@ -45,9 +47,9 @@ ZALO_BOT_ADMIN_IDS=...
 ```
 
 `ZALO_BOT_OWNER_ID` and `ZALO_BOT_ADMIN_IDS` control who may run
-`/zalosay` in Zalo. `ZALO_BOT_OWNER_ID` is also the private recipient when
-Telegram runs `/zalosay`. The owner must open a private chat with the bot
-before receiving messages. Telegram authorization uses `BOT_OWNER_ID` and
+`/zalosay` in Zalo. `ZALO_BOT_OWNER_ID` is no longer a Telegram broadcast
+destination. Each recipient must open a private chat and send `/subscribe`.
+Telegram authorization uses `BOT_OWNER_ID` and
 `BOT_ADMIN_IDS`.
 
 Official references:
@@ -70,9 +72,10 @@ Live checklist:
    `/bench`, and `/team`.
 2. As a configured admin, send `/zalosay Hello team`. The bot must post
    `Hello team` in the same Zalo chat.
-3. As a Telegram admin, send `/zalosay Hello from Telegram`. The Zalo bot must
-   post only `Hello from Telegram` to the owner's private Zalo chat, and
-   Telegram must show a short success confirmation.
+3. In Zalo, send `/subscribe`. As a Telegram admin, send
+   `/zalosay Hello from Telegram`, then the confirmation command shown in the
+   preview. Only subscribed recipients should receive the message, and
+   Telegram must show delivery counts. See the broadcast guide before live testing.
 4. As a non-admin, send `/zalosay Hello team`. The bot must deny it.
 5. Send `/addme` and `/chiateam`. The bot must not reply or change state.
 6. Create an active vote from the Telegram admin flow with `/taovote QUESTION`.
@@ -81,7 +84,9 @@ Live checklist:
 9. Send `/demvote`. The Zalo voter must appear in the shared result.
 10. Send `/bench` and `/team`. Both must remain read-only.
 
-Live checkpoint: all steps passed against the production webhook on 2026-09-02.
+Historical checkpoint: the original non-broadcast steps passed against the
+production webhook on 2026-09-02. The broadcast extension needs deployment
+and a separate live check; local tests do not establish production delivery.
 
 `/vote 0` records that the user will not attend. Sending another `/vote` value
 changes that user's choice.

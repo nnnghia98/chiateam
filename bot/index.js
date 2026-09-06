@@ -39,8 +39,11 @@ const {
   createTelegramPermissionPolicy,
 } = require('../platforms/telegram/permission-policy');
 const {
-  createZaloAnnouncementPublisher,
-} = require('../platforms/zalo/announcement-publisher');
+  createZaloBroadcastService,
+} = require('../platforms/zalo/broadcast-service');
+const {
+  createApiZaloAnnouncementRepository,
+} = require('../runtime/repositories/api-zalo-announcement-repository');
 const {
   registerCallbackQueryHandler,
 } = require('./commands/common/callback-query');
@@ -125,7 +128,9 @@ async function bootstrapBot() {
   const attendanceVoteController = createTelegramAttendanceVoteController({
     bot,
   });
-  const zaloAnnouncementPublisher = createZaloAnnouncementPublisher();
+  const zaloBroadcastService = createZaloBroadcastService({
+    repository: createApiZaloAnnouncementRepository(),
+  });
   const playerRepository = createApiPlayerRepository();
   const statisticsRepository = createApiStatisticsRepository();
   const matchRepository = createApiMatchRepository();
@@ -139,7 +144,7 @@ async function bootstrapBot() {
     permissionPolicy: createTelegramPermissionPolicy(),
     registerTelegramActionHandler: registerCallbackQueryHandler,
     definitions: createCommandDefinitions({
-      announcementPublisher: zaloAnnouncementPublisher,
+      broadcastService: zaloBroadcastService,
       benchIdentityPolicy: createTelegramBenchIdentityPolicy(),
       votePublisher: attendanceVotePublisher,
       voteController: attendanceVoteController,

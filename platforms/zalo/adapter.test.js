@@ -76,6 +76,7 @@ test('Zalo adapter creates a platform-neutral context', () => {
     conversation: {
       externalId: 'chat-1',
       threadId: null,
+      type: 'private',
     },
   });
   assert.deepEqual(adapter.capabilities, ZALO_CAPABILITIES);

@@ -25,8 +25,13 @@
   `ZALO_WEBHOOK_SECRET`.
 - Confirm the API is public and that the webhook secret and internal API token
   match both deployments.
-- The Zalo owner must open a private chat before Telegram `/zalosay` can send
-  to that account.
+- Telegram `/zalosay` requires subscribers and a separate confirmation.
+  Each person must send `/subscribe` in a private Zalo chat. Check
+  `/zalosay status DRAFT_ID` after partial failures; do not resend the entire
+  announcement blindly. See [broadcast setup](ZALO_BROADCAST.md).
+- A 401 from the broadcast preflight means Zalo rejected `ZALO_BOT_TOKEN`
+  on the Telegram bot service. Use the existing working token, not a new
+  rotation. Vercel's token alone does not configure the Telegram service.
 
 ## A command is missing or denied
 
