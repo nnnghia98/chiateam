@@ -16,10 +16,18 @@ const {
   createVoteCommand,
 } = require('../core/use-cases/management/vote-command');
 const { createTeamCommand } = require('../core/use-cases/teams/team-command');
+const {
+  createZaloSubscriptionCommand,
+} = require('../core/use-cases/common/zalo-subscription-command');
+const {
+  createApiZaloAnnouncementRepository,
+} = require('./repositories/api-zalo-announcement-repository');
 
 const ZALO_COMMAND_NAMES = Object.freeze([
   'start',
   'zalosay',
+  'subscribe',
+  'unsubscribe',
   'poll',
   'vote',
   'demvote',
@@ -40,7 +48,26 @@ function requireSharedManifestEntry(name) {
 const ZALO_COMMAND_MANIFEST = Object.freeze(
   [
     requireSharedManifestEntry('start'),
-    requireSharedManifestEntry('zalosay'),
+    {
+      ...requireSharedManifestEntry('zalosay'),
+      description: 'Gửi nội dung vào chat hiện tại, không gửi đến mọi người',
+    },
+    {
+      name: 'subscribe',
+      aliases: [],
+      category: 'Thông báo',
+      usage: '/subscribe',
+      description: 'Đăng ký nhận thông báo của đội trong chat riêng',
+      permission: 'player',
+    },
+    {
+      name: 'unsubscribe',
+      aliases: [],
+      category: 'Thông báo',
+      usage: '/unsubscribe',
+      description: 'Ngừng nhận thông báo của đội',
+      permission: 'player',
+    },
     {
       name: 'poll',
       aliases: [],
@@ -68,13 +95,23 @@ const ZALO_COMMAND_MANIFEST = Object.freeze(
   )
 );
 
-function createZaloCommandDefinitions() {
+function createZaloCommandDefinitions({
+  subscriptionRepository = createApiZaloAnnouncementRepository(),
+} = {}) {
   return Object.freeze([
     createStartCommand({
       manifest: ZALO_COMMAND_MANIFEST,
       includeQuickStart: false,
     }),
     createAnnouncementCommand(),
+    createZaloSubscriptionCommand({
+      repository: subscriptionRepository,
+      subscribed: true,
+    }),
+    createZaloSubscriptionCommand({
+      repository: subscriptionRepository,
+      subscribed: false,
+    }),
     createPollCommand(),
     createVoteCommand(),
     createDemvoteCommand(),

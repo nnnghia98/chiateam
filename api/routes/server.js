@@ -63,6 +63,11 @@ const DEFAULT_PORT = Number(
   process.env.API_PORT || process.env.UI_API_PORT || process.env.PORT || 8787
 );
 const defaultWebhookEventService = createWebhookEventService();
+const {
+  OPERATIONS: ZALO_ANNOUNCEMENT_OPERATIONS,
+  createZaloAnnouncementService,
+} = require('../services/zalo-announcement-service');
+const defaultZaloAnnouncementService = createZaloAnnouncementService();
 
 function logRequest(req, res) {
   const startedAt = Date.now();
@@ -627,6 +632,7 @@ function createUiApiServer({
   matchMediaService = defaultMatchMediaService,
   twoNikeService = defaultTwoNikeService,
   webhookEventService = defaultWebhookEventService,
+  zaloAnnouncementService = defaultZaloAnnouncementService,
 } = {}) {
   const startedAt = new Date().toISOString();
   const maintenanceMode = isMaintenanceModeEnabled();
@@ -1705,6 +1711,35 @@ function createUiApiServer({
           res,
           500,
           { error: 'Failed to update leaderboard entry' },
+          headers
+        );
+      }
+    }
+
+    // Internal-only subscriber and broadcast state. Never exposed to public clients.
+    if (path.startsWith('/api/zalo-announcements/') && req.method === 'POST') {
+      if (!requireAdmin(req, res, headers)) return;
+      const operation = path.slice('/api/zalo-announcements/'.length);
+      if (!ZALO_ANNOUNCEMENT_OPERATIONS.includes(operation)) {
+        return sendJson(res, 404, { error: 'Not found' }, headers);
+      }
+      let payload;
+      try {
+        payload = await readJson(req, { maxBytes: 16000 });
+      } catch {
+        return sendJson(res, 400, { error: 'INVALID_JSON' }, headers);
+      }
+      try {
+        const result = await zaloAnnouncementService[operation](payload);
+        return sendJson(res, result.ok ? 200 : 400, result, headers);
+      } catch {
+        console.error(
+          `[zalo.announcement] ${operation} storage operation failed`
+        );
+        return sendJson(
+          res,
+          500,
+          { error: 'ANNOUNCEMENT_STORAGE_FAILED' },
           headers
         );
       }

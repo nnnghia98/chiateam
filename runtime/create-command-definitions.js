@@ -5,6 +5,9 @@ const {
   createAnnouncementCommand,
 } = require('../core/use-cases/common/announcement-command');
 const {
+  createZaloBroadcastCommand,
+} = require('../core/use-cases/common/zalo-broadcast-command');
+const {
   assertAnnouncementPublisher,
 } = require('../core/ports/announcement-publisher');
 const { createAddCommand } = require('../core/use-cases/bench/add-command');
@@ -96,6 +99,7 @@ const {
 
 function createCommandDefinitions({
   announcementPublisher,
+  broadcastService,
   benchIdentityPolicy,
   votePublisher,
   voteController,
@@ -104,13 +108,15 @@ function createCommandDefinitions({
   matchRepository,
   matchSummaryGenerator,
 } = {}) {
-  const activeAnnouncementPublisher = assertAnnouncementPublisher(
-    announcementPublisher
-  );
+  const announcementCommand = broadcastService
+    ? createZaloBroadcastCommand({ service: broadcastService })
+    : createAnnouncementCommand({
+        publisher: assertAnnouncementPublisher(announcementPublisher),
+      });
 
   return Object.freeze([
     createStartCommand(),
-    createAnnouncementCommand({ publisher: activeAnnouncementPublisher }),
+    announcementCommand,
     createAddmeCommand({ identityPolicy: benchIdentityPolicy }),
     createAddCommand(),
     createBenchCommand(),

@@ -16,7 +16,7 @@ BOT_OWNER_ID=your_bot_owner_id
 BOT_ADMIN_IDS=your_admin_id_1,your_admin_id_2
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token
 ZALO_BOT_TOKEN=your_zalo_bot_token
-ZALO_BOT_OWNER_ID=your_zalo_owner_id
+# ZALO_BOT_OWNER_ID remains a Zalo admin identity, not a broadcast destination.
 CHAT_ID=your_chat_id
 DEFAULT_THREAD_ID=
 MAIN_THREAD_ID=your_main_thread_id
@@ -50,6 +50,10 @@ ADMIN_UI_URL=https://admin.example.com
 ```
 
 ## 2. Deploy Settings in Railway
+
+For Telegram-to-Zalo subscriber announcements, deploy the API and the Zalo
+webhook as well as the Telegram bot. See [broadcast setup](ZALO_BROADCAST.md).
+The existing `ZALO_BOT_TOKEN` on the Telegram bot service authorizes sends.
 
 Railway will automatically detect your Node.js project and use:
 

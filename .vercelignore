@@ -38,6 +38,7 @@
 /runtime/repositories/*
 !/runtime/repositories/api-state-repository.js
 !/runtime/repositories/api-webhook-event-repository.js
+!/runtime/repositories/api-zalo-announcement-repository.js
 !/shared
 !/package.json
 !/yarn.lock

@@ -90,6 +90,7 @@ function createZaloAdapter({
       conversation: {
         externalId: message.chat.id,
         threadId: null,
+        type: message.chat.chat_type,
       },
     });
   }

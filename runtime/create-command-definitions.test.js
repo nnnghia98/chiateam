@@ -90,3 +90,30 @@ test('shared runtime definitions match the approved command manifest', () => {
   assert.deepEqual(supportedNames.sort(), listSupportedCommandNames().sort());
   assert.equal(definitions.length, 34);
 });
+
+test('production Telegram wiring uses subscriber broadcasts without an owner recipient', async () => {
+  const dependencies = createDependencies();
+  delete dependencies.announcementPublisher;
+  const calls = [];
+  const definitions = createCommandDefinitions({
+    ...dependencies,
+    broadcastService: {
+      prepare: async message => {
+        calls.push(message);
+        return { id: 'draft', total: 2 };
+      },
+      confirm: async () => ({}),
+      cancel: async () => true,
+      status: async () => null,
+    },
+  });
+  const command = definitions.find(d => d.name === 'zalosay');
+  const ctx = { actor: { platform: 'telegram' }, args: ['Hello', 'team'] };
+  const result = await command.action(
+    ctx,
+    {},
+    await command.condition(ctx, {})
+  );
+  assert.deepEqual(calls, ['Hello team']);
+  assert.equal(result.operation, 'prepare');
+});

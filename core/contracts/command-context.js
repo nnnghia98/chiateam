@@ -52,6 +52,9 @@ function createCommandContext(input = {}) {
       'conversation.externalId'
     ),
     threadId: optionalText(conversationInput.threadId),
+    ...(conversationInput.type
+      ? { type: String(conversationInput.type).toLowerCase() }
+      : {}),
   });
 
   return Object.freeze({

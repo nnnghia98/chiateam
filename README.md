@@ -98,7 +98,7 @@ part of the supported bot runtime.
 
 - Telegram is the primary adapter and runs the full command catalog.
 - Zalo uses the production webhook and exposes only `/start`, `/zalosay`,
-  `/poll`, `/vote`, `/demvote`, `/bench`, and `/team`.
+  `/subscribe`, `/unsubscribe`, `/poll`, `/vote`, `/demvote`, `/bench`, and `/team`.
 - Zalo roster and team mutation commands are intentionally disabled.
 - Messenger has a local webhook MVP with only `/start`, `/poll`,
   `/vote 0|1|2|3|4`, `/demvote`, `/bench`, and `/team`.
@@ -108,9 +108,12 @@ part of the supported bot runtime.
 
 Important rewritten command forms:
 
-- `/zalosay MESSAGE` sends a Zalo message from Telegram. It is admin-only and
-  requires `ZALO_BOT_TOKEN` and `ZALO_BOT_OWNER_ID` on the Telegram bot
-  service. The message goes to the owner's private Zalo chat.
+- `/zalosay MESSAGE` previews a Zalo subscriber broadcast from Telegram.
+  It is admin-only, requires confirmation within ten minutes, and uses
+  `ZALO_BOT_TOKEN` on the Telegram bot service. Each recipient opts in with
+  `/subscribe` in a private Zalo chat and can stop with `/unsubscribe`.
+  `ZALO_BOT_OWNER_ID` is no longer the broadcast destination.
+  See [Zalo broadcast setup](docs/ZALO_BROADCAST.md) for deployment and status commands.
 - `/clearvote confirm` requires confirmation.
 - `/reset` runs immediately and is admin-only.
 - `/register NUMBER`, `/register add NAME NUMBER`, or
