@@ -28,7 +28,7 @@ function isValidWebhookSecret(received, expected) {
 }
 
 function getZaloWebhookEventId(update) {
-  const message = extractZaloMessage(update);
+  const message = extractZaloMessage(update, { textOnly: false });
   const chatId = String(message?.chat?.id ?? '').trim();
   const messageId = String(message?.message_id ?? '').trim();
 

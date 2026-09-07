@@ -38,9 +38,14 @@ function createStartUpdate() {
 test('Zalo webhook application routes without polling listeners', async () => {
   const client = new MockZaloClient();
   const lifecycle = [];
+  const profiles = [];
   const application = createZaloWebhookApplication({
     client,
     secretToken: 'secret-123',
+    greetingRepository: { claim: async () => true },
+    subscriptionRepository: {
+      refreshSubscriber: async profile => profiles.push(profile),
+    },
     stateRepository: createStateRepository({
       load: async () => ({}),
       save: async changes => changes,
@@ -70,8 +75,20 @@ test('Zalo webhook application routes without polling listeners', async () => {
     { statusCode: 200, body: { ok: true } }
   );
   assert.equal(client.messages.length, 1);
+  assert.match(client.messages[0].text, /Chào Nghia! Đây là bot ChiaTeam/);
+  assert.deepEqual(profiles, [
+    {
+      userId: 'user-1',
+      chatId: 'chat-1',
+      chatType: 'private',
+      displayName: 'Nghia',
+    },
+  ]);
   assert.match(client.messages[0].text, /\/poll/);
-  assert.doesNotMatch(client.messages[0].text, /\/addme|\/chiateam/);
+  assert.doesNotMatch(
+    client.messages[0].text,
+    /\/zalosay|\/say|\/addme|\/chiateam/
+  );
   assert.deepEqual(
     lifecycle.map(([operation]) => operation),
     ['claim', 'complete']

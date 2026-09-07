@@ -39,17 +39,19 @@ function unwrapZaloUpdate(update) {
   return update;
 }
 
-function extractZaloMessage(update) {
+function extractZaloMessage(update, { textOnly = true } = {}) {
   const result = unwrapZaloUpdate(update);
 
   if (!result || typeof result !== 'object' || Array.isArray(result)) {
     return null;
   }
 
-  if (
-    result.event_name != null &&
-    result.event_name !== 'message.text.received'
-  ) {
+  const supportedEvent = textOnly
+    ? result.event_name === 'message.text.received'
+    : /^message\.(text|image|sticker|voice|unsupported)\.received$/.test(
+        result.event_name
+      );
+  if (result.event_name != null && !supportedEvent) {
     return null;
   }
 
@@ -59,7 +61,8 @@ function extractZaloMessage(update) {
       : result;
 
   if (
-    typeof message.text !== 'string' ||
+    ((textOnly || result.event_name === 'message.text.received') &&
+      typeof message.text !== 'string') ||
     message.from?.id == null ||
     message.chat?.id == null
   ) {
@@ -240,12 +243,16 @@ class ZaloBotClient extends EventEmitter {
 
   processUpdate(update) {
     const normalized = unwrapZaloUpdate(update);
-    const message = extractZaloMessage(normalized);
+    const message = extractZaloMessage(normalized, { textOnly: false });
 
     this.emit('update', normalized);
 
     if (message) {
-      this.emit('message', message);
+      // Keep non-text event types so captions cannot be treated as commands.
+      this.emit(
+        'message',
+        extractZaloMessage(normalized) ? message : normalized
+      );
     }
 
     return normalized;

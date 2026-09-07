@@ -11,6 +11,12 @@ const {
   createApiStateRepository,
 } = require('../runtime/repositories/api-state-repository');
 const { startZaloBotRuntime } = require('../runtime/start-zalo-bot');
+const {
+  createApiZaloGreetingRepository,
+} = require('../runtime/repositories/api-zalo-greeting-repository');
+const {
+  createApiZaloAnnouncementRepository,
+} = require('../runtime/repositories/api-zalo-announcement-repository');
 const { logEvent } = require('./utils/logger');
 
 function requireZaloToken(env = process.env) {
@@ -31,14 +37,18 @@ async function bootstrapZaloBot({
       logEvent('zalo', 'polling error', { error: error.message }, 'error'),
   }),
   stateRepository = createApiStateRepository(),
+  subscriptionRepository = createApiZaloAnnouncementRepository(),
+  greetingRepository = createApiZaloGreetingRepository(),
   permissionPolicy = createZaloPermissionPolicy({ env }),
 } = {}) {
   const botInfo = await client.getMe();
   const runtime = startZaloBotRuntime({
     client,
     stateRepository,
+    subscriptionRepository,
+    greetingRepository,
     permissionPolicy,
-    definitions: createZaloCommandDefinitions(),
+    definitions: createZaloCommandDefinitions({ subscriptionRepository }),
     onError: error =>
       logEvent('zalo', 'command error', { error: error.message }, 'error'),
   });

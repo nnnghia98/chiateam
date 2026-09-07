@@ -1,5 +1,9 @@
 # ChiaTeam Bot — Migration Plan
 
+This file records the earlier infrastructure migration. See the
+[multi-platform migration plan](MULTI_PLATFORM_BOT_PLAN.md) for current progress:
+Zalo is live and owner-confirmed on 2026-09-07; Messenger production setup is next.
+
 ## Dead Server → New Cloud Services
 
 ---

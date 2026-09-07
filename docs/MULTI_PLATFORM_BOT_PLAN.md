@@ -1,6 +1,8 @@
 # Multi-Platform Bot Refactor Plan
 
-Status: In progress — Phase 7 complete locally; Phase 8 Messenger MVP complete locally
+Status: In progress — Zalo and subscriber broadcasts are live, confirmed by the
+owner on 2026-09-07. Phase 8 Messenger MVP is complete locally; production setup
+and live tests remain pending. Phase 7 release-security tasks remain open.
 
 ## Goal
 
@@ -630,7 +632,7 @@ Decision:
 - [x] The owner chose a dedicated Vercel webhook before starting Messenger.
 - [x] Keep Messenger deferred until the Zalo webhook is deployed and tested.
 
-Restricted command set:
+Restricted command set at the original Phase 6 checkpoint:
 
 ```text
 /start
@@ -657,7 +659,7 @@ commands, including `/chiateam`, are not registered on Zalo.
 - [x] Add text fallbacks for missing buttons, polls, and topics.
 - [x] Add adapter contract tests.
 
-Current checkpoint:
+Original Phase 6 checkpoint (before the subscriber broadcast extension):
 
 - [x] A standalone yarn dev:zalo polling process is available.
 - [x] The adapter registers /start, /zalosay, /poll, /vote, /demvote,
@@ -666,9 +668,9 @@ Current checkpoint:
       hidden and unhandled on Zalo, except for admin-only `/zalosay`.
 - [x] The seven commands use shared use cases and the existing API state
       repository.
-- [x] Telegram `/zalosay` publishes only to the private recipient in
-      `ZALO_BOT_OWNER_ID` and returns a source-chat confirmation without
-      changing stored state.
+- [x] Initial Telegram `/zalosay` delivery used the private recipient in
+      `ZALO_BOT_OWNER_ID`. The subscriber broadcast extension below replaces
+      this single-recipient behavior.
 - [x] Mixed Telegram and Zalo votes keep separate platform identities and can
       still be synchronized to the bench by Telegram admin flow.
 - [x] Automated restricted-command checkpoint passes: 26 of 26.
@@ -883,9 +885,9 @@ Current checkpoint:
 
 See [`docs/MESSENGER_ADAPTER.md`](MESSENGER_ADAPTER.md) for setup and testing.
 
-### Zalo Broadcast Extension (2026-09-06)
+### Zalo Broadcast Extension
 
-Implemented locally; not yet deployed or live-tested.
+Implemented on 2026-09-06. Production use confirmed by the owner on 2026-09-07.
 
 - [x] Add private-chat `/subscribe` and `/unsubscribe` on Zalo.
 - [x] Change Telegram `/zalosay` to preview all subscribers and require a
@@ -895,16 +897,28 @@ Implemented locally; not yet deployed or live-tested.
 - [x] Report delivery counts and stop safely on uncertain results without
       automatic retries.
 - [x] Pass 485 tests, including isolated PostgreSQL and HTTP integration checks.
-- [ ] Deploy the API, Vercel webhook, and Telegram bot, in that order.
-- [ ] Run a small, approved live broadcast with consenting subscribers.
+- [x] Deploy the API, Vercel webhook, and Telegram bot.
+- [x] Complete the owner live check: `/subscribe` works, followed by confirmation
+      that the Zalo bot works properly on 2026-09-07.
+
+Result: the Zalo adapter and subscriber announcement flow are complete for this
+migration. Completion is based on the owner's live report, not a new automated
+production test. Failure, retry-prevention, and restart cases remain covered by
+the recorded local tests; this checkpoint does not claim new live checks of
+those cases. `ZALO_BOT_OWNER_ID` remains an admin user ID, not a broadcast
+destination. Existing env values and football storage are unchanged.
 
 See [Zalo broadcast setup](ZALO_BROADCAST.md) for commands and failure handling.
 
 ## Current Next Action
 
-Deploy and live-check the Zalo broadcast extension. Keep existing `.env` values
-unchanged; no new variable is needed.
+Continue Phase 8 with the existing Messenger MVP:
 
-Messenger's Meta app and Page setup remain pending. When the owner provides
-the new Messenger values, add them only to the deployment provider, deploy the
-webhook, and run the live checks.
+1. Create and configure the Meta app, Page, permissions, and credentials.
+2. Add the owner-provided Messenger values to the deployment provider and
+   deploy the webhook.
+3. Subscribe the Page to Messenger webhooks and verify the callback.
+4. Run the live Messenger command and retry tests.
+
+Keep existing `.env` values unchanged. The Phase 7 release-security and
+clean-install checks remain open; Zalo completion does not clear those tasks.

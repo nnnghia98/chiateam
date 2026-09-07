@@ -12,6 +12,7 @@ const { ensureMatchMediaTables } = require('../services/match-media-service');
 const { ensureTwoNikeTable } = require('../routes/two-nikes');
 const { ensureWebhookEventsTable } = require('../routes/webhook-events');
 const { ensureZaloAnnouncementTables } = require('../routes/zalo-announcements');
+const { ensureZaloGreetingsTable } = require('../routes/zalo-greetings');
 const {
   ensureMatchPlayerUserIdColumn,
   ensureMatchResultColumns,
@@ -40,6 +41,7 @@ async function initDatabase() {
     await ensureTwoNikeTable();
     await ensureWebhookEventsTable();
     await ensureZaloAnnouncementTables();
+    await ensureZaloGreetingsTable();
     console.log(
       '✅ Supabase connection successful. Server time:',
       result.rows[0].now
@@ -54,6 +56,7 @@ async function initDatabase() {
     console.log('✅ Ensured 2nike table exists');
     console.log('✅ Ensured webhook event table exists');
     console.log('✅ Ensured Zalo subscriber and announcement tables exist');
+    console.log('✅ Ensured Zalo greeting table exists');
   } catch (err) {
     console.error('❌ Failed to connect to Supabase:', err);
     throw err;

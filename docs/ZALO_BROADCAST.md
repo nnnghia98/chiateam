@@ -4,7 +4,16 @@ Telegram `/zalosay MESSAGE` now prepares an announcement for **all opted-in
 private Zalo chats**, instead of sending immediately to `ZALO_BOT_OWNER_ID`.
 It still requires a Telegram admin in `BOT_OWNER_ID` or `BOT_ADMIN_IDS`.
 
+Production checkpoint (2026-09-07): the owner confirmed `/subscribe` works,
+then reported that the Zalo bot works properly. The migration's live Zalo
+checkpoint is complete based on that report. The deployment steps below remain
+the setup guide, not pending work for the current installation.
+
 ## Deploy
+
+Subscriber name update: deploy the API first, then the Zalo webhook and Telegram
+bot. The API adds a nullable `display_name` column to existing subscription
+tables automatically. Existing IDs and subscription choices are preserved.
 
 1. Deploy the API first. The new internal `/api/zalo-announcements/*` routes
    create the three tables below on their first request. The existing database
@@ -39,9 +48,12 @@ A Telegram admin sends:
 /zalosay Training starts at 20:00
 ```
 
-The preview shows the text, recipient count, and commands containing a draft
-ID. **No announcement has been sent yet.** Within ten minutes, the same admin
-in the same Telegram chat/topic sends the exact confirmation from the preview:
+The preview shows the text, recipient count, and inline **✅ Gửi thông báo** and
+**❌ Hủy** buttons. **No announcement has been sent yet.** Within ten minutes,
+the same admin taps a button in the original Telegram chat/topic. No draft ID
+needs to be copied. Repeated taps cannot resend a claimed draft.
+
+The text commands remain available for older previews and manual recovery:
 
 ```text
 /zalosay confirm DRAFT_ID
@@ -56,7 +68,8 @@ To cancel an unconfirmed draft or inspect delivery progress:
 
 `/say` remains an alias. In Zalo itself, `/zalosay MESSAGE` keeps its old
 admin-only behavior of replying in the current conversation; it does not
-start a broadcast from a serverless webhook.
+start a broadcast from a serverless webhook. Zalo's `/start` help hides
+`/zalosay` and its `/say` alias.
 
 ## Delivery and failure behavior
 
@@ -82,11 +95,35 @@ start a broadcast from a serverless webhook.
   recipients. Safe logs use `[zalo.broadcast]` with error categories; they do
   not include credentials, recipient IDs, message bodies, or raw errors.
 
+## Subscriber names
+
+In Telegram, admins can view the active subscribers without sending a broadcast:
+
+```text
+/zalosay subscribers
+/zalosay subscribers 2
+```
+
+Each page shows up to 10 people with their latest saved Zalo display name,
+user ID, and chat ID. Missing names appear as `Chưa có tên`. Display names are
+labels, not verified player identities; names can repeat or change.
+
+`/subscribe` and `/unsubscribe` save `message.from.display_name` when available.
+Later private messages, including plain text and unknown commands, refresh
+the name for an existing matching user/chat. They do not create subscriptions,
+change chat IDs, or turn notifications back on. Group messages do not refresh
+subscriber records. Empty names keep the previous value.
+
+Existing subscribers get names when they next send a private message; they
+do not need to register again. Name refresh errors do not stop commands, and the
+refresh request has a two-second timeout. The internal `refreshSubscriber` and
+`subscribers` API operations require the same admin authentication as broadcasts.
+
 ## Storage
 
 Only the API writes these PostgreSQL tables:
 
-- `zalo_announcement_subscriptions`: user/chat IDs and subscription choice.
+- `zalo_announcement_subscriptions`: user/chat IDs, display name, and subscription choice.
 - `zalo_announcements`: immutable text, source admin/chat/topic, confirmation
   expiry, and broadcast status.
 - `zalo_announcement_deliveries`: frozen recipient snapshot and delivery status.

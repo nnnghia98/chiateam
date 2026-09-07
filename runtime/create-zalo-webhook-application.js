@@ -13,6 +13,12 @@ const {
   createApiWebhookEventRepository,
 } = require('./repositories/api-webhook-event-repository');
 const { startZaloBotRuntime } = require('./start-zalo-bot');
+const {
+  createApiZaloGreetingRepository,
+} = require('./repositories/api-zalo-greeting-repository');
+const {
+  createApiZaloAnnouncementRepository,
+} = require('./repositories/api-zalo-announcement-repository');
 
 function requireEnvironmentValue(env, name) {
   const value = String(env?.[name] ?? '').trim();
@@ -31,7 +37,8 @@ function createZaloWebhookApplication({
   eventRepository,
   permissionPolicy,
   definitions,
-  subscriptionRepository,
+  subscriptionRepository = createApiZaloAnnouncementRepository(),
+  greetingRepository = createApiZaloGreetingRepository(),
   secretToken,
   onError = error => console.error('❌ [zalo.webhook.command]', error),
 } = {}) {
@@ -43,6 +50,8 @@ function createZaloWebhookApplication({
     });
   const runtime = startZaloBotRuntime({
     client: activeClient,
+    subscriptionRepository,
+    greetingRepository,
     stateRepository: stateRepository || createApiStateRepository(),
     permissionPolicy: permissionPolicy || createZaloPermissionPolicy({ env }),
     definitions:

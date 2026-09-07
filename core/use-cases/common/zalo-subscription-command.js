@@ -29,6 +29,7 @@ function createZaloSubscriptionCommand({ repository, subscribed }) {
           userId: context.actor.externalId,
           chatId: context.conversation.externalId,
           chatType: context.conversation.type,
+          displayName: context.actor.displayName,
         });
         return { changed: false, code: 'SAVED' };
       } catch {

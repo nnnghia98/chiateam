@@ -61,6 +61,9 @@ function createZaloBroadcastService({
   }
 
   return Object.freeze({
+    async subscribers(page) {
+      return repository.subscribers({ page });
+    },
     async prepare(message, context) {
       return repository.prepare({ ...sourceIdentity(context), message });
     },

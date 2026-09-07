@@ -15,6 +15,8 @@ test('announcement repository calls bounded internal POST routes', async () => {
   for (const method of [
     'subscribe',
     'unsubscribe',
+    'refreshSubscriber',
+    'subscribers',
     'prepare',
     'claim',
     'next',
@@ -24,9 +26,14 @@ test('announcement repository calls bounded internal POST routes', async () => {
     'cancel',
   ])
     await repository[method]({ id: 'example' });
-  assert.equal(calls.length, 9);
+  assert.equal(calls.length, 11);
   assert.ok(
-    calls.every(call => call.method === 'POST' && call.timeoutMs === 15000)
+    calls.every(
+      call =>
+        call.method === 'POST' &&
+        call.timeoutMs ===
+          (call.path.endsWith('/refreshSubscriber') ? 2000 : 15000)
+    )
   );
   assert.equal(calls[0].path, '/api/zalo-announcements/subscribe');
   const invalid = createApiZaloAnnouncementRepository({

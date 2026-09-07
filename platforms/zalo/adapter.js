@@ -3,6 +3,9 @@ const {
 } = require('../../core/contracts/command-context');
 const { extractZaloMessage } = require('./client');
 const { formatZaloMessage, splitZaloText } = require('./formatter');
+const {
+  createZaloGreetingResult,
+} = require('../../core/use-cases/common/zalo-greeting');
 
 const DEFAULT_INTERACTION_TTL_MS = 10 * 60 * 1000;
 const DEFAULT_EVENT_TTL_MS = 60 * 60 * 1000;
@@ -39,6 +42,8 @@ function createZaloAdapter({
   interactionTtlMs = DEFAULT_INTERACTION_TTL_MS,
   eventTtlMs = DEFAULT_EVENT_TTL_MS,
   now = Date.now,
+  onPrivateMessage,
+  greetingRepository,
   errorMessage = '❌ Có lỗi xảy ra. Vui lòng thử lại.',
   onError = error => console.error('❌ [zalo.adapter]', error),
 } = {}) {
@@ -66,6 +71,15 @@ function createZaloAdapter({
   if (typeof now !== 'function' || typeof onError !== 'function') {
     throw new TypeError('Zalo adapter callbacks must be functions.');
   }
+  if (onPrivateMessage != null && typeof onPrivateMessage !== 'function') {
+    throw new TypeError('Zalo private message callback must be a function.');
+  }
+  if (
+    greetingRepository != null &&
+    typeof greetingRepository.claim !== 'function'
+  ) {
+    throw new TypeError('Zalo greeting repository requires claim.');
+  }
 
   let started = false;
   const pendingInputs = new Map();
@@ -73,7 +87,7 @@ function createZaloAdapter({
   const inFlightEvents = new Map();
 
   function createContext(event, parsed) {
-    const message = extractZaloMessage(event);
+    const message = extractZaloMessage(event, { textOnly: false });
 
     if (!parsed || !message) {
       return null;
@@ -175,12 +189,65 @@ function createZaloAdapter({
   }
 
   async function handleEvent(event) {
+    const message = extractZaloMessage(event, { textOnly: false });
+    const privateUserMessage =
+      String(message?.chat?.chat_type).toLowerCase() === 'private' &&
+      message.from?.is_bot !== true;
+    if (
+      onPrivateMessage &&
+      privateUserMessage &&
+      typeof message.from?.display_name === 'string' &&
+      message.from.display_name.trim()
+    ) {
+      try {
+        await onPrivateMessage({
+          userId: String(message.from.id),
+          chatId: String(message.chat.id),
+          chatType: 'private',
+          displayName: message.from.display_name,
+        });
+      } catch {
+        // Profile refresh is optional; never stop a command or log user data.
+        try {
+          onError(new Error('Zalo subscriber name refresh failed.'));
+        } catch {
+          /* Diagnostics must not prevent command handling. */
+        }
+      }
+    }
     const explicitContext = toCommandContext(event);
+    let greeted = false;
+    if (greetingRepository && privateUserMessage) {
+      try {
+        const claimed = await greetingRepository.claim({
+          userId: String(message.from.id),
+          chatId: String(message.chat.id),
+          chatType: 'private',
+        });
+        // /start includes the greeting with its full help, so do not send it twice.
+        if (claimed && explicitContext?.command !== 'start') {
+          const greetingContext =
+            explicitContext ||
+            createContext(event, { command: 'start', args: [] });
+          await sendResult(
+            greetingContext,
+            createZaloGreetingResult(greetingContext.actor)
+          );
+          greeted = true;
+        }
+      } catch {
+        try {
+          onError(new Error('Zalo greeting failed.'));
+        } catch {
+          /* Greeting failures must not prevent commands or expose user data. */
+        }
+      }
+    }
     const pending = explicitContext ? null : takeInput(event);
     const context = explicitContext || pending?.context;
 
     if (!context) {
-      return false;
+      return greeted;
     }
 
     if (explicitContext) {
@@ -193,7 +260,7 @@ function createZaloAdapter({
       if (pending) {
         pendingInputs.set(pending.key, pending.pending);
       }
-      return false;
+      return greeted;
     }
 
     await sendResult(context, routed.result);
@@ -208,7 +275,7 @@ function createZaloAdapter({
   }
 
   async function handleUpdate(update) {
-    const message = extractZaloMessage(update);
+    const message = extractZaloMessage(update, { textOnly: false });
 
     if (!message) {
       return false;
@@ -218,7 +285,7 @@ function createZaloAdapter({
     const eventId = messageId ? `${message.chat.id}:${messageId}` : '';
 
     if (!eventId) {
-      return handleEvent(message);
+      return handleEvent(update);
     }
 
     removeExpiredEvents();
@@ -231,7 +298,7 @@ function createZaloAdapter({
       return inFlightEvents.get(eventId);
     }
 
-    const task = handleEvent(message)
+    const task = handleEvent(update)
       .then(handled => {
         processedEvents.set(eventId, now() + eventTtlMs);
         return handled;

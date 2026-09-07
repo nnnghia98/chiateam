@@ -179,3 +179,105 @@ test('Zalo adapter registers and removes one message listener', () => {
   adapter.stop();
   assert.equal(client.listenerCount('message'), 0);
 });
+
+test('private text refreshes names once, including plain text and unknown commands', async () => {
+  const profiles = [];
+  const client = new MockZaloClient();
+  const adapter = createZaloAdapter({
+    client,
+    router: { run: async () => ({ handled: false }) },
+    onPrivateMessage: async profile => profiles.push(profile),
+  });
+  const hello = createUpdate('hello');
+  await Promise.all([adapter.handleUpdate(hello), adapter.handleUpdate(hello)]);
+  await adapter.handleUpdate(hello);
+  await adapter.handleUpdate(
+    createUpdate('/unknown', {
+      messageId: '2',
+      from: { display_name: 'New name' },
+    })
+  );
+  await adapter.handleUpdate(
+    createUpdate('group text', { messageId: '3', chat: { chat_type: 'GROUP' } })
+  );
+  await adapter.handleUpdate(
+    createUpdate('blank name', { messageId: '4', from: { display_name: '  ' } })
+  );
+  await adapter.handleUpdate(
+    createUpdate('bot', { messageId: '5', from: { is_bot: true } })
+  );
+  await adapter.handleUpdate({ invalid: true });
+  assert.deepEqual(profiles, [
+    {
+      userId: 'user-1',
+      chatId: 'chat-1',
+      chatType: 'private',
+      displayName: 'Nghia',
+    },
+    {
+      userId: 'user-1',
+      chatId: 'chat-1',
+      chatType: 'private',
+      displayName: 'New name',
+    },
+  ]);
+  assert.equal(client.sentMessages.length, 0);
+});
+
+test('failed name refresh does not prevent replies or expose raw errors', async () => {
+  const errors = [];
+  const client = new MockZaloClient();
+  const adapter = createZaloAdapter({
+    client,
+    router: {
+      run: async () => ({
+        handled: true,
+        result: createTextResult('Team reply'),
+      }),
+    },
+    onPrivateMessage: async () => {
+      throw new Error('secret token and user data');
+    },
+    onError: error => {
+      errors.push(error.message);
+      throw new Error('logger failed');
+    },
+  });
+  assert.equal(await adapter.handleUpdate(createUpdate()), true);
+  assert.equal(client.sentMessages[0].text, 'Team reply');
+  assert.deepEqual(errors, ['Zalo subscriber name refresh failed.']);
+});
+
+test('a failed automatic greeting does not stop the first command', async () => {
+  const errors = [];
+  const client = new MockZaloClient();
+  const sendMessage = client.sendMessage.bind(client);
+  let attempts = 0;
+  client.sendMessage = async (...args) => {
+    if (++attempts === 1) throw new Error('private send error');
+    return sendMessage(...args);
+  };
+  let claimed = false;
+  const adapter = createZaloAdapter({
+    client,
+    greetingRepository: {
+      claim: async () => {
+        const first = !claimed;
+        claimed = true;
+        return first;
+      },
+    },
+    router: {
+      run: async () => ({
+        handled: true,
+        result: createTextResult('Command reply'),
+      }),
+    },
+    onError: error => errors.push(error.message),
+  });
+  await adapter.handleUpdate(createUpdate('/subscribe'));
+  assert.equal(client.sentMessages[0].text, 'Command reply');
+  assert.deepEqual(errors, ['Zalo greeting failed.']);
+  await adapter.handleUpdate(createUpdate('hello', { messageId: 'later' }));
+  assert.equal(attempts, 2);
+});

@@ -9,9 +9,18 @@ test('announcement HTTP routes require trusted admin auth and reject invalid req
     else process.env.INTERNAL_API_AUTH_TOKEN = previous;
   });
   const calls = [];
+  const profileCalls = [];
   const { createUiApiServer } = require('./server');
   const app = createUiApiServer({
     zaloAnnouncementService: {
+      subscribers: async () => ({
+        ok: true,
+        result: { subscribers: [{ displayName: 'Private name' }] },
+      }),
+      refreshSubscriber: async payload => {
+        profileCalls.push(payload);
+        return { ok: true, result: { updated: true } };
+      },
       prepare: async payload => {
         calls.push(payload);
         return { ok: true, result: { id: 'draft', total: 2 } };
@@ -43,6 +52,22 @@ test('announcement HTTP routes require trusted admin auth and reject invalid req
   assert.equal((await call('prepare', { token: '' })).status, 403);
   assert.equal((await call('prepare', { role: 'viewer' })).status, 403);
   assert.equal(calls.length, 0);
+  for (const operation of ['subscribers', 'refreshSubscriber']) {
+    assert.equal((await call(operation, { token: '' })).status, 403);
+    const denied = await call(operation, { role: 'viewer' });
+    assert.equal(denied.status, 403);
+    assert.doesNotMatch(await denied.text(), /Private name/);
+  }
+  assert.equal(profileCalls.length, 0);
+  const list = await call('subscribers');
+  assert.equal(list.status, 200);
+  assert.match(await list.text(), /Private name/);
+  assert.equal(
+    (await call('refreshSubscriber', { body: '{"displayName":"Nghĩa"}' }))
+      .status,
+    200
+  );
+  assert.deepEqual(profileCalls, [{ displayName: 'Nghĩa' }]);
   assert.equal((await call('unexpected')).status, 404);
   assert.equal((await call('prepare', { body: '{broken' })).status, 400);
   assert.equal((await call('subscribe')).status, 400);

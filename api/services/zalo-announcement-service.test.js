@@ -38,6 +38,7 @@ test('subscription validation rejects groups, missing identities and extra targe
       chatId: 'c',
       userId: 'u',
       subscribed: false,
+      displayName: null,
     }
   );
 });
@@ -117,4 +118,49 @@ test('service validates before storage and generates its own draft ID', async ()
     await service.subscribe({ chatId: 'c', userId: 'u', chatType: 'private' }),
     { ok: true, result: { subscribed: true } }
   );
+});
+
+test('subscriber profiles normalize optional names and cannot change consent', () => {
+  const identity = { chatId: 'c', userId: 'u', chatType: 'private' };
+  assert.deepEqual(
+    normalizeRequest('refreshSubscriber', {
+      ...identity,
+      displayName: '  Nguyễn\nVăn\u0000 A  ',
+      subscribed: true,
+    }),
+    { chatId: 'c', userId: 'u', displayName: 'Nguyễn Văn A' }
+  );
+  for (const displayName of [undefined, null, '', ' \n ', {}, 123]) {
+    assert.equal(
+      normalizeRequest('subscribe', { ...identity, displayName }).displayName,
+      null
+    );
+  }
+  assert.equal(
+    normalizeRequest('subscribe', { ...identity, displayName: 'a'.repeat(300) })
+      .displayName.length,
+    256
+  );
+  assert.equal(
+    normalizeRequest('refreshSubscriber', { ...identity, chatType: 'group' }),
+    null
+  );
+  assert.equal(
+    normalizeRequest('refreshSubscriber', { ...identity, userId: '' }),
+    null
+  );
+});
+
+test('subscriber list pagination is bounded and ignores caller page sizes', () => {
+  assert.deepEqual(normalizeRequest('subscribers', {}), {
+    page: 1,
+    pageSize: 10,
+  });
+  assert.deepEqual(
+    normalizeRequest('subscribers', { page: 2, pageSize: 1000 }),
+    { page: 2, pageSize: 10 }
+  );
+  for (const page of [0, -1, 1.5, '2', 1000001]) {
+    assert.equal(normalizeRequest('subscribers', { page }), null);
+  }
 });

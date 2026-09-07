@@ -99,14 +99,18 @@ test('Zalo runtime exposes only announcement and player actions', async () => {
     true
   );
   const help = client.sentMessages.at(-1).text;
-  ['/zalosay', '/poll', '/vote', '/demvote', '/bench', '/team'].forEach(
-    command => {
-      assert.match(help, new RegExp(command));
-    }
-  );
-  assert.match(help, /alias: \/say/);
-  assert.match(help, /\/zalosay \[MESSAGE\].*\(admin\)/);
-  assert.doesNotMatch(help, /\/addme|\/chiateam|\/register/);
+  [
+    '/subscribe',
+    '/unsubscribe',
+    '/poll',
+    '/vote',
+    '/demvote',
+    '/bench',
+    '/team',
+  ].forEach(command => {
+    assert.match(help, new RegExp(command));
+  });
+  assert.doesNotMatch(help, /\/zalosay|\/say|\/addme|\/chiateam|\/register/);
 
   assert.equal(
     await runtime.adapter.handleUpdate(

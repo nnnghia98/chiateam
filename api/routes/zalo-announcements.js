@@ -10,9 +10,12 @@ function ensureZaloAnnouncementTables(database = db) {
       CREATE TABLE IF NOT EXISTS zalo_announcement_subscriptions (
         chat_id TEXT PRIMARY KEY,
         user_id TEXT NOT NULL UNIQUE,
+        display_name TEXT,
         subscribed BOOLEAN NOT NULL,
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
+      ALTER TABLE zalo_announcement_subscriptions
+        ADD COLUMN IF NOT EXISTS display_name TEXT;
       CREATE TABLE IF NOT EXISTS zalo_announcements (
         id UUID PRIMARY KEY,
         actor_id TEXT NOT NULL,
@@ -56,17 +59,45 @@ function createZaloAnnouncementRepository({ database = db } = {}) {
   const ownsDraft = `id = $1 AND actor_id = $2 AND source_chat_id = $3 AND source_thread_id = $4`;
 
   return Object.freeze({
-    async setSubscription({ chatId, userId, subscribed }) {
+    async setSubscription({ chatId, userId, subscribed, displayName = null }) {
       await query(
         `
-        INSERT INTO zalo_announcement_subscriptions (chat_id, user_id, subscribed)
-        VALUES ($1, $2, $3)
+        INSERT INTO zalo_announcement_subscriptions (chat_id, user_id, subscribed, display_name)
+        VALUES ($1, $2, $3, $4)
         ON CONFLICT (user_id) DO UPDATE SET
-          chat_id = EXCLUDED.chat_id, subscribed = EXCLUDED.subscribed, updated_at = NOW()
+          chat_id = EXCLUDED.chat_id, subscribed = EXCLUDED.subscribed,
+          display_name = COALESCE(EXCLUDED.display_name, zalo_announcement_subscriptions.display_name),
+          updated_at = NOW()
       `,
-        [chatId, userId, subscribed]
+        [chatId, userId, subscribed, displayName]
       );
       return { subscribed };
+    },
+
+    async refreshSubscriber({ chatId, userId, displayName }) {
+      if (!displayName) return { updated: false };
+      const result = await query(
+        `UPDATE zalo_announcement_subscriptions SET display_name = $3
+         WHERE chat_id = $1 AND user_id = $2 AND display_name IS DISTINCT FROM $3`,
+        [chatId, userId, displayName]
+      );
+      return { updated: result.rowCount > 0 };
+    },
+
+    async subscribers({ page, pageSize }) {
+      const result = await query(
+        `WITH recipients AS (
+          SELECT chat_id AS "chatId", user_id AS "userId", display_name AS "displayName"
+          FROM zalo_announcement_subscriptions WHERE subscribed = TRUE
+        ), page AS (
+          SELECT * FROM recipients ORDER BY "displayName" NULLS LAST, "userId"
+          LIMIT $1 OFFSET $2
+        )
+        SELECT (SELECT COUNT(*)::INTEGER FROM recipients) AS total,
+          COALESCE((SELECT json_agg(page) FROM page), '[]'::json) AS subscribers`,
+        [pageSize, (page - 1) * pageSize]
+      );
+      return { ...result.rows[0], page, pageSize };
     },
 
     async prepare(p) {
