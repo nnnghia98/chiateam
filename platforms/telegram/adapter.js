@@ -274,12 +274,7 @@ function createTelegramAdapter({
     }
 
     clearInput(context);
-    const routed = await router.run(context);
-
-    if (!routed.handled) {
-      return false;
-    }
-
+    // Stop the button spinner before a command starts a long-running broadcast.
     if (typeof bot.answerCallbackQuery === 'function' && query?.id != null) {
       try {
         await bot.answerCallbackQuery(query.id, {
@@ -289,6 +284,12 @@ function createTelegramAdapter({
       } catch (error) {
         onError(error);
       }
+    }
+
+    const routed = await router.run(context);
+
+    if (!routed.handled) {
+      return false;
     }
 
     await sendResult(context, routed.result);

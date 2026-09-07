@@ -1,12 +1,15 @@
 const {
   createCommandDefinition,
 } = require('../../contracts/command-definition');
-const { createTextResult } = require('../../contracts/command-result');
+const {
+  createCommandResult,
+  createTextResult,
+} = require('../../contracts/command-result');
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MESSAGES = Object.freeze({
   usage:
-    '⚠️ Dùng /zalosay [nội dung, tối đa 2000 ký tự]. Bot sẽ yêu cầu xác nhận trước khi gửi đến tất cả người đăng ký.',
+    '⚠️ Dùng /zalosay [nội dung, tối đa 2000 ký tự]. Bot sẽ yêu cầu xác nhận trước khi gửi đến tất cả người đăng ký.\nXem danh sách: /zalosay subscribers [trang].',
   denied:
     '⛔ Chỉ admin Telegram mới có quyền gửi thông báo đến tất cả người đăng ký.',
   empty:
@@ -37,6 +40,35 @@ function formatSummary(summary) {
   );
 }
 
+function subscriberListResult({ subscribers, total, page, pageSize }) {
+  if (total === 0) return createTextResult(MESSAGES.empty);
+  const pages = Math.ceil(total / pageSize);
+  const blocks = [
+    `Người đăng ký Zalo: ${total}\nTrang ${page}/${pages}`,
+    ...subscribers.map(
+      (subscriber, index) =>
+        `${(page - 1) * pageSize + index + 1}. ${subscriber.displayName || 'Chưa có tên'}\n` +
+        `User ID: ${subscriber.userId}\nChat ID: ${subscriber.chatId}`
+    ),
+  ];
+  if (subscribers.length === 0)
+    blocks.push('Trang này không có người đăng ký.');
+  if (page > 1)
+    blocks.push(`/zalosay subscribers ${Math.min(page - 1, pages)}`);
+  if (page < pages) blocks.push(`/zalosay subscribers ${page + 1}`);
+  const messages = [];
+  let text = '';
+  for (const block of blocks) {
+    if (text && text.length + block.length + 2 > 3500) {
+      messages.push({ text });
+      text = '';
+    }
+    text += (text ? '\n\n' : '') + block;
+  }
+  if (text) messages.push({ text });
+  return createCommandResult({ messages });
+}
+
 function createZaloBroadcastCommand({ service } = {}) {
   for (const method of ['prepare', 'confirm', 'cancel', 'status']) {
     if (typeof service?.[method] !== 'function')
@@ -55,6 +87,15 @@ function createZaloBroadcastCommand({ service } = {}) {
       if (context.actor.platform !== 'telegram')
         return { ok: false, code: 'PERMISSION_DENIED' };
       const [operation, id] = context.args;
+      if (operation === 'subscribers') {
+        const page = id === undefined ? 1 : Number(id);
+        return context.args.length <= 2 &&
+          (id === undefined || /^[1-9]\d*$/.test(id)) &&
+          Number.isInteger(page) &&
+          page <= 1000000
+          ? { ok: true, operation, page }
+          : { ok: false, code: 'INVALID' };
+      }
       if (['confirm', 'cancel', 'status'].includes(operation)) {
         return context.args.length === 2 && UUID.test(id || '')
           ? { ok: true, operation, id }
@@ -67,9 +108,13 @@ function createZaloBroadcastCommand({ service } = {}) {
     },
     action: async (context, state, condition) => {
       try {
-        const { operation, id, message } = condition;
+        const { operation, id, message, page } = condition;
         const result = await service[operation](
-          operation === 'prepare' ? message : id,
+          operation === 'prepare'
+            ? message
+            : operation === 'subscribers'
+              ? page
+              : id,
           context
         );
         return { changed: false, code: 'RESULT', operation, result, message };
@@ -83,13 +128,25 @@ function createZaloBroadcastCommand({ service } = {}) {
       if (outcome.code === 'INVALID') return createTextResult(MESSAGES.usage);
       if (outcome.code !== 'RESULT') return createTextResult(MESSAGES.storage);
       const { operation, result } = outcome;
+      if (operation === 'subscribers') return subscriberListResult(result);
       if (operation === 'prepare') {
         if (!result || result.total === 0)
           return createTextResult(MESSAGES.empty);
         return createTextResult(
           `Sẽ gửi thông báo đến ${result.total} người đã đăng ký trên Zalo:\n\n${outcome.message}\n\n` +
-            `Chưa gửi tin nhắn. Xác nhận trong 10 phút tại chat này:\n/zalosay confirm ${result.id}\n` +
-            `Hủy: /zalosay cancel ${result.id}`
+            'Chưa gửi tin nhắn. Bấm nút bên dưới trong 10 phút để gửi hoặc hủy.',
+          [
+            {
+              id: 'zalo_broadcast_confirm',
+              label: '✅ Gửi thông báo',
+              command: `/zalosay confirm ${result.id}`,
+            },
+            {
+              id: 'zalo_broadcast_cancel',
+              label: '❌ Hủy',
+              command: `/zalosay cancel ${result.id}`,
+            },
+          ]
         );
       }
       if (operation === 'cancel')

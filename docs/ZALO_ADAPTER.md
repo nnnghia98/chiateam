@@ -2,7 +2,9 @@
 
 Status: Phase 6 complete. The production Vercel webhook is registered, live
 delivery is confirmed, and the restricted-command checklist passed on
-2026-09-02. Local polling is stopped.
+2026-09-02. The owner confirmed `/subscribe` works and reported the Zalo bot
+working properly on 2026-09-07, completing the subscriber broadcast checkpoint.
+Local polling is stopped.
 
 The Zalo adapter currently reuses the shared football core for:
 
@@ -32,6 +34,30 @@ user's choice in the same active vote.
 
 Telegram and Zalo run as separate processes. They read and write the same bot
 state through the API.
+
+## Greeting
+
+After the first private message, the bot sends a short greeting using the Zalo
+display name (or `bạn` when no name is available) and the commands `/subscribe`,
+`/poll`, `/team`, and `/start`. Text, image, sticker, and voice messages can
+trigger this greeting. Captions and media are never executed as commands.
+
+`/start` always shows the greeting with the full command list. A first message
+of `/start` receives one combined reply. Any other first command is still run
+after the greeting. There are no automatic greetings in group chats or replies
+to bot accounts. Zalo does not document an event for simply opening a chat.
+
+The API records a one-time claim per user in the private PostgreSQL table
+`zalo_greetings`. Greetings do not subscribe users or change football state.
+Claims survive restarts and concurrent messages. The claim is saved before
+sending; if delivery fails or is uncertain, it is not retried automatically.
+Users can always send `/start` again. Greeting failures do not stop commands.
+
+Deploy the API first, then the Zalo webhook. The new table is created
+automatically on the first `/api/zalo-greetings/claim` request or by the existing
+database initialization script. The endpoint requires internal admin auth.
+Existing users receive their one-time greeting on their next private message
+after this change is deployed. No past chats are messaged automatically.
 
 ## Create and Configure the Bot
 
@@ -68,12 +94,12 @@ yarn dev:zalo
 
 Live checklist:
 
-1. Send `/start`. It must list `/zalosay`, `/poll`, `/vote`, `/demvote`,
-   `/bench`, and `/team`.
+1. Send `/start`. It must list `/subscribe`, `/unsubscribe`, `/poll`,
+   `/vote`, `/demvote`, `/bench`, and `/team`. It must hide `/zalosay` and `/say`.
 2. As a configured admin, send `/zalosay Hello team`. The bot must post
    `Hello team` in the same Zalo chat.
 3. In Zalo, send `/subscribe`. As a Telegram admin, send
-   `/zalosay Hello from Telegram`, then the confirmation command shown in the
+   `/zalosay Hello from Telegram`, then tap **✅ Gửi thông báo** in the
    preview. Only subscribed recipients should receive the message, and
    Telegram must show delivery counts. See the broadcast guide before live testing.
 4. As a non-admin, send `/zalosay Hello team`. The bot must deny it.
@@ -85,8 +111,9 @@ Live checklist:
 10. Send `/bench` and `/team`. Both must remain read-only.
 
 Historical checkpoint: the original non-broadcast steps passed against the
-production webhook on 2026-09-02. The broadcast extension needs deployment
-and a separate live check; local tests do not establish production delivery.
+production webhook on 2026-09-02. The subscriber broadcast checkpoint was
+completed from the owner's live report on 2026-09-07. This records working
+production use, not new live tests of every failure or restart case.
 
 `/vote 0` records that the user will not attend. Sending another `/vote` value
 changes that user's choice.

@@ -1,4 +1,5 @@
 const { COMMAND_MANIFEST } = require('../core/commands/command-manifest');
+const { buildZaloGreeting } = require('../core/use-cases/common/zalo-greeting');
 const {
   createAnnouncementCommand,
 } = require('../core/use-cases/common/announcement-command');
@@ -100,8 +101,9 @@ function createZaloCommandDefinitions({
 } = {}) {
   return Object.freeze([
     createStartCommand({
-      manifest: ZALO_COMMAND_MANIFEST,
+      manifest: ZALO_COMMAND_MANIFEST.filter(entry => entry.name !== 'zalosay'),
       includeQuickStart: false,
+      getGreeting: buildZaloGreeting,
     }),
     createAnnouncementCommand(),
     createZaloSubscriptionCommand({

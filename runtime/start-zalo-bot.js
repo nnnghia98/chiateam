@@ -11,6 +11,8 @@ function startZaloBotRuntime({
   definitions = [],
   stateRepository = createApiStateRepository(),
   permissionPolicy,
+  subscriptionRepository,
+  greetingRepository,
   listenForClientEvents = true,
   onError,
 } = {}) {
@@ -30,6 +32,8 @@ function startZaloBotRuntime({
   const adapter = createZaloAdapter({
     client,
     router,
+    onPrivateMessage: subscriptionRepository?.refreshSubscriber,
+    greetingRepository,
     onError,
   });
 

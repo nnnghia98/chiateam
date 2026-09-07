@@ -171,9 +171,16 @@ CREATE TABLE public.webhook_events (
 CREATE INDEX webhook_events_expiry_idx
   ON public.webhook_events (expires_at);
 
+CREATE TABLE public.zalo_greetings (
+  user_id text PRIMARY KEY,
+  chat_id text NOT NULL,
+  claimed_at timestamptz NOT NULL DEFAULT now()
+);
+
 CREATE TABLE public.zalo_announcement_subscriptions (
   chat_id text PRIMARY KEY,
   user_id text NOT NULL UNIQUE,
+  display_name text,
   subscribed boolean NOT NULL,
   updated_at timestamptz NOT NULL DEFAULT now()
 );
@@ -265,6 +272,7 @@ ALTER TABLE public.storage ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.current_match ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.webhook_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.zalo_announcement_subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.zalo_greetings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.zalo_announcements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.zalo_announcement_deliveries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.match_video_sources ENABLE ROW LEVEL SECURITY;
@@ -284,6 +292,7 @@ REVOKE ALL PRIVILEGES ON TABLE
   public.current_match,
   public.webhook_events,
   public.zalo_announcement_subscriptions,
+  public.zalo_greetings,
   public.zalo_announcements,
   public.zalo_announcement_deliveries,
   public.match_video_sources,

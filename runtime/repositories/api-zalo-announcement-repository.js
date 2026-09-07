@@ -3,6 +3,8 @@ const { requestJson } = require('../../bot/utils/api-client');
 const OPERATIONS = [
   'subscribe',
   'unsubscribe',
+  'refreshSubscriber',
+  'subscribers',
   'prepare',
   'claim',
   'next',
@@ -23,7 +25,7 @@ function createApiZaloAnnouncementRepository({ request = requestJson } = {}) {
             {
               method: 'POST',
               body: payload,
-              timeoutMs: 15000,
+              timeoutMs: operation === 'refreshSubscriber' ? 2000 : 15000,
             }
           );
           if (response?.ok !== true || !Object.hasOwn(response, 'result')) {

@@ -220,6 +220,42 @@ test('Telegram adapter encodes action fallback commands in buttons', async () =>
   );
 });
 
+test('Telegram acknowledges a button before running a slow command', async () => {
+  const bot = new MockTelegramBot();
+  let completeCommand;
+  let commandStarted;
+  const started = new Promise(resolve => {
+    commandStarted = resolve;
+  });
+  const command = new Promise(resolve => {
+    completeCommand = resolve;
+  });
+  const adapter = createTelegramAdapter({
+    bot,
+    router: {
+      async run() {
+        commandStarted();
+        await command;
+        return { handled: true, result: createTextResult('Finished') };
+      },
+    },
+  });
+  const handling = adapter.handleAction({
+    id: 'slow-callback',
+    data: 'core:cmd:/zalosay confirm 11111111-1111-4111-8111-111111111111',
+    from: createEvent().from,
+    message: { chat: { id: -456 }, message_thread_id: 10 },
+  });
+  await started;
+  assert.deepEqual(bot.answeredCallbacks, [
+    { id: 'slow-callback', options: { text: '', show_alert: false } },
+  ]);
+  assert.equal(bot.sentMessages.length, 0);
+  completeCommand();
+  await handling;
+  assert.equal(bot.sentMessages[0].text, 'Finished');
+});
+
 test('Telegram adapter renders generic rich text and escapes platform markup', async () => {
   const bot = new MockTelegramBot();
   const adapter = createTelegramAdapter({

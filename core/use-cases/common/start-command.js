@@ -6,9 +6,9 @@ const { COMMAND_MANIFEST } = require('../../commands/command-manifest');
 
 function buildStartHelpSegments(
   manifest = COMMAND_MANIFEST,
-  { includeQuickStart = true } = {}
+  { includeQuickStart = true, greeting = '👋 CHIATEAM BOT' } = {}
 ) {
-  const segments = [{ text: '👋 CHIATEAM BOT', bold: true }, { text: '\n\n' }];
+  const segments = [{ text: greeting, bold: true }, { text: '\n\n' }];
   let currentCategory = null;
 
   if (includeQuickStart) {
@@ -58,6 +58,7 @@ function buildStartHelpSegments(
 function createStartCommand({
   manifest = COMMAND_MANIFEST,
   includeQuickStart = true,
+  getGreeting,
 } = {}) {
   return createCommandDefinition({
     name: 'start',
@@ -70,9 +71,10 @@ function createStartCommand({
     stateKeys: [],
     condition: async () => ({ ok: true }),
     action: async () => ({ changed: false, code: 'START_HELP' }),
-    reply: async () => {
+    reply: async (outcome, context) => {
       const segments = buildStartHelpSegments(manifest, {
         includeQuickStart,
+        greeting: getGreeting?.(context.actor),
       });
       return createRichTextResult(segments, [], {
         channel: 'main',

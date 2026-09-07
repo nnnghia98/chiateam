@@ -6,6 +6,8 @@ const {
 const OPERATIONS = Object.freeze([
   'subscribe',
   'unsubscribe',
+  'refreshSubscriber',
+  'subscribers',
   'prepare',
   'claim',
   'next',
@@ -27,18 +29,36 @@ const validId = value =>
   value.length <= 256 &&
   !/\s/.test(value);
 
+function normalizeDisplayName(value) {
+  if (typeof value !== 'string') return null;
+  return (
+    value
+      .replace(/[\p{Cc}\s]+/gu, ' ')
+      .trim()
+      .slice(0, 256) || null
+  );
+}
+
 function normalizeRequest(operation, payload) {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload))
     return null;
   const p = payload;
-  if (operation === 'subscribe' || operation === 'unsubscribe') {
+  if (['subscribe', 'unsubscribe', 'refreshSubscriber'].includes(operation)) {
     if (!validId(p.chatId) || !validId(p.userId) || p.chatType !== 'private')
       return null;
     return {
       chatId: p.chatId,
       userId: p.userId,
-      subscribed: operation === 'subscribe',
+      displayName: normalizeDisplayName(p.displayName),
+      ...(operation === 'refreshSubscriber'
+        ? {}
+        : { subscribed: operation === 'subscribe' }),
     };
+  }
+  if (operation === 'subscribers') {
+    const page = p.page ?? 1;
+    if (!Number.isInteger(page) || page < 1 || page > 1000000) return null;
+    return { page, pageSize: 10 };
   }
   if (operation !== 'prepare' && !UUID.test(p.id || '')) return null;
   if (['prepare', 'claim', 'cancel', 'status'].includes(operation)) {

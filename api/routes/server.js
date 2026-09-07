@@ -68,6 +68,10 @@ const {
   createZaloAnnouncementService,
 } = require('../services/zalo-announcement-service');
 const defaultZaloAnnouncementService = createZaloAnnouncementService();
+const {
+  createZaloGreetingService,
+} = require('../services/zalo-greeting-service');
+const defaultZaloGreetingService = createZaloGreetingService();
 
 function logRequest(req, res) {
   const startedAt = Date.now();
@@ -633,6 +637,7 @@ function createUiApiServer({
   twoNikeService = defaultTwoNikeService,
   webhookEventService = defaultWebhookEventService,
   zaloAnnouncementService = defaultZaloAnnouncementService,
+  zaloGreetingService = defaultZaloGreetingService,
 } = {}) {
   const startedAt = new Date().toISOString();
   const maintenanceMode = isMaintenanceModeEnabled();
@@ -1740,6 +1745,28 @@ function createUiApiServer({
           res,
           500,
           { error: 'ANNOUNCEMENT_STORAGE_FAILED' },
+          headers
+        );
+      }
+    }
+
+    if (path === '/api/zalo-greetings/claim' && req.method === 'POST') {
+      if (!requireAdmin(req, res, headers)) return;
+      let payload;
+      try {
+        payload = await readJson(req, { maxBytes: 4000 });
+      } catch {
+        return sendJson(res, 400, { error: 'INVALID_JSON' }, headers);
+      }
+      try {
+        const result = await zaloGreetingService.claim(payload);
+        return sendJson(res, result.ok ? 200 : 400, result, headers);
+      } catch {
+        console.error('[zalo.greeting] Claim failed');
+        return sendJson(
+          res,
+          500,
+          { error: 'GREETING_STORAGE_FAILED' },
           headers
         );
       }

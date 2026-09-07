@@ -51,6 +51,12 @@ test(
         return { ...result, rowCount: result.affectedRows };
       },
     };
+    // Simulate the existing production schema and subscriber before migration.
+    await pg.exec(`CREATE TABLE zalo_announcement_subscriptions (
+      chat_id TEXT PRIMARY KEY, user_id TEXT NOT NULL UNIQUE,
+      subscribed BOOLEAN NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    ); INSERT INTO zalo_announcement_subscriptions (chat_id, user_id, subscribed)
+       VALUES ('legacy-chat', 'legacy-user', TRUE);`);
     await ensureZaloAnnouncementTables(database);
     const repository = createZaloAnnouncementRepository({ database });
     const api = createZaloAnnouncementService({ repository });
@@ -66,6 +72,99 @@ test(
       remote.subscribe({ chatId, userId, chatType: 'private' });
     const draft = () =>
       remote.prepare({ ...source, message: 'Hello subscribers' });
+
+    await t.test(
+      'name migration preserves existing subscribers and refresh never opts anyone in',
+      async () => {
+        const legacy = (
+          await pg.query('SELECT * FROM zalo_announcement_subscriptions')
+        ).rows[0];
+        assert.equal(legacy.subscribed, true);
+        assert.equal(legacy.display_name, null);
+        const profile = {
+          chatId: 'legacy-chat',
+          userId: 'legacy-user',
+          chatType: 'private',
+          displayName: 'Nghĩa',
+        };
+        assert.deepEqual(await remote.refreshSubscriber(profile), {
+          updated: true,
+        });
+        assert.deepEqual(
+          await remote.refreshSubscriber({ ...profile, userId: 'stranger' }),
+          { updated: false }
+        );
+        assert.deepEqual(
+          await remote.refreshSubscriber({ ...profile, chatId: 'group' }),
+          { updated: false }
+        );
+        await remote.unsubscribe(profile);
+        await remote.refreshSubscriber({
+          ...profile,
+          displayName: 'New name',
+          subscribed: true,
+        });
+        await remote.refreshSubscriber({ ...profile, displayName: '  ' });
+        const row = (
+          await pg.query('SELECT * FROM zalo_announcement_subscriptions')
+        ).rows[0];
+        assert.equal(row.subscribed, false);
+        assert.equal(row.display_name, 'New name');
+        assert.equal((await draft()).total, 0);
+        await remote.subscribe({ ...profile, displayName: null });
+        await remote.subscribe({ ...profile, displayName: '   ' });
+        const list = await remote.subscribers({});
+        assert.deepEqual(list, {
+          page: 1,
+          pageSize: 10,
+          total: 1,
+          subscribers: [
+            {
+              chatId: profile.chatId,
+              userId: profile.userId,
+              displayName: 'New name',
+            },
+          ],
+        });
+      }
+    );
+
+    await t.test(
+      'subscriber list pages are stable and exclude opted-out users',
+      async () => {
+        await reset();
+        for (let index = 0; index < 12; index += 1) {
+          const userId = `user-${String(index).padStart(2, '0')}`;
+          await remote.subscribe({
+            chatId: userId,
+            userId,
+            chatType: 'private',
+            displayName: index === 11 ? null : 'Same name',
+          });
+        }
+        await remote.unsubscribe({
+          chatId: 'user-00',
+          userId: 'user-00',
+          chatType: 'private',
+        });
+        const first = await remote.subscribers({ page: 1 });
+        const second = await remote.subscribers({ page: 2 });
+        const beyond = await remote.subscribers({ page: 3 });
+        assert.equal(first.total, 11);
+        assert.equal(first.subscribers.length, 10);
+        assert.equal(second.subscribers.length, 1);
+        assert.equal(second.subscribers[0].displayName, null);
+        assert.equal(
+          new Set(
+            [...first.subscribers, ...second.subscribers].map(p => p.userId)
+          ).size,
+          11
+        );
+        assert.ok(first.subscribers.every(p => p.userId !== 'user-00'));
+        assert.equal(beyond.total, 11);
+        assert.deepEqual(beyond.subscribers, []);
+      }
+    );
 
     await t.test(
       'subscription upserts deduplicate users and preserve opt-out',
@@ -229,6 +328,7 @@ test(
           client: zalo,
           secretToken: 'test-secret',
           subscriptionRepository: remote,
+          greetingRepository: { claim: async () => false },
           stateRepository: noMatchState,
           eventRepository: {
             claim: async () => ({ state: 'claimed', claimId: 'claim' }),
@@ -241,7 +341,8 @@ test(
           chat,
           command,
           chatType = 'PRIVATE',
-          secret = 'test-secret'
+          secret = 'test-secret',
+          displayName = 'Original name'
         ) {
           return app.handleWebhook({
             headers: { 'X-Bot-Api-Secret-Token': secret },
@@ -252,7 +353,7 @@ test(
                 message: {
                   message_id: `${chat}-${command}`,
                   text: command,
-                  from: { id: chat },
+                  from: { id: chat, display_name: displayName },
                   chat: { id: chat, chat_type: chatType },
                 },
               },
@@ -267,11 +368,20 @@ test(
         await receive('group', '/subscribe', 'GROUP');
         await receive('a', '/subscribe');
         await receive('b', '/subscribe');
+        await receive('a', 'hello', 'PRIVATE', 'test-secret', 'Updated name');
+        await receive('stranger', 'hello');
+        const subscribers = await remote.subscribers({});
+        assert.equal(subscribers.total, 2);
+        assert.equal(
+          subscribers.subscribers.find(p => p.userId === 'a').displayName,
+          'Updated name'
+        );
         const before = sent.length;
         const telegram = new EventEmitter();
         const replies = [];
-        telegram.sendMessage = async (chat, text) =>
-          replies.push({ chat, text });
+        telegram.sendMessage = async (chat, text, options) =>
+          replies.push({ chat, text, options });
+        telegram.answerCallbackQuery = async () => ({});
         const service = createZaloBroadcastService({
           repository: remote,
           client: zalo,
@@ -281,7 +391,7 @@ test(
           bot: telegram,
           stateRepository: noMatchState,
           permissionPolicy: createTelegramPermissionPolicy({
-            env: { BOT_OWNER_ID: '11' },
+            env: { BOT_OWNER_ID: '11', BOT_ADMIN_IDS: '22' },
           }),
           definitions: [createZaloBroadcastCommand({ service })],
         });
@@ -292,23 +402,65 @@ test(
           message_thread_id: '7',
           text,
         });
+        await runtime.adapter.handleEvent(event('/zalosay subscribers'));
+        assert.match(replies.at(-1).text, /Updated name/);
+        assert.equal(sent.length, before);
         await runtime.adapter.handleEvent(event('/zalosay Hello subscribers'));
         assert.equal(sent.length, before);
-        const id = replies
-          .at(-1)
-          .text.match(/\/zalosay confirm ([a-f0-9-]+)/)[1];
+        const preview = replies.at(-1);
+        const [sendButton, cancelButton] =
+          preview.options.reply_markup.inline_keyboard.flat();
+        const id = sendButton.callback_data.split(' ').at(-1);
+        assert.doesNotMatch(preview.text, new RegExp(id));
+        const tap = (
+          button,
+          userId = '11',
+          chatId = 'source',
+          threadId = '7'
+        ) =>
+          runtime.adapter.handleAction({
+            id: 'callback',
+            data: button.callback_data,
+            from: { id: userId },
+            message: { chat: { id: chatId }, message_thread_id: threadId },
+          });
+        for (const button of [sendButton, cancelButton]) {
+          await tap(button, '33'); // Not an admin.
+          await tap(button, '22'); // Another admin cannot act for the author.
+          await tap(button, '11', 'other-chat');
+          await tap(button, '11', 'source', '8');
+        }
+        assert.equal((await remote.status({ id, ...source })).status, 'draft');
+        assert.equal(sent.length, before);
         await receive('b', '/unsubscribe');
         const afterOptOut = sent.length;
-        await runtime.adapter.handleEvent(event(`/zalosay confirm ${id}`));
+        await tap(sendButton);
         assert.deepEqual(sent.slice(afterOptOut), [
           { chat: 'a', text: 'Hello subscribers' },
         ]);
         assert.match(replies.at(-1).text, /Đã gửi: 1/);
         assert.match(replies.at(-1).text, /hủy đăng ký: 1/);
-        await runtime.adapter.handleEvent(event(`/zalosay confirm ${id}`));
+        await tap(sendButton);
         assert.equal(sent.length, afterOptOut + 1);
         await runtime.adapter.handleEvent(event(`/zalosay status ${id}`));
         assert.match(replies.at(-1).text, /Đã gửi: 1/);
+        await runtime.adapter.handleEvent(event('/zalosay Cancel this'));
+        const cancelledButtons = replies
+          .at(-1)
+          .options.reply_markup.inline_keyboard.flat();
+        await tap(cancelledButtons[1]);
+        assert.match(replies.at(-1).text, /Đã hủy/);
+        await tap(cancelledButtons[0]);
+        assert.equal(sent.length, afterOptOut + 1);
+        await runtime.adapter.handleEvent(event('/zalosay Expired preview'));
+        const expiredSend =
+          replies.at(-1).options.reply_markup.inline_keyboard[0][0];
+        await pg.query(
+          'UPDATE zalo_announcements SET expires_at = NOW() - $2::interval WHERE id = $1',
+          [expiredSend.callback_data.split(' ').at(-1), '1 second']
+        );
+        await tap(expiredSend);
+        assert.equal(sent.length, afterOptOut + 1);
       }
     );
 
