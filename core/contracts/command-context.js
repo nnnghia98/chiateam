@@ -60,6 +60,20 @@ function createCommandContext(input = {}) {
   return Object.freeze({
     command: normalizeCommandName(input.command),
     args: Object.freeze(input.args.map(value => String(value))),
+    ...(typeof input.rawArgs === 'string' ? { rawArgs: input.rawArgs } : {}),
+    ...(typeof input.inputValue === 'string'
+      ? { inputValue: input.inputValue }
+      : {}),
+    ...(input.attachment?.type === 'image'
+      ? {
+          attachment: Object.freeze({
+            type: 'image',
+            fileId: requireText(input.attachment.fileId, 'attachment.fileId'),
+            fileSize: input.attachment.fileSize,
+            grouped: input.attachment.grouped === true,
+          }),
+        }
+      : {}),
     actor,
     conversation,
   });

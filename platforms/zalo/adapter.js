@@ -32,6 +32,7 @@ function parseZaloCommandText(text) {
   return {
     command: token.slice(1),
     args: parts,
+    rawArgs: text.trim().slice(token.length).trim(),
   };
 }
 

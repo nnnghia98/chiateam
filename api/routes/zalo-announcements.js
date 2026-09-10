@@ -21,7 +21,8 @@ function ensureZaloAnnouncementTables(database = db) {
         actor_id TEXT NOT NULL,
         source_chat_id TEXT NOT NULL,
         source_thread_id TEXT NOT NULL,
-        message TEXT NOT NULL CHECK (char_length(message) BETWEEN 1 AND 2000),
+        message TEXT NOT NULL,
+        photo_url TEXT,
         status TEXT NOT NULL CHECK (status IN ('draft', 'sending', 'finished', 'cancelled')),
         expires_at TIMESTAMPTZ NOT NULL,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -35,6 +36,18 @@ function ensureZaloAnnouncementTables(database = db) {
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         PRIMARY KEY (announcement_id, chat_id)
       );
+      ALTER TABLE zalo_announcements ADD COLUMN IF NOT EXISTS photo_url TEXT;
+      DO $migration$
+      BEGIN
+        PERFORM pg_advisory_xact_lock(hashtext('zalo_announcements_content_check'));
+        IF EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'zalo_announcements'::regclass AND conname = 'zalo_announcements_message_check') THEN
+          ALTER TABLE zalo_announcements DROP CONSTRAINT zalo_announcements_message_check;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'zalo_announcements'::regclass AND conname = 'zalo_announcements_content_check') THEN
+          ALTER TABLE zalo_announcements ADD CONSTRAINT zalo_announcements_content_check
+            CHECK (char_length(message) BETWEEN 0 AND 2000 AND (photo_url IS NOT NULL OR char_length(message) BETWEEN 1 AND 2000));
+        END IF;
+      END $migration$;
       ALTER TABLE zalo_announcement_subscriptions ENABLE ROW LEVEL SECURITY;
       ALTER TABLE zalo_announcements ENABLE ROW LEVEL SECURITY;
       ALTER TABLE zalo_announcement_deliveries ENABLE ROW LEVEL SECURITY;
@@ -56,7 +69,7 @@ function createZaloAnnouncementRepository({ database = db } = {}) {
   }
 
   const identity = p => [p.id, p.actorId, p.sourceChatId, p.sourceThreadId];
-  const ownsDraft = `id = $1 AND actor_id = $2 AND source_chat_id = $3 AND source_thread_id = $4`;
+  const ownsDraft = 'id = $1 AND actor_id = $2 AND source_chat_id = $3 AND source_thread_id = $4';
 
   return Object.freeze({
     async setSubscription({ chatId, userId, subscribed, displayName = null }) {
@@ -101,12 +114,13 @@ function createZaloAnnouncementRepository({ database = db } = {}) {
     },
 
     async prepare(p) {
+      const hasPhoto = p.photoUrl != null;
       const result = await query(
         `
         WITH draft AS (
           INSERT INTO zalo_announcements
-            (id, actor_id, source_chat_id, source_thread_id, message, status, expires_at)
-          VALUES ($1, $2, $3, $4, $5, 'draft', NOW() + INTERVAL '10 minutes')
+            (id, actor_id, source_chat_id, source_thread_id, message, photo_url, status, expires_at)
+          VALUES ($1, $2, $3, $4, $5, ${hasPhoto ? '$6' : 'NULL'}, 'draft', NOW() + INTERVAL '10 minutes')
           RETURNING id, expires_at
         ), recipients AS (
           INSERT INTO zalo_announcement_deliveries (announcement_id, chat_id, user_id, status)
@@ -118,7 +132,9 @@ function createZaloAnnouncementRepository({ database = db } = {}) {
         SELECT draft.id, draft.expires_at AS "expiresAt",
           (SELECT COUNT(*)::INTEGER FROM recipients) AS total FROM draft
       `,
-        [...identity(p), p.message]
+        hasPhoto
+          ? [...identity(p), p.message || '', p.photoUrl]
+          : [...identity(p), p.message || '']
       );
       return result.rows[0];
     },
@@ -128,11 +144,14 @@ function createZaloAnnouncementRepository({ database = db } = {}) {
         `
         UPDATE zalo_announcements SET status = 'sending'
         WHERE ${ownsDraft} AND status = 'draft' AND expires_at > NOW()
-        RETURNING id, message
+        RETURNING id, message, photo_url AS "photoUrl"
       `,
         identity(p)
       );
-      return result.rows[0] || null;
+      const row = result.rows[0];
+      if (!row) return null;
+      if (row.photoUrl == null) delete row.photoUrl;
+      return row;
     },
 
     async next({ id }) {
@@ -184,7 +203,7 @@ function createZaloAnnouncementRepository({ database = db } = {}) {
 
     async finish({ id }) {
       await query(
-        `UPDATE zalo_announcements SET status = 'finished' WHERE id = $1 AND status = 'sending'`,
+        'UPDATE zalo_announcements SET status = \'finished\' WHERE id = $1 AND status = \'sending\'',
         [id]
       );
       return true;

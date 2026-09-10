@@ -108,6 +108,21 @@ test('Zalo client validates message and webhook limits', () => {
     /1 to 2000/
   );
   assert.throws(
+    () => client.sendPhoto('chat-1', 'http://example.com/a'),
+    /HTTPS/
+  );
+  assert.throws(
+    () => client.sendPhoto('chat-1', 'https://user:pass@example.com/a'),
+    /credentials/
+  );
+  assert.throws(
+    () =>
+      client.sendPhoto('chat-1', 'https://example.com/a', {
+        caption: 'x'.repeat(2001),
+      }),
+    /2000/
+  );
+  assert.throws(
     () => client.setWebhook('http://example.com/zalo', '12345678'),
     /HTTPS/
   );
@@ -115,6 +130,30 @@ test('Zalo client validates message and webhook limits', () => {
     () => client.setWebhook('https://example.com/zalo', 'short'),
     /8 to 256/
   );
+});
+
+test('Zalo client serializes sendPhoto and omits an empty caption', async () => {
+  const calls = [];
+  const client = new ZaloBotClient({
+    token: 'test-token',
+    fetcher: async (url, options) => {
+      calls.push({ url, options });
+      return createResponse({ ok: true, result: { message_id: 'photo-1' } });
+    },
+  });
+  await client.sendPhoto('chat-1', 'https://cdn.example/photo.jpg', {
+    caption: 'Look',
+  });
+  await client.sendPhoto('chat-1', 'https://cdn.example/photo.jpg');
+  assert.deepEqual(JSON.parse(calls[0].options.body), {
+    chat_id: 'chat-1',
+    photo: 'https://cdn.example/photo.jpg',
+    caption: 'Look',
+  });
+  assert.deepEqual(JSON.parse(calls[1].options.body), {
+    chat_id: 'chat-1',
+    photo: 'https://cdn.example/photo.jpg',
+  });
 });
 
 test('Zalo client exposes webhook status operations', async () => {

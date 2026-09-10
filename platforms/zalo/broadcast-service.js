@@ -29,6 +29,7 @@ function createZaloBroadcastService({
   env = process.env,
   client,
   createClient = createZaloBotClient,
+  imageUploader,
   wait = milliseconds =>
     new Promise(resolve => setTimeout(resolve, milliseconds)),
   sendIntervalMs = 1000,
@@ -66,6 +67,19 @@ function createZaloBroadcastService({
     },
     async prepare(message, context) {
       return repository.prepare({ ...sourceIdentity(context), message });
+    },
+    async prepareImage(attachment, message, context) {
+      if (!imageUploader || typeof imageUploader.upload !== 'function')
+        throw Object.assign(new Error('Image upload is not configured.'), {
+          code: 'IMAGE_UPLOAD_FAILED',
+        });
+      const { photoUrl } = await imageUploader.upload(attachment);
+      const result = await repository.prepare({
+        ...sourceIdentity(context),
+        message,
+        photoUrl,
+      });
+      return { ...result, photoUrl };
     },
     async status(id, context) {
       return repository.status({ id, ...sourceIdentity(context) });
@@ -108,7 +122,13 @@ function createZaloBroadcastService({
           let status = 'sent';
           let errorCode = null;
           try {
-            await activeClient.sendMessage(recipient.chatId, draft.message);
+            if (draft.photoUrl) {
+              await activeClient.sendPhoto(recipient.chatId, draft.photoUrl, {
+                caption: draft.message,
+              });
+            } else {
+              await activeClient.sendMessage(recipient.chatId, draft.message);
+            }
           } catch (error) {
             errorCode = classifySendError(error);
             status = errorCode === 'NETWORK_ERROR' ? 'unknown' : 'failed';

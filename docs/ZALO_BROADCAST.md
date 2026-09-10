@@ -11,6 +11,18 @@ the setup guide, not pending work for the current installation.
 
 ## Deploy
 
+Image support: create a **public** Supabase Storage bucket named
+`zalo-announcements`. On the API, set `SUPABASE_URL` and
+`SUPABASE_SERVICE_ROLE_KEY` as for avatar uploads. The optional
+`SUPABASE_ZALO_STORAGE_BUCKET` changes this bucket name. The API verifies that
+the bucket is public; it does not create a bucket or change access settings.
+Anyone with an image link can view that image.
+
+Deploy the API before the Telegram bot for image support. The API automatically
+adds `photo_url` and updates the announcement content constraint, preserving
+existing drafts. No manual `init-db` is needed. Keep the Supabase key on the API;
+the Telegram bot uploads through the existing authenticated internal API.
+
 Subscriber name update: deploy the API first, then the Zalo webhook and Telegram
 bot. The API adds a nullable `display_name` column to existing subscription
 tables automatically. Existing IDs and subscription choices are preserved.
@@ -23,7 +35,7 @@ tables automatically. Existing IDs and subscription choices are preserved.
 3. Deploy the Telegram bot, which executes confirmed broadcasts using its
    existing `ZALO_BOT_TOKEN`. It no longer needs `ZALO_BOT_OWNER_ID` as a
    destination. Keep existing owner/admin settings: Zalo still uses them for
-   admin permissions. No new env variable is required.
+   admin permissions. Text broadcasts need no new storage settings.
 
 The API and webhook use the existing `BOT_API_BASE_URL` and
 `INTERNAL_API_AUTH_TOKEN`. No new Zalo polling process or Vercel background job
@@ -43,6 +55,32 @@ history and the former owner destination are not imported automatically.
 Group chats cannot subscribe. One subscription is stored per Zalo user.
 
 A Telegram admin sends:
+
+```text
+/zalosay
+```
+
+Choose **Text** or **Image** using the inline buttons:
+
+- **Text:** send the content as the next message. Line breaks and blank lines
+  are preserved. Text can contain up to 2000 characters.
+- **Image:** attach one photo using Telegram's photo option, with an optional
+  caption of up to 2000 characters. Photos can be JPEG, PNG, or WebP, up to
+  5 MiB. Albums and images attached as documents are not supported.
+
+The next message must come from the same admin in the same chat and topic,
+within ten minutes. **Hủy** cancels this input step. Another command clears it.
+Restarting the Telegram bot clears unfinished input steps; send `/zalosay`
+again. Prepared drafts remain in the database across restarts.
+
+The bot uploads the photo to Supabase and shows the photo and caption for
+review. The upload happens before confirmation; subscribers receive nothing
+until you tap **Gửi thông báo**. Telegram download links contain the bot token,
+so these links are never saved in drafts or sent to Zalo. Uploaded images stay
+in the bucket, including cancelled drafts; do not remove images while a
+confirmed broadcast may still be sending.
+
+The direct text shortcut also remains available:
 
 ```text
 /zalosay Training starts at 20:00
@@ -124,7 +162,7 @@ refresh request has a two-second timeout. The internal `refreshSubscriber` and
 Only the API writes these PostgreSQL tables:
 
 - `zalo_announcement_subscriptions`: user/chat IDs, display name, and subscription choice.
-- `zalo_announcements`: immutable text, source admin/chat/topic, confirmation
+- `zalo_announcements`: immutable text/caption and optional photo URL, source admin/chat/topic, confirmation
   expiry, and broadcast status.
 - `zalo_announcement_deliveries`: frozen recipient snapshot and delivery status.
 
@@ -149,3 +187,5 @@ use an in-memory database and fake messaging clients; they send no real messages
 Official contracts: [sendMessage](https://docs.zaloplatforms.com/docs/BOT/apis/sendMessage)
 requires one `chat_id` per send; [webhooks](https://docs.zaloplatforms.com/docs/BOT/webhook)
 provide the private conversation ID.
+Image broadcasts use [sendPhoto](https://docs.zaloplatforms.com/docs/BOT/apis/sendPhoto)
+with the Supabase image URL and optional caption, so Zalo displays the photo.
