@@ -190,10 +190,14 @@ CREATE TABLE public.zalo_announcements (
   actor_id text NOT NULL,
   source_chat_id text NOT NULL,
   source_thread_id text NOT NULL,
-  message text NOT NULL CHECK (char_length(message) BETWEEN 1 AND 2000),
+  message text NOT NULL,
+  photo_url text,
   status text NOT NULL CHECK (status IN ('draft', 'sending', 'finished', 'cancelled')),
   expires_at timestamptz NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now()
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT zalo_announcements_content_check CHECK (
+    char_length(message) BETWEEN 0 AND 2000 AND (photo_url IS NOT NULL OR char_length(message) BETWEEN 1 AND 2000)
+  )
 );
 
 CREATE TABLE public.zalo_announcement_deliveries (

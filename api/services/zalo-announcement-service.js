@@ -69,19 +69,38 @@ function normalizeRequest(operation, payload) {
     )
       return null;
     if (p.sourceThreadId !== '' && !validId(p.sourceThreadId)) return null;
-    if (
-      operation === 'prepare' &&
-      (typeof p.message !== 'string' ||
-        !p.message.trim() ||
-        p.message.length > 2000)
-    )
-      return null;
+    if (operation === 'prepare') {
+      const message = typeof p.message === 'string' ? p.message : null;
+      let photoUrl = null;
+      if (p.photoUrl !== undefined) {
+        if (typeof p.photoUrl !== 'string' || p.photoUrl.length > 2048)
+          return null;
+        try {
+          const parsed = new URL(p.photoUrl);
+          if (parsed.protocol !== 'https:' || parsed.username || parsed.password)
+            return null;
+          photoUrl = parsed.toString();
+        } catch {
+          return null;
+        }
+      }
+      if ((!message || !message.trim()) && !photoUrl) return null;
+      if (message && message.length > 2000) return null;
+      return {
+        id: p.id,
+        actorId: p.actorId,
+        sourceChatId: p.sourceChatId,
+        sourceThreadId: p.sourceThreadId,
+        message: message || '',
+        ...(photoUrl ? { photoUrl } : {}),
+      };
+    }
     return {
       id: p.id,
       actorId: p.actorId,
       sourceChatId: p.sourceChatId,
       sourceThreadId: p.sourceThreadId,
-      ...(operation === 'prepare' ? { message: p.message } : {}),
+      ...(operation === 'prepare' ? { message: p.message, photoUrl: null } : {}),
     };
   }
   if (operation === 'record') {

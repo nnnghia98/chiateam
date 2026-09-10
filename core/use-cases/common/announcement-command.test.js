@@ -1,5 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { createZaloAdapter } = require('../../../platforms/zalo/adapter');
+const { ZaloBotClient } = require('../../../platforms/zalo/client');
 
 const { createCommandRegistry } = require('../../commands/command-registry');
 const { createCommandRouter } = require('../../commands/command-router');
@@ -69,6 +71,33 @@ test('announcement parser accepts a bounded message', () => {
     parseAnnouncementRequest(['x'.repeat(MAX_ANNOUNCEMENT_LENGTH + 1)]),
     { ok: false, code: 'INVALID_ANNOUNCEMENT' }
   );
+});
+
+test('direct Zalo announcements preserve line breaks and blank lines through delivery', async () => {
+  const message = 'Lịch đá ⚽\nSân  A\n\nGiờ:\t20h';
+  const sent = [];
+  const client = new ZaloBotClient({
+    token: 'test-token',
+    fetcher: async (url, options) => {
+      sent.push(JSON.parse(options.body));
+      return { ok: true, json: async () => ({ ok: true, result: {} }) };
+    },
+  });
+  const { router } = createAnnouncementRouter();
+  const adapter = createZaloAdapter({ client, router });
+  for (const command of ['/zalosay', '/say']) {
+    await adapter.handleUpdate({
+      event_name: 'message.text.received',
+      message: {
+        from: { id: 'admin' },
+        chat: { id: 'source', chat_type: 'PRIVATE' },
+        message_id: command,
+        text: `${command}\n${message}`,
+      },
+    });
+  }
+  assert.equal(sent.length, 2);
+  assert.ok(sent.every(payload => payload.text === message));
 });
 
 test('admin announcement returns the message on the announcement channel', async () => {

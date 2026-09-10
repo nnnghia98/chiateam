@@ -47,6 +47,7 @@ function parseCommandText(text) {
   return {
     command: token.slice(1).split('@')[0],
     args: parts,
+    rawArgs: text.trim().slice(token.length).trim(),
   };
 }
 
@@ -103,6 +104,7 @@ function createTelegramAdapter({
   let unregisterActionHandler = null;
   let usesDirectActionListener = false;
   const pendingInputs = new Map();
+  const interactionVersions = new Map();
 
   function createContext(event, parsed) {
     if (!parsed || event?.from?.id == null || event?.chat?.id == null) {
@@ -144,18 +146,35 @@ function createTelegramAdapter({
     pendingInputs.set(getInteractionKey(context), {
       command: input.command,
       args: input.args,
+      kind: input.kind,
       expiresAt: now() + interactionTtlMs,
     });
   }
 
   function clearInput(context) {
-    pendingInputs.delete(getInteractionKey(context));
+    const key = getInteractionKey(context);
+    pendingInputs.delete(key);
+    interactionVersions.set(key, Symbol());
+  }
+
+  function composeVersion(context) {
+    return ['zalosay', 'say'].includes(context.command) &&
+      !['confirm', 'cancel', 'status', 'subscribers'].includes(context.args[0])
+      ? interactionVersions.get(getInteractionKey(context))
+      : undefined;
+  }
+
+  function isCurrent(context, version) {
+    return (
+      version === undefined ||
+      interactionVersions.get(getInteractionKey(context)) === version
+    );
   }
 
   function takeInput(event) {
     const text = String(event?.text ?? '').trim();
 
-    if (!text || text.startsWith('/')) {
+    if (text.startsWith('/')) {
       return null;
     }
 
@@ -175,6 +194,20 @@ function createTelegramAdapter({
       return null;
     }
 
+    if (!text && !pending.kind) return null;
+    const photo = Array.isArray(event.photo)
+      ? event.photo.reduce(
+          (largest, candidate) =>
+            !largest ||
+            candidate.width * candidate.height > largest.width * largest.height
+              ? candidate
+              : largest,
+          null
+        )
+      : null;
+    if (!text && !photo && !event.document && !event.video && !event.sticker)
+      return null;
+
     pendingInputs.delete(key);
 
     if (pending.expiresAt <= now()) {
@@ -185,14 +218,33 @@ function createTelegramAdapter({
       context: createContext(event, {
         command: pending.command,
         args: [...pending.args, text],
+        ...(pending.kind
+          ? {
+              inputValue:
+                pending.kind === 'image'
+                  ? String(event.caption ?? '').trim()
+                  : text,
+              ...(photo && pending.kind === 'image'
+                ? {
+                    attachment: {
+                      type: 'image',
+                      fileId: photo.file_id,
+                      fileSize: photo.file_size,
+                      grouped: event.media_group_id != null,
+                    },
+                  }
+                : {}),
+            }
+          : {}),
       }),
       key,
       pending,
     };
   }
 
-  async function sendResult(context, result) {
+  async function sendResult(context, result, version) {
     for (const message of result.messages) {
+      if (!isCurrent(context, version)) return;
       const rendered = formatter(message);
       const options = { ...rendered.options };
       const hasConfiguredChannel = Object.prototype.hasOwnProperty.call(
@@ -209,6 +261,15 @@ function createTelegramAdapter({
 
       if (threadId != null) {
         options.message_thread_id = threadId;
+      }
+
+      if (message.photoUrl) {
+        await bot.sendPhoto(
+          chatId,
+          message.photoUrl,
+          threadId == null ? {} : { message_thread_id: threadId }
+        );
+        if (!isCurrent(context, version)) return;
       }
 
       try {
@@ -228,7 +289,7 @@ function createTelegramAdapter({
         await bot.sendMessage(chatId, rendered.text, fallbackOptions);
       }
 
-      rememberInput(context, message.input);
+      if (isCurrent(context, version)) rememberInput(context, message.input);
     }
   }
 
@@ -244,8 +305,10 @@ function createTelegramAdapter({
     if (explicitContext) {
       clearInput(context);
     }
-
+    const version = composeVersion(context);
     const routed = await router.run(context);
+
+    if (!isCurrent(context, version)) return true;
 
     if (!routed.handled) {
       if (pending) {
@@ -254,7 +317,19 @@ function createTelegramAdapter({
       return false;
     }
 
-    await sendResult(context, routed.result);
+    try {
+      await sendResult(context, routed.result, version);
+    } catch (error) {
+      if (!pending?.pending.kind) throw error;
+      if (isCurrent(context, version)) {
+        pendingInputs.set(pending.key, pending.pending);
+        await reportError(
+          event,
+          new Error('Telegram compose preview failed.'),
+          context
+        );
+      }
+    }
     return true;
   }
 
@@ -274,6 +349,7 @@ function createTelegramAdapter({
     }
 
     clearInput(context);
+    const version = composeVersion(context);
     // Stop the button spinner before a command starts a long-running broadcast.
     if (typeof bot.answerCallbackQuery === 'function' && query?.id != null) {
       try {
@@ -292,13 +368,13 @@ function createTelegramAdapter({
       return false;
     }
 
-    await sendResult(context, routed.result);
+    await sendResult(context, routed.result, version);
     return true;
   }
 
-  async function reportError(event, error) {
+  async function reportError(event, error, knownContext) {
     onError(error);
-    const context = toCommandContext(event);
+    const context = knownContext || toCommandContext(event);
 
     if (!context) {
       return;
@@ -357,6 +433,7 @@ function createTelegramAdapter({
     }
 
     pendingInputs.clear();
+    interactionVersions.clear();
     unregisterActionHandler = null;
     usesDirectActionListener = false;
     started = false;

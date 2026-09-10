@@ -29,7 +29,29 @@ const MESSAGES = Object.freeze({
     '❌ Zalo từ chối yêu cầu. Kiểm tra quyền gửi tin của bot và trạng thái tài khoản Zalo.',
   storage:
     '❌ Không thể đọc hoặc lưu tiến độ gửi. Kiểm tra API và database; không gửi lại toàn bộ thông báo khi chưa kiểm tra trạng thái.',
+  IMAGE_TOO_LARGE: '⚠️ Ảnh quá lớn. Gửi một ảnh nhỏ hơn 5 MB.',
+  INVALID_IMAGE: '⚠️ Gửi một ảnh JPG, PNG hoặc WebP bằng nút đính kèm ảnh.',
+  IMAGE_UPLOAD_FAILED:
+    '❌ Chưa tải được ảnh. Kiểm tra cấu hình lưu ảnh rồi gửi lại.',
 });
+
+const STOP_ACTION = {
+  id: 'zalo_compose_stop',
+  label: '❌ Hủy',
+  command: '/zalosay --stop',
+};
+
+function inputPrompt(kind, error) {
+  const text =
+    kind === 'image'
+      ? 'Gửi một ảnh bằng nút đính kèm ảnh trong Telegram. Có thể thêm chú thích (tối đa 2000 ký tự). Mỗi thông báo chỉ gửi một ảnh, tối đa 5 MB.'
+      : 'Gửi nội dung thông báo trong tin nhắn tiếp theo (tối đa 2000 ký tự).';
+  return createTextResult(
+    `${error ? `${error}\n\n` : ''}${text}\nBot sẽ cho bạn xem trước và xác nhận. Lựa chọn có hiệu lực trong 10 phút.`,
+    [STOP_ACTION],
+    { input: { command: 'zalosay', args: [`--${kind}`], kind } }
+  );
+}
 
 function formatSummary(summary) {
   return (
@@ -87,6 +109,52 @@ function createZaloBroadcastCommand({ service } = {}) {
       if (context.actor.platform !== 'telegram')
         return { ok: false, code: 'PERMISSION_DENIED' };
       const [operation, id] = context.args;
+      if (context.args.length === 0) return { ok: true, operation: 'choose' };
+      if (operation === '--stop') return { ok: true, operation: 'stop' };
+      if (['--text', '--image'].includes(operation)) {
+        const kind = operation.slice(2);
+        if (context.inputValue === undefined)
+          return { ok: true, operation: 'prompt', kind };
+        const message = context.inputValue.trim();
+        if (message.length > 2000)
+          return {
+            ok: true,
+            operation: 'prompt',
+            kind,
+            error: '⚠️ Nội dung tối đa 2000 ký tự.',
+          };
+        if (kind === 'text')
+          return message
+            ? { ok: true, operation: 'prepare', message }
+            : { ok: true, operation: 'prompt', kind };
+        if (!context.attachment)
+          return {
+            ok: true,
+            operation: 'prompt',
+            kind,
+            error: MESSAGES.INVALID_IMAGE,
+          };
+        if (context.attachment.grouped)
+          return {
+            ok: true,
+            operation: 'prompt',
+            kind,
+            error: '⚠️ Gửi từng ảnh riêng, không gửi album.',
+          };
+        if (context.attachment.fileSize > 5 * 1024 * 1024)
+          return {
+            ok: true,
+            operation: 'prompt',
+            kind,
+            error: MESSAGES.IMAGE_TOO_LARGE,
+          };
+        return {
+          ok: true,
+          operation: 'prepareImage',
+          message,
+          attachment: context.attachment,
+        };
+      }
       if (operation === 'subscribers') {
         const page = id === undefined ? 1 : Number(id);
         return context.args.length <= 2 &&
@@ -101,14 +169,31 @@ function createZaloBroadcastCommand({ service } = {}) {
           ? { ok: true, operation, id }
           : { ok: false, code: 'INVALID' };
       }
-      const message = context.args.join(' ').trim();
+      const message = (context.rawArgs ?? context.args.join(' ')).trim();
       return message.length > 0 && message.length <= 2000
         ? { ok: true, operation: 'prepare', message }
         : { ok: false, code: 'INVALID' };
     },
     action: async (context, state, condition) => {
+      if (['choose', 'prompt', 'stop'].includes(condition.operation))
+        return { changed: false, code: 'COMPOSE', ...condition };
       try {
         const { operation, id, message, page } = condition;
+        if (operation === 'prepareImage') {
+          const result = await service.prepareImage(
+            condition.attachment,
+            message,
+            context
+          );
+          return {
+            changed: false,
+            code: 'RESULT',
+            operation: 'prepare',
+            result,
+            message,
+            photoUrl: result.photoUrl,
+          };
+        }
         const result = await service[operation](
           operation === 'prepare'
             ? message
@@ -118,13 +203,42 @@ function createZaloBroadcastCommand({ service } = {}) {
           context
         );
         return { changed: false, code: 'RESULT', operation, result, message };
-      } catch {
+      } catch (error) {
+        if (condition.operation === 'prepareImage')
+          return {
+            changed: false,
+            code: 'COMPOSE',
+            operation: 'prompt',
+            kind: 'image',
+            error: MESSAGES[error?.code] || MESSAGES.IMAGE_UPLOAD_FAILED,
+          };
         return { changed: false, code: 'STORAGE_ERROR' };
       }
     },
     reply: async outcome => {
       if (outcome.code === 'PERMISSION_DENIED')
         return createTextResult(MESSAGES.denied);
+      if (outcome.code === 'COMPOSE') {
+        if (outcome.operation === 'choose')
+          return createTextResult(
+            'Chọn loại thông báo gửi đến người đăng ký Zalo:',
+            [
+              {
+                id: 'zalo_compose_text',
+                label: 'Text',
+                command: '/zalosay --text',
+              },
+              {
+                id: 'zalo_compose_image',
+                label: 'Image',
+                command: '/zalosay --image',
+              },
+            ]
+          );
+        if (outcome.operation === 'stop')
+          return createTextResult(MESSAGES.cancelled);
+        return inputPrompt(outcome.kind, outcome.error);
+      }
       if (outcome.code === 'INVALID') return createTextResult(MESSAGES.usage);
       if (outcome.code !== 'RESULT') return createTextResult(MESSAGES.storage);
       const { operation, result } = outcome;
@@ -132,7 +246,7 @@ function createZaloBroadcastCommand({ service } = {}) {
       if (operation === 'prepare') {
         if (!result || result.total === 0)
           return createTextResult(MESSAGES.empty);
-        return createTextResult(
+        const preview = createTextResult(
           `Sẽ gửi thông báo đến ${result.total} người đã đăng ký trên Zalo:\n\n${outcome.message}\n\n` +
             'Chưa gửi tin nhắn. Bấm nút bên dưới trong 10 phút để gửi hoặc hủy.',
           [
@@ -148,6 +262,14 @@ function createZaloBroadcastCommand({ service } = {}) {
             },
           ]
         );
+        if (outcome.photoUrl) {
+          return createCommandResult({
+            messages: [
+              { ...preview.messages[0], photoUrl: outcome.photoUrl },
+            ],
+          });
+        }
+        return preview;
       }
       if (operation === 'cancel')
         return createTextResult(

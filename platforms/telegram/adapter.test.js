@@ -48,11 +48,13 @@ test('Telegram command parser supports mentions and arguments', () => {
   assert.deepEqual(parseCommandText('/TEAM@ChiaTeamBot 3'), {
     command: 'TEAM',
     args: ['3'],
+    rawArgs: '3',
   });
   assert.equal(parseCommandText('hello'), null);
   assert.deepEqual(parseTelegramCommandAction('core:cmd:/editbench 2'), {
     command: 'editbench',
     args: ['2'],
+    rawArgs: '2',
   });
   assert.equal(parseTelegramCommandAction('editbench:select:1'), null);
 });
@@ -71,6 +73,7 @@ test('Telegram adapter creates a platform-neutral command context', () => {
   assert.deepEqual(context, {
     command: 'edit-stats',
     args: ['10', '4', '3', '1', '0'],
+    rawArgs: '10 4 3 1 0',
     actor: {
       platform: 'telegram',
       externalId: '123',

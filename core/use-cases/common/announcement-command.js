@@ -16,12 +16,12 @@ const ANNOUNCEMENT_MESSAGES = Object.freeze({
   publishError: '❌ Không thể gửi tin nhắn đến Zalo. Vui lòng thử lại.',
 });
 
-function parseAnnouncementRequest(args) {
+function parseAnnouncementRequest(args, rawArgs) {
   if (!Array.isArray(args) || args.length === 0) {
     return { ok: false, code: 'MISSING_ANNOUNCEMENT' };
   }
 
-  const message = args.join(' ').trim();
+  const message = (rawArgs ?? args.join(' ')).trim();
 
   if (!message || message.length > MAX_ANNOUNCEMENT_LENGTH) {
     return { ok: false, code: 'INVALID_ANNOUNCEMENT' };
@@ -46,7 +46,8 @@ function createAnnouncementCommand({ publisher } = {}) {
       permission: 'admin',
     },
     stateKeys: [],
-    condition: async context => parseAnnouncementRequest(context.args),
+    condition: async context =>
+      parseAnnouncementRequest(context.args, context.rawArgs),
     action: async (context, state, condition) => {
       if (!activePublisher) {
         return {

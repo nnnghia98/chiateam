@@ -31,6 +31,10 @@ const { updatePlayerStats } = require('./leaderboard');
 const defaultMatchMediaService = require('../services/match-media-service');
 const defaultTwoNikeService = require('../services/two-nike-service');
 const {
+  MAX_ZALO_IMAGE_BYTES,
+  createZaloImageStorageService,
+} = require('../services/zalo-image-storage-service');
+const {
   createWebhookEventService,
 } = require('../services/webhook-event-service');
 const {
@@ -68,6 +72,7 @@ const {
   createZaloAnnouncementService,
 } = require('../services/zalo-announcement-service');
 const defaultZaloAnnouncementService = createZaloAnnouncementService();
+const defaultZaloImageStorageService = createZaloImageStorageService();
 const {
   createZaloGreetingService,
 } = require('../services/zalo-greeting-service');
@@ -89,17 +94,28 @@ function logRequest(req, res) {
   });
 }
 
-function readJson(req, { maxBytes = 1_000_000 } = {}) {
+function readJson(req, { maxBytes = 1_000_000, destroyOnLimit = true } = {}) {
   return new Promise((resolve, reject) => {
-    let body = '';
+    const chunks = [];
+    let bytes = 0;
+    let exceeded = false;
     req.on('data', chunk => {
-      body += chunk;
-      if (body.length > maxBytes) {
+      if (exceeded) return;
+      bytes += Buffer.byteLength(chunk);
+      if (bytes > maxBytes) {
+        exceeded = true;
+        chunks.length = 0;
         reject(new Error('Payload too large'));
-        req.destroy();
+        if (destroyOnLimit) req.destroy();
+        return;
       }
+      chunks.push(Buffer.from(chunk));
     });
+    req.on('error', reject);
+    req.on('aborted', () => reject(new Error('Request body was interrupted')));
     req.on('end', () => {
+      if (exceeded) return;
+      const body = Buffer.concat(chunks).toString('utf8');
       if (!body) return resolve(null);
       try {
         resolve(JSON.parse(body));
@@ -637,6 +653,7 @@ function createUiApiServer({
   twoNikeService = defaultTwoNikeService,
   webhookEventService = defaultWebhookEventService,
   zaloAnnouncementService = defaultZaloAnnouncementService,
+  zaloImageStorageService = defaultZaloImageStorageService,
   zaloGreetingService = defaultZaloGreetingService,
 } = {}) {
   const startedAt = new Date().toISOString();
@@ -1722,6 +1739,43 @@ function createUiApiServer({
     }
 
     // Internal-only subscriber and broadcast state. Never exposed to public clients.
+    if (
+      path === '/api/zalo-announcements/upload-image' &&
+      req.method === 'POST'
+    ) {
+      if (!requireAdmin(req, res, headers)) return;
+      try {
+        const payload = await readJson(req, {
+          maxBytes: Math.ceil((MAX_ZALO_IMAGE_BYTES * 4) / 3) + 4096,
+          destroyOnLimit: false,
+        });
+        const result = await zaloImageStorageService.uploadImage(payload || {});
+        return sendJson(res, 200, { ok: true, result }, headers);
+      } catch (error) {
+        if (
+          error.message === 'Payload too large' ||
+          error.code === 'IMAGE_TOO_LARGE'
+        ) {
+          return sendJson(res, 413, { error: 'IMAGE_TOO_LARGE' }, headers);
+        }
+        if (['INVALID_IMAGE_DATA', 'INVALID_IMAGE_TYPE'].includes(error.code)) {
+          return sendJson(res, 400, { error: error.code }, headers);
+        }
+        if (error.code === 'STORAGE_NOT_CONFIGURED') {
+          return sendJson(res, 503, { error: error.code }, headers);
+        }
+        if (
+          ['IMAGE_UPLOAD_FAILED', 'STORAGE_BUCKET_UNAVAILABLE', 'STORAGE_BUCKET_PRIVATE'].includes(error.code)
+        ) {
+          return sendJson(res, 503, { error: error.code }, headers);
+        }
+        if (error instanceof SyntaxError) {
+          return sendJson(res, 400, { error: 'INVALID_JSON' }, headers);
+        }
+        return sendJson(res, 500, { error: 'IMAGE_STORAGE_FAILED' }, headers);
+      }
+    }
+
     if (path.startsWith('/api/zalo-announcements/') && req.method === 'POST') {
       if (!requireAdmin(req, res, headers)) return;
       const operation = path.slice('/api/zalo-announcements/'.length);

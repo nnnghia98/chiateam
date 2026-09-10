@@ -42,6 +42,9 @@ const {
   createZaloBroadcastService,
 } = require('../platforms/zalo/broadcast-service');
 const {
+  createTelegramPhotoUploadService,
+} = require('../platforms/telegram/photo-upload-service');
+const {
   createApiZaloAnnouncementRepository,
 } = require('../runtime/repositories/api-zalo-announcement-repository');
 const {
@@ -128,8 +131,13 @@ async function bootstrapBot() {
   const attendanceVoteController = createTelegramAttendanceVoteController({
     bot,
   });
+  const zaloAnnouncementRepository = createApiZaloAnnouncementRepository();
   const zaloBroadcastService = createZaloBroadcastService({
-    repository: createApiZaloAnnouncementRepository(),
+    repository: zaloAnnouncementRepository,
+    imageUploader: createTelegramPhotoUploadService({
+      bot,
+      repository: zaloAnnouncementRepository,
+    }),
   });
   const playerRepository = createApiPlayerRepository();
   const statisticsRepository = createApiStatisticsRepository();

@@ -56,9 +56,13 @@ function normalizeInput(input, index) {
   }
 
   const args = Array.isArray(input.args) ? input.args : [];
+  if (input.kind != null && !['text', 'image'].includes(input.kind)) {
+    throw new TypeError(`messages[${index}].input.kind is invalid.`);
+  }
 
   return Object.freeze({
     command,
+    ...(input.kind ? { kind: input.kind } : {}),
     args: Object.freeze(
       args.map((arg, argIndex) =>
         requireText(arg, `messages[${index}].input.args[${argIndex}]`)
@@ -105,6 +109,7 @@ function normalizeMessage(message, index) {
     segments: Object.freeze(normalizedSegments),
     channel,
     input: normalizeInput(message.input, index),
+    ...(message.photoUrl ? { photoUrl: String(message.photoUrl) } : {}),
   });
 }
 

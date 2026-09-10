@@ -53,6 +53,7 @@ test('Zalo command parser supports command arguments', () => {
   assert.deepEqual(parseZaloCommandText('/TEAM 3'), {
     command: 'TEAM',
     args: ['3'],
+    rawArgs: '3',
   });
   assert.equal(parseZaloCommandText('hello'), null);
   assert.equal(parseZaloCommandText('/bad.command'), null);
@@ -67,6 +68,7 @@ test('Zalo adapter creates a platform-neutral context', () => {
   assert.deepEqual(adapter.toCommandContext(createUpdate('/team 3')), {
     command: 'team',
     args: ['3'],
+    rawArgs: '3',
     actor: {
       platform: 'zalo',
       externalId: 'user-1',

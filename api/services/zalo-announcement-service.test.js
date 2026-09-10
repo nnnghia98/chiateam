@@ -67,6 +67,26 @@ test('broadcast validation requires Telegram source ownership and bounded conten
   });
 });
 
+test('photo drafts require credential-free HTTPS URLs and allow an empty caption', () => {
+  assert.deepEqual(
+    normalizeRequest('prepare', { ...source, message: '', photoUrl: 'https://cdn.example/photo.jpg' }),
+    { id: undefined, actorId: 'admin', sourceChatId: 'source', sourceThreadId: '', message: '', photoUrl: 'https://cdn.example/photo.jpg' }
+  );
+  for (const photoUrl of [
+    'http://cdn.example/photo.jpg',
+    'https://user:pass@cdn.example/photo.jpg',
+    'javascript:alert(1)',
+    `https://cdn.example/${'x'.repeat(2049)}`,
+    123,
+  ]) {
+    assert.equal(normalizeRequest('prepare', { ...source, message: 'caption', photoUrl }), null);
+  }
+  assert.equal(
+    normalizeRequest('prepare', { ...source, message: 'x'.repeat(2001), photoUrl: 'https://cdn.example/photo.jpg' }),
+    null
+  );
+});
+
 test('delivery receipts accept only safe error categories', () => {
   assert.equal(
     normalizeRequest('record', { id, chatId: 'c', status: 'pending' }),

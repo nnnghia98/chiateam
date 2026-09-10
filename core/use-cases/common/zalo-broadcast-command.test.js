@@ -1,5 +1,13 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { EventEmitter } = require('node:events');
+const {
+  createTelegramAdapter,
+} = require('../../../platforms/telegram/adapter');
+const { ZaloBotClient } = require('../../../platforms/zalo/client');
+const {
+  createZaloBroadcastService,
+} = require('../../../platforms/zalo/broadcast-service');
 const { createCommandRegistry } = require('../../commands/command-registry');
 const { createCommandRouter } = require('../../commands/command-router');
 const { createZaloBroadcastCommand } = require('./zalo-broadcast-command');
@@ -51,6 +59,75 @@ function harness(overrides = {}) {
   const definition = createZaloBroadcastCommand({ service });
   return { calls, definition, router: router([definition]) };
 }
+
+test('multiline Telegram broadcasts keep their text through preview, confirmation and Zalo JSON', async () => {
+  const message = 'Lịch đá ⚽\nSân  A\n\nGiờ:\t20h\r\nMang áo trắng';
+  for (const command of ['/zalosay', '/say', '/ZALOSAY@ChiaTeamBot']) {
+    let draft;
+    let pending = true;
+    const sent = [];
+    const client = new ZaloBotClient({
+      token: 'test-token',
+      fetcher: async (url, options) => {
+        if (url.endsWith('/sendMessage')) sent.push(JSON.parse(options.body));
+        return { ok: true, json: async () => ({ ok: true, result: {} }) };
+      },
+    });
+    const service = createZaloBroadcastService({
+      client,
+      sendIntervalMs: 0,
+      repository: {
+        prepare: async input => {
+          draft = { id, message: input.message };
+          return { id, total: 1 };
+        },
+        claim: async () => draft,
+        next: async () => {
+          if (!pending) return null;
+          pending = false;
+          return { chatId: 'zalo-recipient' };
+        },
+        record: async () => true,
+        finish: async () => {},
+        status: async () => ({ id, status: 'finished', total: 1, sent: 1 }),
+        cancel: async () => true,
+      },
+    });
+    const previews = [];
+    const bot = new EventEmitter();
+    bot.sendMessage = async (chatId, text, options) =>
+      previews.push({ text, options });
+    const adapter = createTelegramAdapter({
+      bot,
+      router: router([createZaloBroadcastCommand({ service })]),
+    });
+    const event = { from: { id: 'admin' }, chat: { id: 'source' } };
+    await adapter.handleEvent({ ...event, text: `${command}\n${message}` });
+    assert.equal(draft.message, message);
+    assert.ok(previews[0].text.includes(message));
+    assert.equal(sent.length, 0);
+    await adapter.handleAction({
+      id: 'confirm-button',
+      from: event.from,
+      message: event,
+      data: previews[0].options.reply_markup.inline_keyboard[0][0].callback_data,
+    });
+    assert.deepEqual(sent, [{ chat_id: 'zalo-recipient', text: message }]);
+  }
+});
+
+test('broadcast length validation counts the original whitespace', async () => {
+  const h = harness();
+  const rawArgs = `a${'\n'.repeat(1999)}b`;
+  await h.router.run({ ...context(['a', 'b']), rawArgs });
+  assert.equal(h.calls.length, 0);
+  await h.router.run({
+    ...context(['a', 'b']),
+    rawArgs: `a${'\n'.repeat(1998)}b`,
+  });
+  assert.equal(h.calls.length, 1);
+  assert.equal(h.calls[0][1].length, 2000);
+});
 
 test('broadcast command previews exact content without sending and uses the source chat', async () => {
   const h = harness();

@@ -209,6 +209,30 @@ class ZaloBotClient extends EventEmitter {
     return this.call('sendMessage', payload);
   }
 
+  sendPhoto(chatId, photoUrl, { caption = '' } = {}) {
+    let photo;
+    try {
+      photo = new URL(requireText(photoUrl, 'Zalo photo URL'));
+    } catch {
+      throw new TypeError('Zalo photo URL is invalid.');
+    }
+    if (photo.protocol !== 'https:' || photo.username || photo.password) {
+      throw new TypeError('Zalo photo URL must use HTTPS without credentials.');
+    }
+    const text = String(caption ?? '');
+    if (text.length > 2000) {
+      throw new RangeError(
+        'Zalo photo caption must contain at most 2000 characters.'
+      );
+    }
+    const payload = {
+      chat_id: requireText(chatId, 'Zalo chat ID'),
+      photo: photo.toString(),
+    };
+    if (text) payload.caption = text;
+    return this.call('sendPhoto', payload);
+  }
+
   setWebhook(url, secretToken) {
     const webhookUrl = new URL(requireText(url, 'Zalo webhook URL'));
     const secret = requireText(secretToken, 'Zalo webhook secret');
