@@ -1,8 +1,28 @@
 # Multi-Platform Bot Refactor Plan
 
-Status: In progress — Zalo and subscriber broadcasts are live, confirmed by the
-owner on 2026-09-07. Phase 8 Messenger MVP is complete locally; production setup
-and live tests remain pending. Phase 7 release-security tasks remain open.
+Status: In progress — admin panel UI work is the current priority, selected by
+the owner on 2026-09-10. The Telegram/Zalo status and settings handoff is ready
+for the admin team; implementation has not started. Zalo and subscriber
+broadcasts are live, confirmed by
+the owner on 2026-09-07. Phase 8 Messenger MVP is complete locally; production
+setup and live tests are deferred as lower priority. Phase 7 release-security
+tasks remain open.
+Phase 9, payment announcements with manual confirmation, is the final planned
+phase and has not started. Scope agreed on 2026-09-10.
+
+Progress review on 2026-09-10:
+
+- Phases 0–6 are complete for their original agreed scope. The owner selected
+  Telegram/Zalo status and settings as a Phase 5 follow-up, with implementation
+  handed to the admin team.
+- Phase 7 release-security and clean-install checks remain open.
+- Phase 8 is complete locally. All 28 Messenger tests passed again; production
+  setup and live checks are still unconfirmed and are now lower priority.
+- Zalo and subscriber broadcasts remain complete based on the owner's
+  2026-09-07 live report. This review did not run new production checks.
+- All 5 current `/chiatien` tests passed. The command calculates and announces
+  fees but does not yet create bills or track payments.
+- Phase 9 is planned only. No payment feature was implemented in this review.
 
 ## Goal
 
@@ -568,7 +588,9 @@ Decision:
 Owner checkpoint:
 
 - [x] The owner approved reuse of the existing admin site on 2026-09-01.
-- [ ] Notify the owner before creating any new runtime-settings UI.
+- [x] Notify the owner before creating any new runtime-settings UI. On
+      2026-09-10 the owner selected Telegram/Zalo status and settings, and
+      requested a handoff for the admin team rather than implementation here.
 
 Phase 4 compatibility work:
 
@@ -591,7 +613,8 @@ Verification:
 - [x] Admin production build passes on 2026-09-01.
 - [x] Live admin storage round-trip test passed on 2026-09-01.
 
-Deferred until the owner explicitly approves new settings UI:
+Originally deferred until owner approval (2026-09-01 checkpoint; see the
+2026-09-10 follow-up below for the selected status/settings scope):
 
 - Runtime status and maintenance controls.
 - Enabled platform and allowed conversation settings.
@@ -607,6 +630,36 @@ Exit criteria:
 
 Phase 5 result: complete. The existing admin site is compatible with the Phase 4
 API, and no new runtime-settings UI was created.
+
+#### Phase 5 Follow-up: Admin Panel UI (Current Priority)
+
+The owner selected admin panel UI work ahead of Messenger production setup on
+2026-09-10. The completed Phase 5 compatibility work stays complete; this is a
+new UI improvement pass in the existing `chiateam-admin` repository.
+
+Current review:
+
+- [x] Locate the existing admin project and read its repository instructions.
+- [x] Inspect the current navigation and next-match page code. Existing pages
+      include next match, players, shirts, leaderboard, World Cup, and 2Nike.
+- [x] Choose the first UI area: Telegram and Zalo bot status and settings.
+- [x] Prepare the [admin team handoff](ADMIN_BOT_SETTINGS_HANDOFF.md), including
+      the existing API gaps, proposed controls, and acceptance checks.
+- [x] Check the existing local desktop layout. The site loads in viewer mode
+      but reports a dashboard data-loading error; the cause is unverified.
+- [ ] Review the chosen screen in the browser on desktop and mobile sizes.
+- [ ] Implement the agreed UI changes with clear viewer and admin permissions.
+- [ ] Verify the affected tasks, storage preservation, and UI states, then run
+      the relevant admin checks.
+
+The first screen is an admin-only Bots page for Telegram and Zalo. The handoff
+proposes separate command controls and last-command activity; the admin team
+must agree on the backend contract and pause behavior before implementation.
+Existing API settings are in memory and do not control both bot runtimes, so
+the handoff includes required API/runtime work. Implementation belongs to the
+admin team and the bot/API owner. Keep the existing API integration and
+next-match storage rules. Payment tracking remains Phase 9, the final planned
+step. No UI, API, or bot-runtime code was changed in this handoff task.
 
 ### Phase 6: Prove a Second Adapter
 
@@ -851,7 +904,9 @@ The first open-source multi-platform release is complete when:
 Effort: Medium
 
 The local Messenger implementation is complete. Meta app setup, configuration,
-deployment, webhook subscription, and live tests are still pending.
+deployment, webhook subscription, and live tests are deferred as lower priority
+by the owner on 2026-09-10. Resume them after the admin panel UI work when the
+owner chooses to return to Messenger.
 
 Restricted command set:
 
@@ -910,15 +965,134 @@ destination. Existing env values and football storage are unchanged.
 
 See [Zalo broadcast setup](ZALO_BROADCAST.md) for commands and failure handling.
 
+### Phase 9: Add Payment Announcements and Manual Confirmation (Final Step)
+
+Status: planned, not started. Scope agreed with the owner on 2026-09-10.
+
+This remains the final planned feature step. Messenger production setup is
+currently deferred and does not block admin panel work. Review any still-open
+migration tasks before starting payment implementation.
+
+Agreed scope:
+
+- Use bank transfers and the owner's personal MoMo receiving QR code.
+- Do not use MoMo Business, business registration, or a paid third-party
+  payment-service subscription for this version.
+- The owner checks received money manually. Automatic bank confirmation is
+  a possible later feature, outside this phase.
+- Use Telegram for `/chiatien` and admin payment management. Use Telegram and
+  opted-in Zalo chats for payment details, status, and reminders.
+
+Planned flow:
+
+1. An admin runs `/chiatien` to announce the fee split and create or reuse a
+   bill for that match. Keep the existing player fee-view permission; player
+   requests must not create bills or trigger broadcasts.
+2. Save each player's amount and a unique payment code for that player and
+   match. Include bank details, bank QR, and personal MoMo QR in the payment
+   message. Reuse the current fee rules, including water fees for the losing
+   team.
+3. A player selects “I have paid” or uses a text command. Their status changes
+   from `Unpaid` to `Waiting for confirmation`.
+4. An admin checks the bank account or MoMo wallet, then marks the payment
+   `Paid`. A player report or screenshot alone must not mark it paid.
+5. The bot shows remaining unpaid players and sends reminders when requested
+   by an admin. Stop reminding players once payment is confirmed.
+
+Implementation checklist:
+
+- [ ] Add one saved bill per match with player amounts and payment codes.
+      Repeated `/chiatien` calls must reuse the bill and preserve paid status.
+      Later team or fee changes must not silently change an existing bill.
+- [ ] Add payment details and QR delivery on Telegram and subscribed Zalo
+      chats. Provide text commands where buttons are unavailable.
+- [ ] Link Telegram and Zalo accounts to one player record before sending
+      personal bills. Do not match players by display name alone.
+- [ ] Add player payment reports and admin confirmation. Record the method,
+      amount received, confirming admin, and confirmation time. Leave partial
+      or unmatched payments for admin review.
+- [ ] Add a payment-status view, unpaid list, and admin-triggered reminders.
+      Send personal reminders through the player's chosen channel to avoid
+      duplicate messages across platforms.
+- [ ] Add shared payment rules and private API-backed payment records. Keep
+      the API as the only writer. Preserve next-match data in the `storage`
+      table and configured JSON mirror; payment records must survive `/reset`.
+- [ ] Test duplicate bill requests, repeated confirmations, player permissions,
+      partial payments, account links, and Telegram/Zalo delivery failures.
+- [ ] Complete owner live checks for a bank payment and a personal MoMo
+      payment, including manual confirmation and stopping paid reminders.
+
+Proposed command names (not implemented):
+
+- `/thanhtoan` — show the player's payment details and status.
+- `/conno` — let an admin view unpaid players.
+- `/xacnhan <payment-code>` — let an admin confirm received money.
+- `/nhacno` — let an admin send payment reminders.
+
+Exit criteria:
+
+- Both payment methods work without a MoMo Business account or third-party
+  payment-service subscription. Normal bank, wallet, hosting, and messaging
+  costs may still apply.
+- Each player has one payment record per match across Telegram and Zalo.
+- Only an admin can confirm payment after checking received money.
+- Existing football commands and stored next-match data continue to work.
+
+## Admin bot controls implementation — 2026-09-10
+
+Local implementation now covers the Phase 5 Telegram/Zalo follow-up in
+`chiateam-admin`. The historical [handoff](ADMIN_BOT_SETTINGS_HANDOFF.md) remains
+as the original request.
+
+- The admin-only `/bots` page shows API availability, command settings, last
+  command received, and the runtime delivery mode. It supports English and
+  Vietnamese, per-platform Save/Cancel, stale data, and preserved drafts.
+- The private PostgreSQL `bot_controls` table is separate from `storage` and
+  its JSON mirror. API saves update one platform atomically. `/reset` does not
+  touch controls. Admin refresh does not record activity.
+- Admin reads/saves require trusted admin access. Runtime checks require the
+  service token and reject all admin-role headers. The browser proxy blocks
+  runtime checks and returns only safe fields.
+- Telegram commands, buttons, and pending replies, plus Zalo commands and
+  pending replies, check the saved control. Native poll answers and outgoing
+  broadcasts stay separate. Zalo `/unsubscribe` remains usable.
+- Failed checks temporarily block commands. `BOT_CONTROLS_LEGACY_API=true` is
+  an explicit transition option for an older API returning 404, only before
+  that process has seen a valid controls response. Do not downgrade an API
+  with saved pauses under this option. Deploy the compatible API first.
+
+Local verification and owner release checks are recorded separately below.
+No production database, bot settings, `.env`, or deployment was changed.
+
+### Completed local checks
+
+- Admin tests: 19 passed. TypeScript check and isolated production build passed.
+  The build copy avoided changing the owner's running development server.
+- Final bot suite: 542 passed, 3 existing database integration tests skipped,
+  0 failed. Bot API/runtime tests use fake services and temporary data. They cover the
+  control contract, private access, command gates, timeout/legacy behavior,
+  and native poll separation. These do not replace a real database restart test.
+- Read-only browser checks confirmed viewer denial and hidden Bots navigation,
+  English/Vietnamese text, and the mobile dark layout. The session was a viewer;
+  signed-in save interactions and real React request timing still need checking.
+- The local admin server answered at port 8389. Its API status proxy returned
+  502; private controls returned 403 for a viewer. No live saves were attempted.
+
+### Owner release checks still required
+
+- [ ] Deploy compatible API and bot runtimes before enabling admin use.
+- [ ] Verify a saved pause survives a real PostgreSQL/API restart.
+- [ ] Verify Telegram commands, buttons, and pending replies with test accounts.
+- [ ] Verify Zalo polling/webhook commands and paused `/unsubscribe` with test accounts.
+- [ ] Verify successful saves and failure recovery in the signed-in admin UI,
+      on desktop/mobile and both themes/languages with a working test API.
+- [ ] Resolve the existing local API connection error (the admin proxy status
+      request returned 502 during this task).
+
 ## Current Next Action
 
-Continue Phase 8 with the existing Messenger MVP:
-
-1. Create and configure the Meta app, Page, permissions, and credentials.
-2. Add the owner-provided Messenger values to the deployment provider and
-   deploy the webhook.
-3. Subscribe the Page to Messenger webhooks and verify the callback.
-4. Run the live Messenger command and retry tests.
-
-Keep existing `.env` values unchanged. The Phase 7 release-security and
-clean-install checks remain open; Zalo completion does not clear those tasks.
+Complete the owner release checks above with test accounts and a test database.
+Keep existing `.env` values unchanged until the owner configures deployment.
+The Phase 7 release-security and clean-install checks remain open. Messenger
+production setup remains deferred. Phase 9 remains the final planned feature:
+payment announcements and manual confirmation.

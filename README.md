@@ -94,6 +94,27 @@ Known commands registered by the active bot runtime:
 Standalone AI, old leaderboard-update, and unsupported World Cup names are not
 part of the supported bot runtime.
 
+Send `/start` in Telegram to show the help and a reply keyboard below the
+message box. The help and keyboard appear in the chat and topic where you
+sent `/start`.
+
+| Menu button | Command |
+| ----------- | ------- |
+| ➕ Tham gia | `/addme` |
+| 📋 Bench | `/bench` |
+| ⚽ Team | `/team` |
+| 🗳️ Kết quả vote | `/demvote` |
+| 👤 Thông tin của tôi | `/me` |
+| 📅 Lịch sử trận | `/matches` |
+| 📖 Hướng dẫn | `/start` |
+
+Telegram provides the keyboard icon near the message box to hide or reopen
+this menu. Its appearance depends on the Telegram app. The menu stays
+available after a button press. Each button sends its label as a chat message
+and runs the matching command with the same permission and pause checks.
+Command results still use their configured channels and topics. Existing
+inline buttons stay unchanged. This menu is available only in Telegram.
+
 ### Supported Platforms
 
 - Telegram is the primary adapter and runs the full command catalog.

@@ -77,6 +77,12 @@ const {
   createZaloGreetingService,
 } = require('../services/zalo-greeting-service');
 const defaultZaloGreetingService = createZaloGreetingService();
+const {
+  MODES: BOT_CONTROL_MODES,
+  PLATFORMS: BOT_CONTROL_PLATFORMS,
+  createBotControlsService,
+} = require('../services/bot-controls-service');
+const defaultBotControlsService = createBotControlsService();
 
 function logRequest(req, res) {
   const startedAt = Date.now();
@@ -162,6 +168,10 @@ function isMaintenanceBypassRoute(path, method) {
   if (path === '/healthz') return true;
   if (path === '/api/status' && method === 'GET') return true;
   if (path === '/api/settings') return true;
+  if (
+    path === '/api/bot-controls' ||
+    /^\/api\/bot-controls\/[^/]+(\/check)?$/.test(path)
+  ) return true;
   return false;
 }
 
@@ -225,6 +235,15 @@ function isAdmin(req) {
 
 function isAuthenticated(req) {
   return getTrustedRole(req) !== null;
+}
+
+function isTrustedBotService(req) {
+  const expectedToken = getInternalApiAuthToken();
+  return Boolean(
+    expectedToken &&
+      req.headers['x-internal-api-auth'] === expectedToken &&
+      !Object.prototype.hasOwnProperty.call(req.headers, 'x-admin-role')
+  );
 }
 
 function requireAuthenticated(req, res, headers) {
@@ -655,6 +674,7 @@ function createUiApiServer({
   zaloAnnouncementService = defaultZaloAnnouncementService,
   zaloImageStorageService = defaultZaloImageStorageService,
   zaloGreetingService = defaultZaloGreetingService,
+  botControlsService = defaultBotControlsService,
 } = {}) {
   const startedAt = new Date().toISOString();
   const maintenanceMode = isMaintenanceModeEnabled();
@@ -704,7 +724,7 @@ function createUiApiServer({
           },
           ...(typeof getStatus === 'function' ? getStatus() : {}),
         },
-        headers
+        { ...headers, 'Cache-Control': 'no-store' }
       );
     }
 
@@ -1773,6 +1793,85 @@ function createUiApiServer({
           return sendJson(res, 400, { error: 'INVALID_JSON' }, headers);
         }
         return sendJson(res, 500, { error: 'IMAGE_STORAGE_FAILED' }, headers);
+      }
+    }
+
+    // Bot controls are intentionally available during maintenance, but every
+    // operation still requires its own trusted caller.
+    if (path === '/api/bot-controls' && req.method === 'GET') {
+      const controlHeaders = { ...headers, 'Cache-Control': 'no-store' };
+      if (!requireAdmin(req, res, controlHeaders)) return;
+      try {
+        return sendJson(
+          res,
+          200,
+          { platforms: await botControlsService.list() },
+          controlHeaders
+        );
+      } catch (error) {
+        console.error('[bot-controls] Failed to read controls');
+        return sendJson(
+          res,
+          ['DATABASE_NOT_CONFIGURED', 'DATABASE_TIMEOUT'].includes(error?.code) ? 503 : 500,
+          { error: ['DATABASE_NOT_CONFIGURED', 'DATABASE_TIMEOUT'].includes(error?.code) ? error.code : 'BOT_CONTROLS_UNAVAILABLE' },
+          controlHeaders
+        );
+      }
+    }
+
+    const botControlMatch = path.match(
+      /^\/api\/bot-controls\/([^/]+)(\/check)?$/
+    );
+    if (botControlMatch && req.method === 'POST') {
+      const controlHeaders = { ...headers, 'Cache-Control': 'no-store' };
+      const platform = botControlMatch[1];
+      const isCheck = Boolean(botControlMatch[2]);
+      if (isCheck ? !isTrustedBotService(req) : !requireAdmin(req, res, controlHeaders)) {
+        if (!isCheck) return;
+        return sendJson(res, 401, { error: 'UNAUTHORIZED' }, controlHeaders);
+      }
+
+      let payload;
+      try {
+        payload = await readJson(req, { maxBytes: 4000 });
+      } catch {
+        return sendJson(res, 400, { error: 'INVALID_JSON' }, controlHeaders);
+      }
+
+      const expectedKeys = isCheck ? ['mode'] : ['commandsEnabled'];
+      const validShape =
+        payload &&
+        typeof payload === 'object' &&
+        !Array.isArray(payload) &&
+        Object.keys(payload).length === expectedKeys.length &&
+        expectedKeys.every(key => Object.prototype.hasOwnProperty.call(payload, key));
+      if (!validShape) {
+        return sendJson(res, 400, { error: 'INVALID_REQUEST' }, controlHeaders);
+      }
+      if (!BOT_CONTROL_PLATFORMS.includes(platform)) {
+        return sendJson(res, 400, { error: 'INVALID_REQUEST' }, controlHeaders);
+      }
+      if ((!isCheck && typeof payload.commandsEnabled !== 'boolean') ||
+          (isCheck && !BOT_CONTROL_MODES.includes(payload.mode))) {
+        return sendJson(res, 400, { error: 'INVALID_REQUEST' }, controlHeaders);
+      }
+
+      try {
+        const result = isCheck
+          ? await botControlsService.check(platform, payload.mode)
+          : await botControlsService.save(platform, payload.commandsEnabled);
+        if (!result.ok) {
+          return sendJson(res, 400, { error: result.code }, controlHeaders);
+        }
+        return sendJson(res, 200, result.control, controlHeaders);
+      } catch (error) {
+        console.error('[bot-controls] Failed to persist controls');
+        return sendJson(
+          res,
+          ['DATABASE_NOT_CONFIGURED', 'DATABASE_TIMEOUT'].includes(error?.code) ? 503 : 500,
+          { error: ['DATABASE_NOT_CONFIGURED', 'DATABASE_TIMEOUT'].includes(error?.code) ? error.code : 'BOT_CONTROLS_UNAVAILABLE' },
+          controlHeaders
+        );
       }
     }
 

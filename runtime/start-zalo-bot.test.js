@@ -13,7 +13,15 @@ const {
   ZALO_COMMAND_NAMES,
   createZaloCommandDefinitions,
 } = require('./create-zalo-command-definitions');
-const { startZaloBotRuntime } = require('./start-zalo-bot');
+const { startZaloBotRuntime: startZaloBotRuntimeRuntime } = require('./start-zalo-bot');
+const { createPermissiveBotControlsGate } = require('./bot-controls');
+
+function startZaloBotRuntime(options) {
+  return startZaloBotRuntimeRuntime({
+    ...options,
+    commandGate: createPermissiveBotControlsGate(),
+  });
+}
 
 class MockZaloClient extends EventEmitter {
   constructor() {

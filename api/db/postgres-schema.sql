@@ -148,6 +148,14 @@ CREATE TABLE public.storage (
   CONSTRAINT storage_id_check CHECK (id = 1)
 );
 
+CREATE TABLE public.bot_controls (
+  platform text PRIMARY KEY CHECK (platform IN ('telegram', 'zalo')),
+  commands_enabled boolean NOT NULL DEFAULT true,
+  last_command_at timestamp with time zone,
+  mode text CHECK (mode IN ('polling', 'webhook')),
+  updated_at timestamp with time zone
+);
+
 CREATE TABLE public.current_match (
   id smallint NOT NULL,
   active_vote jsonb,
@@ -273,6 +281,7 @@ ALTER TABLE public.world_cup_prediction_matches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.world_cup_prediction_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.world_cup_predictions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.storage ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.bot_controls ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.current_match ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.webhook_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.zalo_announcement_subscriptions ENABLE ROW LEVEL SECURITY;
@@ -293,6 +302,7 @@ REVOKE ALL PRIVILEGES ON TABLE
   public.world_cup_prediction_members,
   public.world_cup_predictions,
   public.storage,
+  public.bot_controls,
   public.current_match,
   public.webhook_events,
   public.zalo_announcement_subscriptions,

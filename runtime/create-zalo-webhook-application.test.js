@@ -7,6 +7,7 @@ const {
   createZaloWebhookApplication,
   requireEnvironmentValue,
 } = require('./create-zalo-webhook-application');
+const { createPermissiveBotControlsGate } = require('./bot-controls');
 
 class MockZaloClient extends EventEmitter {
   constructor() {
@@ -41,6 +42,7 @@ test('Zalo webhook application routes without polling listeners', async () => {
   const profiles = [];
   const application = createZaloWebhookApplication({
     client,
+    commandGate: createPermissiveBotControlsGate(),
     secretToken: 'secret-123',
     greetingRepository: { claim: async () => true },
     subscriptionRepository: {

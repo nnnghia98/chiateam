@@ -4,6 +4,10 @@ const { createZaloAdapter } = require('../platforms/zalo/adapter');
 const {
   createApiStateRepository,
 } = require('./repositories/api-state-repository');
+const {
+  createBotControlsClient,
+  createBotControlsGate,
+} = require('./bot-controls');
 
 function startZaloBotRuntime({
   client,
@@ -14,10 +18,16 @@ function startZaloBotRuntime({
   subscriptionRepository,
   greetingRepository,
   listenForClientEvents = true,
+  mode = listenForClientEvents ? 'polling' : 'webhook',
+  commandGate,
+  botControlsClient,
   onError,
 } = {}) {
   if (typeof listenForClientEvents !== 'boolean') {
     throw new TypeError('Zalo runtime listener flag must be a boolean.');
+  }
+  if (!['polling', 'webhook'].includes(mode)) {
+    throw new TypeError('Zalo runtime mode must be polling or webhook.');
   }
 
   const activeRegistry = registry || createCommandRegistry();
@@ -35,6 +45,14 @@ function startZaloBotRuntime({
     onPrivateMessage: subscriptionRepository?.refreshSubscriber,
     greetingRepository,
     onError,
+    commandGate:
+      commandGate ||
+      createBotControlsGate({
+        platform: 'zalo',
+        client:
+          botControlsClient ||
+          createBotControlsClient({ platform: 'zalo', mode }),
+      }),
   });
 
   if (listenForClientEvents) {

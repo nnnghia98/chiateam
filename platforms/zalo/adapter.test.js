@@ -182,6 +182,63 @@ test('Zalo adapter registers and removes one message listener', () => {
   assert.equal(client.listenerCount('message'), 0);
 });
 
+test('Zalo unsubscribe stays available when controls API is down', async () => {
+  const client = new MockZaloClient();
+  let routed = 0;
+  const adapter = createZaloAdapter({
+    client,
+    commandGate: {
+      check: async context => context.command === 'unsubscribe'
+        ? { available: true, commandsEnabled: true }
+        : { available: false, commandsEnabled: false },
+    },
+    router: { run: async () => { routed += 1; return { handled: true, result: createTextResult('ok') }; } },
+  });
+  assert.equal(await adapter.handleUpdate(createUpdate('/unsubscribe')), true);
+  assert.equal(routed, 1);
+  assert.equal(await adapter.handleUpdate(createUpdate('/bench', { messageId: 'message-2' })), true);
+  assert.equal(routed, 1);
+  assert.match(client.sentMessages.at(-1).text, /temporarily unavailable/i);
+});
+
+test('Zalo gate blocks paused commands and pending replies before routing', async () => {
+  const client = new MockZaloClient();
+  const checked = [];
+  let routed = 0;
+  const adapter = createZaloAdapter({
+    client,
+    commandGate: {
+      check: async context => {
+        checked.push(context.command);
+        return { available: true, commandsEnabled: checked.length === 1 };
+      },
+    },
+    router: {
+      run: async () => {
+        routed += 1;
+        return {
+          handled: true,
+          result: createTextResult('Enter a value.', [], {
+            input: { command: 'bench', args: [] },
+          }),
+        };
+      },
+    },
+  });
+
+  assert.equal(
+    await adapter.handleUpdate(createUpdate('/bench', { messageId: 'zalo-1' })),
+    true
+  );
+  assert.equal(
+    await adapter.handleUpdate(createUpdate('value', { messageId: 'zalo-2' })),
+    true
+  );
+  assert.deepEqual(checked, ['bench', 'bench']);
+  assert.equal(routed, 1);
+  assert.match(client.sentMessages.at(-1).text, /paused/i);
+});
+
 test('private text refreshes names once, including plain text and unknown commands', async () => {
   const profiles = [];
   const client = new MockZaloClient();
