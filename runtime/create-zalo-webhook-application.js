@@ -37,6 +37,7 @@ function createZaloWebhookApplication({
   eventRepository,
   permissionPolicy,
   definitions,
+  commandGate,
   subscriptionRepository = createApiZaloAnnouncementRepository(),
   greetingRepository = createApiZaloGreetingRepository(),
   secretToken,
@@ -57,6 +58,8 @@ function createZaloWebhookApplication({
     definitions:
       definitions || createZaloCommandDefinitions({ subscriptionRepository }),
     listenForClientEvents: false,
+    mode: 'webhook',
+    commandGate,
     onError,
   });
   const handleWebhook = createZaloWebhookHandler({

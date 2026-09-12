@@ -49,6 +49,7 @@ async function bootstrapZaloBot({
     greetingRepository,
     permissionPolicy,
     definitions: createZaloCommandDefinitions({ subscriptionRepository }),
+    mode: 'polling',
     onError: error =>
       logEvent('zalo', 'command error', { error: error.message }, 'error'),
   });

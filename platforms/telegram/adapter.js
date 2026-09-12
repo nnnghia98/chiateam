@@ -5,6 +5,10 @@ const {
   TELEGRAM_COMMAND_ACTION_PREFIX,
   formatTelegramMessage,
 } = require('./formatter');
+const {
+  createReplyKeyboard,
+  getReplyKeyboardCommand,
+} = require('./reply-keyboard');
 
 const DEFAULT_INTERACTION_TTL_MS = 10 * 60 * 1000;
 
@@ -72,6 +76,7 @@ function createTelegramAdapter({
   now = Date.now,
   errorMessage = '❌ Có lỗi xảy ra. Vui lòng thử lại.',
   onError = error => console.error('❌ [telegram.adapter]', error),
+  commandGate,
 } = {}) {
   if (
     !bot ||
@@ -98,6 +103,9 @@ function createTelegramAdapter({
 
   if (typeof now !== 'function') {
     throw new TypeError('Telegram adapter clock must be a function.');
+  }
+  if (commandGate != null && typeof commandGate.check !== 'function') {
+    throw new TypeError('Telegram command gate must expose check.');
   }
 
   let started = false;
@@ -127,7 +135,11 @@ function createTelegramAdapter({
   }
 
   function toCommandContext(event) {
-    return createContext(event, parseCommandText(event?.text));
+    const keyboardCommand = getReplyKeyboardCommand(event?.text);
+    return createContext(
+      event,
+      parseCommandText(keyboardCommand || event?.text)
+    );
   }
 
   function getInteractionKey({ actor, conversation }) {
@@ -243,15 +255,27 @@ function createTelegramAdapter({
   }
 
   async function sendResult(context, result, version) {
+    let replyKeyboardAttached = false;
     for (const message of result.messages) {
       if (!isCurrent(context, version)) return;
       const rendered = formatter(message);
       const options = { ...rendered.options };
+      const isStartCommand = context.command.toLowerCase() === 'start';
+      if (
+        isStartCommand &&
+        !replyKeyboardAttached &&
+        !message.input &&
+        !Object.prototype.hasOwnProperty.call(options, 'reply_markup')
+      ) {
+        options.reply_markup = createReplyKeyboard();
+        replyKeyboardAttached = true;
+      }
       const hasConfiguredChannel = Object.prototype.hasOwnProperty.call(
         channelConfig.threads || {},
         message.channel
       );
-      const useSource = message.channel === 'source' || !hasConfiguredChannel;
+      const useSource =
+        isStartCommand || message.channel === 'source' || !hasConfiguredChannel;
       const chatId = useSource
         ? context.conversation.externalId
         : channelConfig.chatId || context.conversation.externalId;
@@ -302,6 +326,15 @@ function createTelegramAdapter({
       return false;
     }
 
+    if (commandGate) {
+      const control = await commandGate.check(context);
+      if (!control?.available || !control.commandsEnabled) {
+        if (explicitContext) clearInput(context);
+        await reportControl(context, control);
+        return true;
+      }
+    }
+
     if (explicitContext) {
       clearInput(context);
     }
@@ -348,6 +381,14 @@ function createTelegramAdapter({
       return false;
     }
 
+    if (commandGate) {
+      const control = await commandGate.check(context);
+      if (!control?.available || !control.commandsEnabled) {
+        await reportControl(context, control);
+        return true;
+      }
+    }
+
     clearInput(context);
     const version = composeVersion(context);
     // Stop the button spinner before a command starts a long-running broadcast.
@@ -388,6 +429,21 @@ function createTelegramAdapter({
       });
     } catch (sendError) {
       onError(sendError);
+    }
+  }
+
+  async function reportControl(context, control) {
+    const text = control?.available === false
+      ? '⚠️ Bot commands are temporarily unavailable. Please try again later.'
+      : '⏸️ Bot commands are currently paused.';
+    try {
+      await bot.sendMessage(context.conversation.externalId, text, {
+        ...(context.conversation.threadId != null
+          ? { message_thread_id: context.conversation.threadId }
+          : {}),
+      });
+    } catch (error) {
+      onError(error);
     }
   }
 

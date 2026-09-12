@@ -89,7 +89,15 @@ const {
   createTelegramPermissionPolicy,
 } = require('../platforms/telegram/permission-policy');
 const { createCommandDefinitions } = require('./create-command-definitions');
-const { startBotRuntime } = require('./start-bot');
+const { startBotRuntime: startBotRuntimeRuntime } = require('./start-bot');
+const { createPermissiveBotControlsGate } = require('./bot-controls');
+
+function startBotRuntime(options) {
+  return startBotRuntimeRuntime({
+    ...options,
+    commandGate: createPermissiveBotControlsGate(),
+  });
+}
 
 class MockTelegramBot extends EventEmitter {
   constructor() {

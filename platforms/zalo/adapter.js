@@ -47,6 +47,7 @@ function createZaloAdapter({
   greetingRepository,
   errorMessage = '❌ Có lỗi xảy ra. Vui lòng thử lại.',
   onError = error => console.error('❌ [zalo.adapter]', error),
+  commandGate,
 } = {}) {
   if (
     !client ||
@@ -71,6 +72,9 @@ function createZaloAdapter({
 
   if (typeof now !== 'function' || typeof onError !== 'function') {
     throw new TypeError('Zalo adapter callbacks must be functions.');
+  }
+  if (commandGate != null && typeof commandGate.check !== 'function') {
+    throw new TypeError('Zalo command gate must expose check.');
   }
   if (onPrivateMessage != null && typeof onPrivateMessage !== 'function') {
     throw new TypeError('Zalo private message callback must be a function.');
@@ -251,6 +255,15 @@ function createZaloAdapter({
       return greeted;
     }
 
+    if (commandGate) {
+      const control = await commandGate.check(context);
+      if (!control?.available || !control.commandsEnabled) {
+        if (explicitContext) clearInput(context);
+        await reportControl(context, control);
+        return true;
+      }
+    }
+
     if (explicitContext) {
       clearInput(context);
     }
@@ -324,6 +337,17 @@ function createZaloAdapter({
       await client.sendMessage(context.conversation.externalId, errorMessage);
     } catch (sendError) {
       onError(sendError);
+    }
+  }
+
+  async function reportControl(context, control) {
+    const text = control?.available === false
+      ? '⚠️ Bot commands are temporarily unavailable. Please try again later.'
+      : '⏸️ Bot commands are currently paused.';
+    try {
+      await client.sendMessage(context.conversation.externalId, text);
+    } catch (error) {
+      onError(error);
     }
   }
 

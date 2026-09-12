@@ -259,6 +259,35 @@ test('Telegram acknowledges a button before running a slow command', async () =>
   assert.equal(bot.sentMessages[0].text, 'Finished');
 });
 
+test('Telegram gate blocks slash commands, buttons, and pending replies', async () => {
+  const bot = new MockTelegramBot();
+  const calls = [];
+  const adapter = createTelegramAdapter({
+    bot,
+    commandGate: { check: async context => { calls.push(context.command); return { available: true, commandsEnabled: calls.length === 1 }; } },
+    router: { run: async () => ({ handled: true, result: createTextResult('Enter', [], { input: { command: 'bench', args: [] } }) }) },
+  });
+  assert.equal(await adapter.handleEvent(createEvent('/bench')), true);
+  assert.equal(await adapter.handleAction({ id: 'paused', data: 'core:cmd:/bench', from: createEvent().from, message: createEvent() }), true);
+  assert.equal(await adapter.handleEvent(createEvent('pending text')), true);
+  assert.deepEqual(calls, ['bench', 'bench', 'bench']);
+  assert.equal(bot.sentMessages.length, 3);
+  assert.match(bot.sentMessages[1].text, /paused/i);
+  assert.match(bot.sentMessages[2].text, /paused/i);
+});
+
+test('Telegram poll answer events bypass command gate', async () => {
+  const bot = new MockTelegramBot();
+  let checks = 0;
+  const adapter = createTelegramAdapter({
+    bot,
+    commandGate: { check: async () => { checks += 1; return { available: false, commandsEnabled: false }; } },
+    router: { run: async () => ({ handled: false }) },
+  });
+  assert.equal(await adapter.handleEvent({ poll_answer: { user: { id: 1 } } }), false);
+  assert.equal(checks, 0);
+});
+
 test('Telegram adapter renders generic rich text and escapes platform markup', async () => {
   const bot = new MockTelegramBot();
   const adapter = createTelegramAdapter({

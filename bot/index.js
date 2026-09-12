@@ -5,6 +5,9 @@ const { callbackQueryCommand, taoVoteCommand } = require('./commands');
 const maintenanceMessage = require('./commands/maintainance');
 const bot = require('./telegram-client');
 const { logCommandUsage } = require('./utils/command-logger');
+const {
+  getReplyKeyboardCommand,
+} = require('../platforms/telegram/reply-keyboard');
 const { logEvent } = require('./utils/logger');
 const { initializeStorage } = require('./utils/storage');
 const { startBotRuntime } = require('../runtime/start-bot');
@@ -87,7 +90,10 @@ const maintenanceUntil = getMaintenanceUntil();
 
 if (isMaintenanceMode) {
   bot.on('message', msg => {
-    if (msg.text && msg.text.startsWith('/')) {
+    if (
+      msg.text &&
+      (msg.text.startsWith('/') || getReplyKeyboardCommand(msg.text))
+    ) {
       const { sendMessage } = require('./utils/chat');
       sendMessage({
         msg,
@@ -109,10 +115,11 @@ if (isMaintenanceMode) {
   return;
 }
 
-// Global command usage logging (for all `/...` commands)
+// Log slash commands and their reply keyboard shortcuts.
 if (bot) {
   bot.on('message', msg => {
-    logCommandUsage(msg);
+    const keyboardCommand = getReplyKeyboardCommand(msg.text);
+    logCommandUsage(keyboardCommand ? { ...msg, text: keyboardCommand } : msg);
   });
 }
 

@@ -4,6 +4,10 @@ const { createTelegramAdapter } = require('../platforms/telegram/adapter');
 const {
   createApiStateRepository,
 } = require('./repositories/api-state-repository');
+const {
+  createBotControlsClient,
+  createBotControlsGate,
+} = require('./bot-controls');
 
 function startBotRuntime({
   bot,
@@ -13,6 +17,8 @@ function startBotRuntime({
   permissionPolicy,
   telegramChannelConfig,
   registerTelegramActionHandler,
+  commandGate,
+  botControlsClient,
   onError,
 } = {}) {
   const activeRegistry = registry || createCommandRegistry();
@@ -30,6 +36,14 @@ function startBotRuntime({
     channelConfig: telegramChannelConfig,
     registerActionHandler: registerTelegramActionHandler,
     onError,
+    commandGate:
+      commandGate ||
+      createBotControlsGate({
+        platform: 'telegram',
+        client:
+          botControlsClient ||
+          createBotControlsClient({ platform: 'telegram', mode: 'polling' }),
+      }),
   });
 
   adapter.start();
