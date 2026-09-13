@@ -1,6 +1,6 @@
 # Command Catalog
 
-Status: Approved for implementation
+Status: Historical snapshot (superseded 2026-09-13)
 Audit date: 2026-08-03
 Approval date: 2026-08-03
 
@@ -9,6 +9,11 @@ Approval date: 2026-08-03
 This catalog is the Phase 1 decision record for the multi-platform bot refactor.
 It covers every slash command found in the active runtime, command files, help
 text, README, and command registry.
+
+The inventory below is kept for history. The football leaderboard commands,
+aggregate statistics repository, API endpoints, and database table described in
+some rows were removed on 2026-09-13. See [the current command audit](COMMAND_ACTION_AUDIT.md)
+for the active list. The separate World Cup prediction leaderboard remains.
 
 Sources checked:
 

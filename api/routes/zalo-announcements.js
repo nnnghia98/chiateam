@@ -113,6 +113,22 @@ function createZaloAnnouncementRepository({ database = db } = {}) {
       return { ...result.rows[0], page, pageSize };
     },
 
+    async listSubscribers({ page = 1, pageSize = 50, includeUnsubscribed = true } = {}) {
+      const result = await query(
+        `SELECT chat_id AS "chatId", user_id AS "userId", display_name AS "displayName",
+                subscribed, updated_at AS "updatedAt"
+           FROM zalo_announcement_subscriptions
+          ${includeUnsubscribed ? '' : 'WHERE subscribed = TRUE'}
+          ORDER BY display_name NULLS LAST, user_id
+          LIMIT $1 OFFSET $2`,
+        [pageSize, (page - 1) * pageSize]
+      );
+      const count = await query(
+        `SELECT COUNT(*)::INTEGER AS total FROM zalo_announcement_subscriptions ${includeUnsubscribed ? '' : 'WHERE subscribed = TRUE'}`
+      );
+      return { total: count.rows[0].total, subscribers: result.rows, page, pageSize };
+    },
+
     async prepare(p) {
       const hasPhoto = p.photoUrl != null;
       const result = await query(
@@ -146,6 +162,19 @@ function createZaloAnnouncementRepository({ database = db } = {}) {
         WHERE ${ownsDraft} AND status = 'draft' AND expires_at > NOW()
         RETURNING id, message, photo_url AS "photoUrl"
       `,
+        identity(p)
+      );
+      const row = result.rows[0];
+      if (!row) return null;
+      if (row.photoUrl == null) delete row.photoUrl;
+      return row;
+    },
+
+    async content(p) {
+      const result = await query(
+        `SELECT id, message, photo_url AS "photoUrl", status
+           FROM zalo_announcements
+          WHERE ${ownsDraft}`,
         identity(p)
       );
       const row = result.rows[0];

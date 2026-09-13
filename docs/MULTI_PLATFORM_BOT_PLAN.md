@@ -1,5 +1,9 @@
 # Multi-Platform Bot Refactor Plan
 
+This plan contains historical design notes. The football leaderboard feature
+described in older sections was removed from the runtime and database on
+2026-09-13. The World Cup prediction leaderboard is a separate feature.
+
 Status: In progress — admin panel UI work is the current priority, selected by
 the owner on 2026-09-10. The Telegram/Zalo status and settings handoff is ready
 for the admin team; implementation has not started. Zalo and subscriber

@@ -11,9 +11,6 @@ const { createPermissionPolicy } = require('../../ports/permission-policy');
 const { createPlayerRepository } = require('../../ports/player-repository');
 const { createStateRepository } = require('../../ports/state-repository');
 const {
-  createStatisticsRepository,
-} = require('../../ports/statistics-repository');
-const {
   MATCH_MESSAGES,
   MATCH_SAVE_STATE_KEYS,
   createMatchCommand,
@@ -88,25 +85,9 @@ function createPlayers(overrides = {}) {
   });
 }
 
-function createStatistics(overrides = {}) {
-  return createStatisticsRepository({
-    async findByNumber() {},
-    async findMany() {},
-    async replaceTotals() {},
-    async incrementGoals() {
-      return { ok: true };
-    },
-    async incrementAssists() {
-      return { ok: true };
-    },
-    ...overrides,
-  });
-}
-
 function createMatchRouter({
   matches = createMatches(),
   players = createPlayers(),
-  statistics = createStatistics(),
   generateSummary = async () => null,
   state = {},
   isAdmin = true,
@@ -119,7 +100,6 @@ function createMatchRouter({
       createMatchCommand({
         matchRepository: matches,
         playerRepository: players,
-        statisticsRepository: statistics,
         summaryGenerator: createMatchSummaryGenerator({
           generate: generateSummary,
         }),
@@ -352,7 +332,7 @@ test('independent /match sync links later players and reapplies saved result', a
   assert.equal(routed.result.messages[0].channel, 'statistics');
   assert.match(routed.result.messages[0].text, /Đã đồng bộ 1 cầu thủ/);
   assert.match(routed.result.messages[0].text, /user_id.*chưa đăng ký: 1/);
-  assert.match(routed.result.messages[0].text, /thắng\/thua/);
+  assert.match(routed.result.messages[0].text, /kết quả trận đấu/);
 });
 
 test('independent /match sync reports unchanged and unresolved players', async () => {
@@ -425,7 +405,7 @@ test('independent /match updates score and generates a summary', async () => {
   assert.match(routed.result.messages[0].text, /Một trận đấu vui/);
 });
 
-test('independent /match applies winner or loser to registered player totals once', async () => {
+test('independent /match records winner or loser results once per match', async () => {
   const calls = [];
   let unchanged = false;
   const detail = createDetailedMatch({
@@ -458,7 +438,7 @@ test('independent /match applies winner or loser to registered player totals onc
   assert.equal(updated.result.messages[0].channel, 'statistics');
   assert.match(updated.result.messages[0].text, /HOME thắng, AWAY thua/);
   assert.match(updated.result.messages[0].text, /1 cầu thủ thắng/);
-  assert.match(repeated.result.messages[0].text, /Không cộng lại/);
+  assert.match(repeated.result.messages[0].text, /Không có thay đổi/);
 });
 
 test('independent /match rejects a result that conflicts with the saved score', async () => {
@@ -519,7 +499,6 @@ test('independent /match rejects a result that conflicts with the saved score', 
 
 test('independent /match updates goal, assist, and MVP with membership checks', async () => {
   const matchCalls = [];
-  const statsCalls = [];
   const matches = createMatches({
     async findByDate() {
       return { id: 50 };
@@ -535,19 +514,8 @@ test('independent /match updates goal, assist, and MVP with membership checks', 
       matchCalls.push(['mvp', ...args]);
     },
   });
-  const statistics = createStatistics({
-    async incrementGoals(...args) {
-      statsCalls.push(['goals', ...args]);
-      return { ok: true };
-    },
-    async incrementAssists(...args) {
-      statsCalls.push(['assists', ...args]);
-      return { ok: true };
-    },
-  });
   const { router } = createMatchRouter({
     matches,
-    statistics,
     players: createPlayers({
       async findByNumber(number) {
         return { id: 100, number };
@@ -564,16 +532,12 @@ test('independent /match updates goal, assist, and MVP with membership checks', 
     [50, 100, 'assists', 1],
     ['mvp', 50, 100],
   ]);
-  assert.deepEqual(statsCalls, [
-    ['goals', 10, 2],
-    ['assists', 10, 1],
-  ]);
   assert.equal(goal.result.messages[0].text, MATCH_MESSAGES.goalUpdated);
   assert.equal(assist.result.messages[0].text, MATCH_MESSAGES.assistUpdated);
   assert.equal(mvp.result.messages[0].text, MATCH_MESSAGES.mvpUpdated);
 });
 
-test('independent /match reports missing conditions and partial stat updates', async () => {
+test('independent /match reports missing conditions for match stat updates', async () => {
   const missingMatch = createMatchRouter();
   const missingPlayer = createMatchRouter({
     matches: createMatches({
@@ -597,26 +561,6 @@ test('independent /match reports missing conditions and partial stat updates', a
       },
     }),
   });
-  const partial = createMatchRouter({
-    matches: createMatches({
-      async findByDate() {
-        return { id: 1 };
-      },
-      async containsPlayer() {
-        return true;
-      },
-    }),
-    players: createPlayers({
-      async findByNumber(number) {
-        return { id: 2, number };
-      },
-    }),
-    statistics: createStatistics({
-      async incrementGoals() {
-        return { ok: false };
-      },
-    }),
-  });
 
   const missingMatchResult = await missingMatch.router.run(
     createContext(['view'])
@@ -625,9 +569,6 @@ test('independent /match reports missing conditions and partial stat updates', a
     createContext(['goal', '10', '1'])
   );
   const outsideResult = await outside.router.run(
-    createContext(['goal', '10', '1'])
-  );
-  const partialResult = await partial.router.run(
     createContext(['goal', '10', '1'])
   );
 
@@ -640,10 +581,6 @@ test('independent /match reports missing conditions and partial stat updates', a
     MATCH_MESSAGES.invalidPlayer
   );
   assert.match(outsideResult.result.messages[0].text, /số 10/);
-  assert.equal(
-    partialResult.result.messages[0].text,
-    MATCH_MESSAGES.statPartial
-  );
 });
 
 test('independent /match deletes by explicit date and handles invalid requests', async () => {

@@ -1,4 +1,11 @@
 require('../config/load-env').loadEnv();
+const { shouldDelegate, startManagedSupervisor, sendReady } = require('../runtime/managed-bootstrap');
+const { safeError } = require('../runtime/managed-process');
+
+if (shouldDelegate()) {
+  startManagedSupervisor({ service: 'telegram', entrypoint: __filename });
+  return;
+}
 
 const { callbackQueryCommand, taoVoteCommand } = require('./commands');
 
@@ -29,9 +36,6 @@ const {
 const {
   createApiPlayerRepository,
 } = require('../runtime/repositories/api-player-repository');
-const {
-  createApiStatisticsRepository,
-} = require('../runtime/repositories/api-statistics-repository');
 const {
   createApiMatchRepository,
 } = require('../runtime/repositories/api-match-repository');
@@ -112,6 +116,7 @@ if (isMaintenanceMode) {
     { until: maintenanceUntil },
     'warn'
   );
+  bot.getMe().then(() => sendReady('telegram')).catch(() => process.exit(1));
   return;
 }
 
@@ -147,7 +152,6 @@ async function bootstrapBot() {
     }),
   });
   const playerRepository = createApiPlayerRepository();
-  const statisticsRepository = createApiStatisticsRepository();
   const matchRepository = createApiMatchRepository();
   const matchSummaryGenerator = createApiMatchSummaryGenerator();
 
@@ -164,7 +168,6 @@ async function bootstrapBot() {
       votePublisher: attendanceVotePublisher,
       voteController: attendanceVoteController,
       playerRepository,
-      statisticsRepository,
       matchRepository,
       matchSummaryGenerator,
     }),
@@ -187,13 +190,15 @@ async function bootstrapBot() {
     registerSyncCommand: false,
   });
   logEvent('bot', 'running', {}, 'success');
+  await bot.getMe();
+  sendReady('telegram');
 }
 
 bootstrapBot().catch(error => {
   logEvent(
     'bot',
     'failed to initialize storage',
-    { error: error.message },
+    { error: safeError(error).message },
     'error'
   );
   process.exit(1);

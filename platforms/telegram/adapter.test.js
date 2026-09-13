@@ -17,6 +17,7 @@ class MockTelegramBot extends EventEmitter {
     super();
     this.sentMessages = [];
     this.answeredCallbacks = [];
+    this.sentPhotos = [];
   }
 
   async sendMessage(chatId, text, options) {
@@ -26,6 +27,11 @@ class MockTelegramBot extends EventEmitter {
 
   async answerCallbackQuery(id, options) {
     this.answeredCallbacks.push({ id, options });
+    return { ok: true };
+  }
+
+  async sendPhoto(chatId, photo, options) {
+    this.sentPhotos.push({ chatId, photo, options });
     return { ok: true };
   }
 }
@@ -67,13 +73,13 @@ test('Telegram adapter creates a platform-neutral command context', () => {
   });
 
   const context = adapter.toCommandContext(
-    createEvent('/edit-stats@ChiaTeamBot 10 4 3 1 0')
+    createEvent('/me@ChiaTeamBot')
   );
 
   assert.deepEqual(context, {
-    command: 'edit-stats',
-    args: ['10', '4', '3', '1', '0'],
-    rawArgs: '10 4 3 1 0',
+    command: 'me',
+    args: [],
+    rawArgs: '',
     actor: {
       platform: 'telegram',
       externalId: '123',
@@ -86,6 +92,83 @@ test('Telegram adapter creates a platform-neutral command context', () => {
     },
   });
   assert.equal('rawEvent' in context, false);
+});
+
+test('Telegram adapter preserves Telegram chat type in the context', () => {
+  const bot = new MockTelegramBot();
+  const adapter = createTelegramAdapter({
+    bot,
+    router: { run: async () => ({ handled: false }) },
+  });
+
+  const context = adapter.toCommandContext({
+    ...createEvent('/bench'),
+    chat: { id: 123, type: 'private' },
+  });
+
+  assert.equal(context.conversation.type, 'private');
+});
+
+test('Telegram adapter keeps private results and photos in the source thread', async () => {
+  const bot = new MockTelegramBot();
+  const adapter = createTelegramAdapter({
+    bot,
+    channelConfig: {
+      chatId: '-100999',
+      threads: { statistics: '88' },
+    },
+    router: {
+      run: async () => ({
+        handled: true,
+        result: {
+          messages: [
+            {
+              text: 'Private stats.',
+              actions: [],
+              segments: [],
+              channel: 'statistics',
+              input: null,
+              photoUrl: 'https://example.test/chart.png',
+            },
+          ],
+        },
+      }),
+    },
+  });
+
+  await adapter.handleEvent({
+    ...createEvent('/statistics'),
+    chat: { id: 123, type: 'private' },
+    message_thread_id: 17,
+  });
+
+  assert.deepEqual(bot.sentPhotos, [
+    { chatId: '123', photo: 'https://example.test/chart.png', options: { message_thread_id: '17' } },
+  ]);
+  assert.deepEqual(bot.sentMessages[0], {
+    chatId: '123',
+    text: 'Private stats.',
+    options: { message_thread_id: '17' },
+  });
+});
+
+test('Telegram adapter uses source routing when no team chat is configured', async () => {
+  const bot = new MockTelegramBot();
+  const adapter = createTelegramAdapter({
+    bot,
+    channelConfig: { chatId: null, threads: { statistics: '88' } },
+    router: {
+      run: async () => ({
+        handled: true,
+        result: createTextResult('Source stats.', [], { channel: 'statistics' }),
+      }),
+    },
+  });
+
+  await adapter.handleEvent(createEvent('/statistics'));
+
+  assert.equal(bot.sentMessages[0].chatId, '-456');
+  assert.equal(bot.sentMessages[0].options.message_thread_id, '10');
 });
 
 test('Telegram adapter ignores commands not owned by the new runtime', async () => {

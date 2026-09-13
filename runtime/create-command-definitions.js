@@ -2,6 +2,9 @@ const {
   createStartCommand,
 } = require('../core/use-cases/common/start-command');
 const {
+  createManagedCommandRules,
+} = require('../core/commands/managed-command-rules');
+const {
   createAnnouncementCommand,
 } = require('../core/use-cases/common/announcement-command');
 const {
@@ -82,15 +85,6 @@ const {
 } = require('../core/use-cases/players/register-command');
 const { createMeCommand } = require('../core/use-cases/players/me-command');
 const {
-  createPlayersCommand,
-} = require('../core/use-cases/players/players-command');
-const {
-  createPlayerCommand,
-} = require('../core/use-cases/players/player-command');
-const {
-  createEditStatsCommand,
-} = require('../core/use-cases/players/edit-stats-command');
-const {
   createMatchCommand,
 } = require('../core/use-cases/matches/match-command');
 const {
@@ -98,13 +92,13 @@ const {
 } = require('../core/use-cases/matches/matches-command');
 
 function createCommandDefinitions({
+  env = process.env,
   announcementPublisher,
   broadcastService,
   benchIdentityPolicy,
   votePublisher,
   voteController,
   playerRepository,
-  statisticsRepository,
   matchRepository,
   matchSummaryGenerator,
 } = {}) {
@@ -115,7 +109,7 @@ function createCommandDefinitions({
       });
 
   return Object.freeze([
-    createStartCommand(),
+    createStartCommand({ commandRules: createManagedCommandRules(env) }),
     announcementCommand,
     createAddmeCommand({ identityPolicy: benchIdentityPolicy }),
     createAddCommand(),
@@ -142,14 +136,10 @@ function createCommandDefinitions({
     createSyncCommand(),
     createClearvoteCommand({ voteController }),
     createRegisterCommand({ playerRepository }),
-    createMeCommand({ playerRepository, statisticsRepository }),
-    createPlayersCommand({ playerRepository, statisticsRepository }),
-    createPlayerCommand({ playerRepository, statisticsRepository }),
-    createEditStatsCommand({ statisticsRepository }),
+    createMeCommand({ playerRepository }),
     createMatchCommand({
       matchRepository,
       playerRepository,
-      statisticsRepository,
       summaryGenerator: matchSummaryGenerator,
     }),
     createMatchesCommand({ matchRepository }),

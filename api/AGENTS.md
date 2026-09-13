@@ -1,6 +1,8 @@
 # API Agent Guide
 
-This folder is the HTTP API server that backs the admin UI and serves as the data layer for the ChiaTeam bot.
+This folder is the HTTP API server that backs the admin panel web app and serves as the data layer for the ChiaTeam bot.
+
+Use **admin panel** for the bot settings and control features, as defined in the root [Agent Guide](../AGENTS.md). The separate service in `management/` is the **admin panel backend** (the server that handles admin panel requests).
 
 The entrypoint is [index.js](./index.js). It initialises crash logging, then calls `createUiApiServer` from [routes/server.js](./routes/server.js) and starts listening.
 
@@ -40,16 +42,12 @@ Default port resolution order: `API_PORT` → `UI_API_PORT` → `PORT` → `8787
 - [routes/matches.js](./routes/matches.js)
   Repository for `matches`, `match_players`, and `match_player_stats`. Handles match creation, lineup management, score updates, goal/assist deltas, and MVP assignment.
 
-- [routes/leaderboard.js](./routes/leaderboard.js)
-  Repository for the `leaderboard` table. Handles ordered fetches, batch match-result application (with a dedicated pg client for transactions), upserts, and individual goal/assist increments.
 
 ### Services (domain logic layer)
 
 - [services/player-service.js](./services/player-service.js)
   Domain logic for player registration: validates input, prevents duplicates, handles admin-created placeholder slots (negative `user_id`), and returns typed result objects (`{ ok, code, data }`).
 
-- [services/leaderboard-service.js](./services/leaderboard-service.js)
-  Domain logic for leaderboard operations: validates result strings (`WIN`/`LOSE`/`DRAW`), normalises player number arrays, and delegates to the repository.
 
 - [services/ai-service.js](./services/ai-service.js)
   Gemini AI integration. Provides two functions:
@@ -64,7 +62,6 @@ Default port resolution order: `API_PORT` → `UI_API_PORT` → `PORT` → `8787
 | Table                | Key columns                                                                                                                |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | `players`            | `id`, `user_id` (Telegram ID, negative = placeholder), `number` (shirt), `name`, `username`, `avatar`                      |
-| `leaderboard`        | `player_number` (FK → players.number), `total_match`, `total_win`, `total_lose`, `total_draw`, `winrate`, `goal`, `assist` |
 | `matches`            | `id`, `match_date` (unique, YYYY-MM-DD), `san`, `tiensan`, `home_score`, `away_score`, `winner_side`, `notes`              |
 | `match_players`      | `match_id`, `player_id` (nullable for guests), `side` (`HOME`/`AWAY`/`EXTRA`), `display_name`                              |
 | `match_player_stats` | `match_id`, `player_id`, `goals`, `assists`, `is_mvp`, `result`                                                            |
@@ -81,7 +78,6 @@ Default port resolution order: `API_PORT` → `UI_API_PORT` → `PORT` → `8787
 | `GET`  | `/api/status`           | Server status and public settings snapshot                   |
 | `GET`  | `/api/players`          | List all players ordered by name                             |
 | `GET`  | `/api/players/:number`  | Get single player by shirt number                            |
-| `GET`  | `/api/player-summaries` | Players joined with their leaderboard stats                  |
 | `GET`  | `/api/matches`          | List matches (`?limit=20&offset=0`) with full player rosters |
 | `GET`  | `/api/matches/:date`    | Single match with players (date = `YYYY-MM-DD`)              |
 
@@ -103,11 +99,10 @@ Header: `x-admin-role: admin` in addition to auth header above.
 | `POST`   | `/api/players`                   | Create admin-managed player (no Telegram ID)                                   |
 | `PUT`    | `/api/players/:number`           | Update player `name`, `username`, or `avatar` by shirt number                  |
 | `POST`   | `/api/players/:number/avatar`    | Upload a player avatar image to Supabase Storage and update `players.avatar`   |
-| `DELETE` | `/api/players/:number`           | Delete player and their leaderboard row                                        |
+| `DELETE` | `/api/players/:number`           | Delete a player by shirt number                                                 |
 | `POST`   | `/api/matches`                   | Create a new match                                                             |
 | `PUT`    | `/api/matches/:date`             | Update match fields (`san`, `tiensan`, scores, `notes`)                        |
 | `DELETE` | `/api/matches/:date`             | Delete match (cascades to players and stats)                                   |
-| `PUT`    | `/api/leaderboard/:playerNumber` | Overwrite leaderboard entry for a player                                       |
 
 ---
 
@@ -140,7 +135,7 @@ Known error codes: `INVALID_NAME`, `INVALID_NUMBER`, `ALREADY_REGISTERED`, `NUMB
 
 ## How To Work In This Folder
 
-- All SQL goes in the route files (`routes/players.js`, `routes/matches.js`, `routes/leaderboard.js`). Do not write raw queries in server.js or service files.
+- All SQL goes in the route files (`routes/players.js`, `routes/matches.js`). Do not write raw queries in server.js or service files.
 - Domain validation and business rules belong in `services/`. Route files are pure data-access.
 - `routes/server.js` is the only file that maps HTTP paths to handlers. Add new endpoints there.
 - Use the `db` pool from `db/config.js` for all queries. Use a dedicated client (`db.connect()`) only when you need a transaction.

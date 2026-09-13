@@ -74,6 +74,27 @@ test('Telegram vote publisher uses the source thread without channel config', as
   assert.equal(reference.chatId, '-456');
 });
 
+test('Telegram vote publisher ignores a configured announcement thread without a team chat', async () => {
+  const calls = [];
+  const publisher = createTelegramAttendanceVotePublisher({
+    bot: {
+      async sendPoll(chatId, question, options, sendOptions) {
+        calls.push({ chatId, question, options, sendOptions });
+        return { poll: { id: 'poll-source-configured-thread' }, message_id: 80 };
+      },
+    },
+    channelConfig: {
+      chatId: null,
+      threads: { announcement: '88' },
+    },
+  });
+
+  await publisher.publish(VOTE, CONTEXT);
+
+  assert.equal(calls[0].chatId, '-456');
+  assert.equal(calls[0].sendOptions.message_thread_id, '10');
+});
+
 test('Telegram vote publisher retries without a closed topic', async () => {
   const calls = [];
   const publisher = createTelegramAttendanceVotePublisher({

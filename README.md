@@ -3,9 +3,9 @@
 Telegram bot and companion HTTP API for running ChiaTeam football sessions.
 
 The bot handles weekly player signups, bench management, team shuffling, venue
-and fee tracking, voting, player registration, match history, and leaderboard
-updates. The API backs the separate admin UI and also acts as the bot's data
-layer for players, matches, leaderboard stats, avatars, and persistent bot
+and fee tracking, voting, player registration, and match history. The API backs
+the separate admin UI and also acts as the bot's data
+layer for players, matches, avatars, and persistent bot
 state.
 
 The admin UI lives in a separate repository:
@@ -87,32 +87,44 @@ Known commands registered by the active bot runtime:
 | Team constraints  | `/manifest`, `/mf`, `/manifests`, `/removemanifest`, `/clearmanifests`         |
 | Venue and fees    | `/san`, `/clearsan`, `/tiensan`, `/tiennuoc`, `/winner`, `/loser`, `/chiatien` |
 | Attendance vote   | `/taovote`, `/clearvote`, `/demvote`, `/sync`                                  |
-| Players and stats | `/register`, `/players`, `/me`, `/player`, `/edit-stats`                       |
+| Players           | `/register`, `/me`                                                           |
 | Matches           | `/match`, `/matches`                                                           |
 | Admin reset       | `/reset`                                                                       |
 
-Standalone AI, old leaderboard-update, and unsupported World Cup names are not
+Standalone AI and unsupported World Cup names are not
 part of the supported bot runtime.
 
 Send `/start` in Telegram to show the help and a reply keyboard below the
 message box. The help and keyboard appear in the chat and topic where you
 sent `/start`.
 
+The help lists each command once. Common commands appear first on Telegram.
+Both platforms hide paused commands and mark admin-only commands with
+`(admin)`. Zalo keeps its smaller list and its personal greeting. Sending
+`/start` does not change match data or subscribe anyone to announcements.
+
 | Menu button | Command |
 | ----------- | ------- |
-| ➕ Tham gia | `/addme` |
+| ➕ Vote +1 | `/addme` |
 | 📋 Bench | `/bench` |
+| 👤 Thêm cầu ngoài | `/add` |
+| ✏️ Sửa bench | `/editbench` |
+| 🗑️ Xoá khỏi bench | `/clearbench` |
+| 🎲 Chia team | `/chiateam` |
 | ⚽ Team | `/team` |
-| 🗳️ Kết quả vote | `/demvote` |
-| 👤 Thông tin của tôi | `/me` |
-| 📅 Lịch sử trận | `/matches` |
+| 👥➕ Thêm vào team | `/addtoteam` |
+| 🗑️ Xoá khỏi team | `/clearteam` |
+| 🗳️ Tạo vote | `/taovote` |
+| 📊 Kết quả vote | `/demvote` |
+| 🔄 Đồng bộ bench | `/sync` |
 | 📖 Hướng dẫn | `/start` |
 
 Telegram provides the keyboard icon near the message box to hide or reopen
 this menu. Its appearance depends on the Telegram app. The menu stays
 available after a button press. Each button sends its label as a chat message
 and runs the matching command with the same permission and pause checks.
-Command results still use their configured channels and topics. Existing
+Private command replies stay in the user's chat. Group command results use
+their configured channels and topics. Existing
 inline buttons stay unchanged. This menu is available only in Telegram.
 
 ### Supported Platforms
@@ -127,6 +139,32 @@ inline buttons stay unchanged. This menu is available only in Telegram.
   and team mutation commands are not available. Delivery is webhook-only.
 - One installation manages one football community.
 
+### Private chats and reply templates
+
+Users can open the bot and send `/start` in a private chat. Telegram command
+replies stay in that chat even when `CHAT_ID` and group topic IDs are configured.
+Group commands keep their configured topic routing. Without `CHAT_ID`, replies
+use the incoming chat and topic; group topic settings are ignored.
+
+For use only in private chats, leave `CHAT_ID`, `DEFAULT_THREAD_ID`,
+`MAIN_THREAD_ID`, `ANNOUNCEMENT_THREAD_ID`, `VIP_THREAD_ID`, and
+`STATISTICS_THREAD_ID` empty. No new bot token or separate bot process is needed.
+The API and normal bot process must still be running. Zalo already replies to
+the incoming Zalo chat and does not use these Telegram settings.
+
+If managed startup is enabled, change saved settings in the admin panel at
+`/bots` and apply them.
+Editing `.env` does not replace settings already saved in the admin panel.
+
+Private chats use the same team, bench, match and vote data. Admin commands
+still require the configured admin user ID. A confirmed `/zalosay` broadcast
+still sends to subscribed Zalo users. `/taovote` still publishes its team poll
+to the configured group; without `CHAT_ID`, it uses the incoming chat.
+
+Help and greeting templates use standard emoji with bold section headings.
+See [reply templates and private chat setup](docs/CHAT_REPLIES.md) for examples,
+platform limits and checks after deployment.
+
 Important rewritten command forms:
 
 - `/zalosay MESSAGE` previews a Zalo subscriber broadcast from Telegram.
@@ -139,14 +177,13 @@ Important rewritten command forms:
 - `/reset` runs immediately and is admin-only.
 - `/register NUMBER`, `/register add NAME NUMBER`, or
   `/register delete NUMBER`.
-- `/edit-stats NUMBER matches=N wins=N losses=N draws=N`.
 - `/match view|save|sync|score|winner|loser|goal|assist|mvp|delete ...` uses one explicit action.
 - `/match sync [dd/mm/yyyy]` links saved match entries to players who
   registered later. It uses Telegram `user_id` and skips duplicate identities.
   Older unlinked entries without a stored `user_id` must be saved again first.
 - `/match winner HOME [dd/mm/yyyy]` or `/match loser AWAY [dd/mm/yyyy]`
-  updates registered player win/loss totals without double-counting the same result.
-- `/matches [LIMIT] [PAGE]` and `/players [PAGE]` support bounded pages.
+  records the result on the saved match and its per-match player rows.
+- `/matches [LIMIT] [PAGE]` supports bounded pages.
 
 Interactive commands that use inline keyboards:
 
@@ -176,7 +213,6 @@ Core endpoints include:
 - `GET /api/settings`
 - `POST /api/settings`
 - `GET /api/players`
-- `GET /api/player-summaries`
 - `GET /api/players/:number`
 - `POST /api/players`
 - `PUT /api/players/:number`
@@ -187,7 +223,6 @@ Core endpoints include:
 - `POST /api/matches`
 - `PUT /api/matches/:date`
 - `DELETE /api/matches/:date`
-- `PUT /api/leaderboard/:playerNumber`
 - `GET /api/bot-storage`
 - `POST /api/bot-storage`
 - `POST /api/bot-storage/reset`
@@ -211,7 +246,6 @@ Structured data is stored in PostgreSQL, usually Supabase Postgres, through
 Main tables:
 
 - `players`
-- `leaderboard`
 - `matches`
 - `match_players`
 - `match_player_stats`
@@ -254,42 +288,28 @@ does not change which env file is loaded.
 cp .env.example .env
 ```
 
-Required or commonly used variables:
+Both files use two main sections:
 
-```text
-TELEGRAM_BOT_TOKEN
-BOT_OWNER_ID
-BOT_ADMIN_IDS
-ZALO_BOT_TOKEN
-ZALO_BOT_OWNER_ID
-MESSENGER_PAGE_ID
-MESSENGER_PAGE_ACCESS_TOKEN
-MESSENGER_APP_SECRET
-MESSENGER_VERIFY_TOKEN
-MESSENGER_GRAPH_API_VERSION
-MESSENGER_ADMIN_IDS
-MESSENGER_WEBHOOK_URL
-CHAT_ID
-MAIN_THREAD_ID
-ANNOUNCEMENT_THREAD_ID
-VIP_THREAD_ID
-STATISTICS_THREAD_ID
+| Section | Settings |
+| --- | --- |
+| `BOT` | Telegram credentials and group topics; Zalo credentials and webhook; Messenger webhook credentials. |
+| `API` | API connection and shared authentication; database and JSON mirror; image storage; allowed web origins; maintenance; optional AI; admin panel backend settings. |
 
-API_PORT
-BOT_STATE_FILE
-BOT_API_BASE_URL
-INTERNAL_API_AUTH_TOKEN
-ADMIN_UI_URL
+Use [.env.example](.env.example) for the current setting names and comments.
+Shared settings appear once. `NODE_ENV`, `INTERNAL_API_AUTH_TOKEN`, and
+maintenance settings under `API` are also used by bot services. Optional
+feature settings stay in the example even when that feature is not enabled.
 
-DATABASE_URL
-SUPABASE_URL
-SUPABASE_SERVICE_ROLE_KEY
-SUPABASE_STORAGE_BUCKET
+`BOT_API_BASE_URL` is the main bot-to-API address. `API_INTERNAL_URL` remains
+a supported fallback and can also seed the first admin panel settings import.
+`WEB_UI_URL` and `ADMIN_UI_URL` both add allowed web origins and may have
+different values.
 
-MAINTENANCE_MODE
-MAINTENANCE_UNTIL
-GEMINI_API_KEY
-```
+Do not put `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`, or `VIEWER_PASSWORD` in
+this repository's `.env`. The admin panel web app has its own environment and
+login settings. `ENV_FILE` is ignored and is not needed. Set the Messenger
+callback URL directly in Meta settings; the code does not read a
+`MESSENGER_WEBHOOK_URL` variable.
 
 `GEMINI_API_KEY` is optional. When present, match flows can generate Vietnamese
 AI commentary. When absent, AI helpers return `null` and normal match behavior

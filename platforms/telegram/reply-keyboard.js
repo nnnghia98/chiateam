@@ -1,19 +1,28 @@
 const REPLY_KEYBOARD_COMMANDS = Object.freeze({
-  '➕ Tham gia': '/addme',
+  '➕ Vote +1': '/addme',
   '📋 Bench': '/bench',
+  '👤 Thêm cầu ngoài': '/add',
+  '✏️ Sửa bench': '/editbench',
+  '🗑️ Xoá khỏi bench': '/clearbench',
+  '🎲 Chia team': '/chiateam',
   '⚽ Team': '/team',
-  '🗳️ Kết quả vote': '/demvote',
-  '👤 Thông tin của tôi': '/me',
-  '📅 Lịch sử trận': '/matches',
+  '👥➕ Thêm vào team': '/addtoteam',
+  '🗑️ Xoá khỏi team': '/clearteam',
+  '🗳️ Tạo vote': '/taovote',
+  '📊 Kết quả vote': '/demvote',
+  '🔄 Đồng bộ bench': '/sync',
   '📖 Hướng dẫn': '/start',
 });
 
 function createReplyKeyboard() {
   return {
     keyboard: [
-      [{ text: '➕ Tham gia' }, { text: '📋 Bench' }],
-      [{ text: '⚽ Team' }, { text: '🗳️ Kết quả vote' }],
-      [{ text: '👤 Thông tin của tôi' }, { text: '📅 Lịch sử trận' }],
+      [{ text: '➕ Vote +1' }, { text: '📋 Bench' }],
+      [{ text: '👤 Thêm cầu ngoài' }, { text: '✏️ Sửa bench' }],
+      [{ text: '🗑️ Xoá khỏi bench' }, { text: '🎲 Chia team' }],
+      [{ text: '⚽ Team' }, { text: '👥➕ Thêm vào team' }],
+      [{ text: '🗑️ Xoá khỏi team' }, { text: '🗳️ Tạo vote' }],
+      [{ text: '📊 Kết quả vote' }, { text: '🔄 Đồng bộ bench' }],
       [{ text: '📖 Hướng dẫn' }],
     ],
     resize_keyboard: true,

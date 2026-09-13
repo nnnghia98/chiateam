@@ -1,5 +1,8 @@
 const { createCommandRegistry } = require('../core/commands/command-registry');
 const { createCommandRouter } = require('../core/commands/command-router');
+const {
+  createManagedCommandRules,
+} = require('../core/commands/managed-command-rules');
 const { createTelegramAdapter } = require('../platforms/telegram/adapter');
 const {
   createApiStateRepository,
@@ -11,6 +14,7 @@ const {
 
 function startBotRuntime({
   bot,
+  env = process.env,
   registry,
   definitions = [],
   stateRepository = createApiStateRepository(),
@@ -29,6 +33,7 @@ function startBotRuntime({
     registry: activeRegistry,
     stateRepository,
     permissionPolicy,
+    commandRules: createManagedCommandRules(env),
   });
   const adapter = createTelegramAdapter({
     bot,
@@ -42,7 +47,11 @@ function startBotRuntime({
         platform: 'telegram',
         client:
           botControlsClient ||
-          createBotControlsClient({ platform: 'telegram', mode: 'polling' }),
+          createBotControlsClient({
+            platform: 'telegram',
+            mode: 'polling',
+            env,
+          }),
       }),
   });
 

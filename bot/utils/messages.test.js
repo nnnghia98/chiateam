@@ -4,23 +4,35 @@ const assert = require('node:assert/strict');
 const { BENCH, CHIA_TEAM, START, TAO_VOTE, TEAM } = require('./messages');
 
 test('/start help is organized into concise sections', () => {
-  assert.match(START.help, /\*BẮT ĐẦU NHANH\*/);
-  assert.match(START.help, /\*DANH SÁCH LỆNH\*/);
-  assert.match(START.help, /\*BENCH\*/);
-  assert.match(START.help, /\*TEAM\*/);
-  assert.match(START.help, /\*TRẬN ĐẤU\*/);
-  assert.match(START.help, /\*CẦU THỦ\*/);
-  assert.match(START.help, /\*ADMIN\*/);
+  assert.match(START.help, /\*🚀 BẮT ĐẦU NHANH\*/);
+  assert.match(START.help, /\*📚 DANH SÁCH LỆNH\*/);
+  assert.match(START.help, /\*🪑 BENCH\*/);
+  assert.match(START.help, /\*⚽ TEAM\*/);
+  assert.match(START.help, /\*🏆 TRẬN ĐẤU\*/);
+  assert.match(START.help, /\*👤 CẦU THỦ\*/);
+  assert.match(START.help, /\*🔐 ADMIN\*/);
 });
 
 test('/start help highlights the recommended command flow first', () => {
-  const quickStartIndex = START.help.indexOf('*BẮT ĐẦU NHANH*');
-  const commandListIndex = START.help.indexOf('*DANH SÁCH LỆNH*');
+  const quickStartIndex = START.help.indexOf('*🚀 BẮT ĐẦU NHANH*');
+  const commandListIndex = START.help.indexOf('*📚 DANH SÁCH LỆNH*');
 
   assert.notEqual(quickStartIndex, -1);
   assert.notEqual(commandListIndex, -1);
   assert.ok(quickStartIndex < commandListIndex);
   assert.match(START.help, /\/addme.+\/bench.+\/chiateam.+\/team/s);
+});
+
+test('compatibility /start help includes current commands and uses matching formatting', () => {
+  assert.equal(START.options.parse_mode, 'MarkdownV2');
+  assert.match(START.help, /\/zalosay/);
+  assert.match(START.help, /\/say/);
+  assert.match(START.help, /\/manifests/);
+  assert.match(START.help, /\/mf/);
+  assert.match(START.help, /\/loser/);
+  for (const command of ['addme', 'bench', 'chiateam', 'team']) {
+    assert.equal(START.help.match(new RegExp(`/${command}\\b`, 'g')).length, 1);
+  }
 });
 
 test('bench and team messages include roster counts', () => {

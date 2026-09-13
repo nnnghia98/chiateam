@@ -101,3 +101,153 @@ test('Zalo webhook application requires production secrets', () => {
   assert.equal(requireEnvironmentValue({ TOKEN: ' value ' }, 'TOKEN'), 'value');
   assert.throws(() => requireEnvironmentValue({}, 'TOKEN'), /Missing TOKEN/);
 });
+
+test('managed webhook drains old request before rebuilding and gates polling mode', async () => {
+  const {
+    createManagedWebhookApplication,
+  } = require('./create-zalo-webhook-application');
+  let version = 1,
+    mode = 'webhook',
+    releaseFirst;
+  const events = [];
+  const firstDone = new Promise(resolve => {
+    releaseFirst = resolve;
+  });
+  const app = createManagedWebhookApplication({
+    getSnapshot: async () => ({
+      version,
+      env: { ZALO_MODE: mode, ZALO_BOT_TOKEN: 'token' },
+    }),
+    lease: async (_id, action) => {
+      events.push(action);
+      return { granted: true };
+    },
+    createApplication: () => {
+      const current = version;
+      events.push(`create${current}`);
+      return {
+        client: { getMe: async () => {} },
+        handleWebhook: async () => {
+          events.push(`start${current}`);
+          if (current === 1) await firstDone;
+          events.push(`end${current}`);
+          return { statusCode: 200, body: { ok: true } };
+        },
+        stop: async () => events.push(`stop${current}`),
+      };
+    },
+  });
+  const first = app.handleWebhook({});
+  await new Promise(resolve => setImmediate(resolve));
+  version = 2;
+  const second = app.handleWebhook({});
+  releaseFirst();
+  await Promise.all([first, second]);
+  assert.ok(events.indexOf('end1') < events.indexOf('stop1'));
+  assert.ok(events.indexOf('stop1') < events.indexOf('create2'));
+  assert.equal(events.filter(x => x === 'release').length, 2);
+  mode = 'polling';
+  assert.equal((await app.handleWebhook({})).statusCode, 503);
+  await app.stop();
+});
+
+test('lease loss fences late custom provider side effects', async () => {
+  let release;
+  const wait = new Promise(resolve => {
+    release = resolve;
+  });
+  let sends = 0;
+  let renewals = 0;
+  const app =
+    require('./create-zalo-webhook-application').createManagedWebhookApplication(
+      {
+        getSnapshot: async () => ({
+          version: 1,
+          env: { ZALO_MODE: 'webhook', ZALO_BOT_TOKEN: 'token' },
+        }),
+        lease: async (_id, action) =>
+          action === 'acquire'
+            ? { granted: true, expiresAt: Date.now() + 10000 }
+            : (++renewals, { granted: false }),
+        createApplication: ({ leaseGuard }) => ({
+          client: { getMe: async () => {} },
+          handleWebhook: async () => {
+            await wait;
+            await leaseGuard();
+            sends += 1;
+            return { statusCode: 200, body: { ok: true } };
+          },
+          stop: async () => {},
+        }),
+      }
+    );
+  const pending = app.handleWebhook({});
+  await new Promise(resolve => setImmediate(resolve));
+  release();
+  const response = await pending;
+  assert.equal(response.statusCode, 503);
+  assert.equal(sends, 0);
+  assert.ok(renewals >= 1);
+  await app.stop();
+});
+
+test('default webhook client refuses an outbound send after its lease guard fails', async () => {
+  let allowed = true;
+  const client = new MockZaloClient();
+  const app = createZaloWebhookApplication({
+    client,
+    secretToken: 'fake-secret',
+    leaseGuard: async () => {
+      if (!allowed)
+        throw Object.assign(new Error('LEASE_LOST'), { code: 'LEASE_LOST' });
+    },
+  });
+  await app.client.sendMessage('fake-chat', 'first');
+  allowed = false;
+  await assert.rejects(app.client.sendMessage('fake-chat', 'late'), {
+    code: 'LEASE_LOST',
+  });
+  assert.equal(client.messages.length, 1);
+  await app.stop();
+});
+test('webhook lease errors block a late handler even with ISO expiry values', async () => {
+  const {
+    createManagedWebhookApplication,
+  } = require('./create-zalo-webhook-application');
+  let unblock;
+  const wait = new Promise(resolve => {
+    unblock = resolve;
+  });
+  let sent = false;
+  const app = createManagedWebhookApplication({
+    getSnapshot: async () => ({
+      version: 1,
+      env: { ZALO_MODE: 'webhook', ZALO_BOT_TOKEN: 'fake' },
+    }),
+    lease: async (_id, action) => {
+      if (action === 'acquire')
+        return {
+          granted: true,
+          expiresAt: new Date(Date.now() + 30000).toISOString(),
+        };
+      if (action === 'renew') throw new Error('offline');
+      return { granted: true };
+    },
+    createApplication: ({ leaseGuard }) => ({
+      client: { getMe: async () => {} },
+      stop: async () => {},
+      handleWebhook: async () => {
+        await wait;
+        await leaseGuard();
+        sent = true;
+        return { statusCode: 200 };
+      },
+    }),
+  });
+  const result = app.handleWebhook({});
+  await new Promise(resolve => setImmediate(resolve));
+  unblock();
+  assert.equal((await result).statusCode, 503);
+  assert.equal(sent, false);
+  await app.stop();
+});

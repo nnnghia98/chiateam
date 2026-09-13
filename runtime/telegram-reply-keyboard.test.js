@@ -13,6 +13,7 @@ const {
 const {
   createTelegramPermissionPolicy,
 } = require('../platforms/telegram/permission-policy');
+const { createReplyKeyboard } = require('../platforms/telegram/reply-keyboard');
 
 function createFixture(t) {
   const bot = new EventEmitter();
@@ -107,10 +108,11 @@ test('Telegram /start and help button show the menu in the source chat', async t
   assert.equal(fixture.sent[1].options.message_thread_id, '10');
   for (const message of fixture.sent) {
     assert.match(message.text, /CHIATEAM BOT/);
+    assert.deepEqual(message.options.reply_markup, createReplyKeyboard());
     assert.ok(
       message.options.reply_markup.keyboard
         .flat()
-        .some(button => button.text === '➕ Tham gia')
+        .some(button => button.text === '➕ Vote +1')
     );
   }
   assert.equal(fixture.saves, 0);
@@ -120,7 +122,7 @@ test('Telegram menu joins once, reads bench, and obeys pause and permissions', a
   const fixture = createFixture(t);
   const { adapter } = fixture.runtime;
 
-  await adapter.handleEvent(event('➕ Tham gia'));
+  await adapter.handleEvent(event('➕ Vote +1'));
   assert.deepEqual(fixture.state.bench, [
     [123, { name: 'Nghia', userId: 123 }],
   ]);
@@ -142,14 +144,14 @@ test('Telegram menu joins once, reads bench, and obeys pause and permissions', a
 
   fixture.deny();
   await adapter.handleEvent(
-    event('➕ Tham gia', { id: 789, first_name: 'Minh' })
+    event('➕ Vote +1', { id: 789, first_name: 'Minh' })
   );
   assert.equal(fixture.saves, 1);
   assert.equal(fixture.permissions.length, 4);
 
   fixture.pause();
   await adapter.handleEvent(
-    event('➕ Tham gia', { id: 789, first_name: 'Minh' })
+    event('➕ Vote +1', { id: 789, first_name: 'Minh' })
   );
   assert.equal(fixture.saves, 1);
   assert.equal(fixture.permissions.length, 4);

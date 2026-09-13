@@ -3,7 +3,13 @@ const {
 } = require('../../contracts/command-definition');
 const { createTextResult } = require('../../contracts/command-result');
 const { assertPlayerRepository } = require('../../ports/player-repository');
-const { parsePositiveInteger } = require('./player-statistics');
+function parsePositiveInteger(value) {
+  const text = String(value ?? '').trim();
+  const number = Number(text);
+  return /^\d+$/.test(text) && Number.isSafeInteger(number) && number > 0
+    ? number
+    : null;
+}
 
 const REGISTER_MESSAGES = Object.freeze({
   usage:

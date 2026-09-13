@@ -1,5 +1,9 @@
 # ChiaTeam Bot — Migration Plan
 
+This is a historical migration record. The football leaderboard table and its
+commands were removed on 2026-09-13; the older schema and command examples below
+are not part of the current runtime.
+
 This file records the earlier infrastructure migration. See the
 [multi-platform migration plan](MULTI_PLATFORM_BOT_PLAN.md) for current progress:
 Zalo is live and owner-confirmed on 2026-09-07. Admin panel UI work is the current
@@ -222,7 +226,7 @@ yarn dev                        # run bot locally
 
 - Set `API_INTERNAL_URL` to the API service URL reachable by the admin server
 - Set the same `INTERNAL_API_AUTH_TOKEN` value on both admin and API
-- Set `ADMIN_SESSION_SECRET`, `ADMIN_PASSWORD`, and `VIEWER_PASSWORD`
+- Set `ADMIN_SESSION_SECRET` and `ADMIN_PASSWORD` in the admin panel web app's own root `.env`, not the bot/backend `.env`. The current web app does not use `VIEWER_PASSWORD`.
 
 ---
 

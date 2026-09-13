@@ -18,8 +18,12 @@ function createTelegramAttendanceVotePublisher({
       const hasConfiguredChat = Boolean(channelConfig.chatId);
       const chatId = channelConfig.chatId || context.conversation.externalId;
       const threadId =
-        channelConfig.threads?.announcement ??
-        (hasConfiguredChat ? null : context.conversation.threadId);
+        // /taovote is an explicit team publication. Keep its configured
+        // announcement destination when a team chat exists; without one,
+        // publish in the source conversation and never use a stray group ID.
+        hasConfiguredChat
+          ? channelConfig.threads?.announcement ?? null
+          : context.conversation.threadId;
       const baseOptions = {
         is_anonymous: false,
         allows_multiple_answers: false,

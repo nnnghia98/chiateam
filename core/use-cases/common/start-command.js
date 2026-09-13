@@ -1,55 +1,115 @@
 const {
   createCommandDefinition,
 } = require('../../contracts/command-definition');
-const { createRichTextResult } = require('../../contracts/command-result');
+const {
+  createRichTextResult,
+  createTextResult,
+} = require('../../contracts/command-result');
 const { COMMAND_MANIFEST } = require('../../commands/command-manifest');
+const {
+  createManagedCommandRules,
+} = require('../../commands/managed-command-rules');
+
+const QUICK_START_COMMANDS = ['addme', 'bench', 'chiateam', 'team'];
+const CATEGORY_ICONS = {
+  Bench: '🪑',
+  Team: '⚽',
+  'Sân và chi phí': '🏟️',
+  Vote: '🗳️',
+  'Cầu thủ': '👤',
+  'Trận đấu': '🏆',
+  Admin: '🔐',
+  'Thông báo': '📣',
+};
+
+function categoryIcon(category) {
+  return Object.prototype.hasOwnProperty.call(CATEGORY_ICONS, category)
+    ? CATEGORY_ICONS[category]
+    : '📋';
+}
+
+function renderHelpRow(segments, entry, rule = {}) {
+  const aliases = Array.isArray(entry.aliases) ? entry.aliases : [];
+  const aliasText =
+    aliases.length > 0
+      ? ` (hoặc ${aliases.map(alias => `/${alias}`).join(', ')})`
+      : '';
+  const permission = entry.permission || entry.instruction?.permission;
+  const adminText =
+    permission === 'admin' || rule.permission === 'admin' ? ' (admin)' : '';
+
+  segments.push(
+    { text: entry.usage, bold: true },
+    { text: `${aliasText} — ${entry.description}${adminText}\n` }
+  );
+}
+
+function visibleEntries(manifest, context, commandRules) {
+  return manifest
+    .filter(entry => entry.name !== 'start')
+    .map(entry => ({ entry, rule: commandRules(context, entry) || {} }))
+    .filter(({ rule }) => rule.enabled !== false);
+}
 
 function buildStartHelpSegments(
   manifest = COMMAND_MANIFEST,
-  { includeQuickStart = true, greeting = '👋 CHIATEAM BOT' } = {}
+  {
+    includeQuickStart = true,
+    greeting = '👋 CHIATEAM BOT',
+    entryRules = new Map(),
+  } = {}
 ) {
-  const segments = [{ text: greeting, bold: true }, { text: '\n\n' }];
-  let currentCategory = null;
+  const safeGreeting = String(greeting ?? '').trim() || '👋 CHIATEAM BOT';
+  const segments = [{ text: safeGreeting, bold: true }, { text: '\n\n' }];
+  const entries = manifest.filter(entry => entry.name !== 'start');
 
   if (includeQuickStart) {
-    segments.push(
-      { text: 'BẮT ĐẦU NHANH', bold: true },
-      { text: '\n/addme — Tự thêm mình vào bench\n' },
-      { text: '/bench — Xem bench hiện tại\n' },
-      { text: '/chiateam — Chia team (admin)\n' },
-      { text: '/team — Xem team hiện tại\n' }
-    );
+    const quickEntries = QUICK_START_COMMANDS.map(name =>
+      entries.find(entry => entry.name === name)
+    ).filter(Boolean);
+    if (quickEntries.length > 0) {
+      segments.push({ text: '🚀 BẮT ĐẦU NHANH', bold: true }, { text: '\n' });
+      quickEntries.forEach(entry =>
+        renderHelpRow(segments, entry, entryRules.get(entry.name))
+      );
+    }
   }
 
-  manifest.forEach(entry => {
-    if (entry.name === 'start') {
-      return;
-    }
+  const quickNames = new Set(QUICK_START_COMMANDS);
+  const categories = new Map();
+  entries
+    .filter(entry => !includeQuickStart || !quickNames.has(entry.name))
+    .forEach(entry => {
+      if (!categories.has(entry.category)) categories.set(entry.category, []);
+      categories.get(entry.category).push(entry);
+    });
 
-    if (entry.category !== currentCategory) {
-      currentCategory = entry.category;
-      segments.push({
-        text: `\n${currentCategory.toUpperCase()}\n`,
-        bold: true,
-      });
-    }
-
-    const aliasText =
-      entry.aliases.length > 0
-        ? ` (alias: ${entry.aliases.map(alias => `/${alias}`).join(', ')})`
-        : '';
-    const adminText = entry.permission === 'admin' ? ' (admin)' : '';
-
+  if (includeQuickStart && categories.size > 0) {
     segments.push(
-      { text: entry.usage, bold: true },
-      { text: `${aliasText} — ${entry.description}${adminText}\n` }
+      { text: '\n' },
+      { text: '📚 DANH SÁCH LỆNH', bold: true },
+      { text: '\n' }
+    );
+  }
+  categories.forEach((categoryEntries, category) => {
+    segments.push(
+      { text: '\n' },
+      { text: `${categoryIcon(category)} ${category.toUpperCase()}`, bold: true },
+      { text: '\n' }
+    );
+    categoryEntries.forEach(entry =>
+      renderHelpRow(segments, entry, entryRules.get(entry.name))
     );
   });
+
+  if (entries.length === 0) {
+    segments.push({ text: 'Hiện chưa có lệnh nào khả dụng.\n' });
+  }
 
   segments.push(
     { text: '\nDùng ' },
     { text: '/start', bold: true },
-    { text: ' bất cứ lúc nào để xem lại hướng dẫn.' }
+    { text: ' bất cứ lúc nào để xem lại hướng dẫn. 💡' }
   );
 
   return segments;
@@ -59,6 +119,7 @@ function createStartCommand({
   manifest = COMMAND_MANIFEST,
   includeQuickStart = true,
   getGreeting,
+  commandRules = createManagedCommandRules(),
 } = {}) {
   return createCommandDefinition({
     name: 'start',
@@ -72,12 +133,24 @@ function createStartCommand({
     condition: async () => ({ ok: true }),
     action: async () => ({ changed: false, code: 'START_HELP' }),
     reply: async (outcome, context) => {
-      const segments = buildStartHelpSegments(manifest, {
+      if (outcome?.code === 'PERMISSION_DENIED') {
+        return createTextResult('Bạn không có quyền thực hiện lệnh này.', [], {
+          channel: 'source',
+        });
+      }
+
+      const selected = visibleEntries(manifest, context, commandRules);
+      const selectedManifest = selected.map(({ entry }) => entry);
+      const entryRules = new Map(
+        selected.map(({ entry, rule }) => [entry.name, rule])
+      );
+      const segments = buildStartHelpSegments(selectedManifest, {
         includeQuickStart,
         greeting: getGreeting?.(context.actor),
+        entryRules,
       });
       return createRichTextResult(segments, [], {
-        channel: 'main',
+        channel: 'source',
       });
     },
   });

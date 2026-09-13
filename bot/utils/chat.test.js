@@ -108,3 +108,73 @@ test('sendMessage can ignore configured chat id for source chat replies', async 
   process.env.CHAT_ID = originalChatId;
   process.env.DEFAULT_THREAD_ID = originalDefaultThreadId;
 });
+
+test('sendMessage keeps private maintenance replies in the source chat', async () => {
+  const originalChatId = process.env.CHAT_ID;
+  const originalMainThreadId = process.env.MAIN_THREAD_ID;
+
+  process.env.CHAT_ID = '-100configured';
+  process.env.MAIN_THREAD_ID = '999';
+
+  const calls = [];
+  const mockBot = {
+    async sendMessage(chatId, message, options) {
+      calls.push({ chatId, message, options });
+      return { ok: true };
+    },
+  };
+
+  const { sendMessage } = loadChatWithMockedBot(mockBot);
+
+  await sendMessage({
+    msg: { chat: { id: 123, type: 'private' }, message_thread_id: 17 },
+    type: 'MAIN',
+    message: 'maintenance',
+  });
+
+  assert.deepEqual(calls, [
+    {
+      chatId: 123,
+      message: 'maintenance',
+      options: { message_thread_id: 17 },
+    },
+  ]);
+
+  process.env.CHAT_ID = originalChatId;
+  process.env.MAIN_THREAD_ID = originalMainThreadId;
+});
+
+test('sendMessage ignores configured thread ids when CHAT_ID is missing', async () => {
+  const originalChatId = process.env.CHAT_ID;
+  const originalMainThreadId = process.env.MAIN_THREAD_ID;
+
+  delete process.env.CHAT_ID;
+  process.env.MAIN_THREAD_ID = '999';
+
+  const calls = [];
+  const mockBot = {
+    async sendMessage(chatId, message, options) {
+      calls.push({ chatId, message, options });
+      return { ok: true };
+    },
+  };
+
+  const { sendMessage } = loadChatWithMockedBot(mockBot);
+
+  await sendMessage({
+    msg: { chat: { id: -456 }, message_thread_id: 17 },
+    type: 'MAIN',
+    message: 'source',
+  });
+
+  assert.deepEqual(calls, [
+    {
+      chatId: -456,
+      message: 'source',
+      options: { message_thread_id: 17 },
+    },
+  ]);
+
+  process.env.CHAT_ID = originalChatId;
+  process.env.MAIN_THREAD_ID = originalMainThreadId;
+});

@@ -41,9 +41,6 @@ Use these folders as the first place to look:
 - [commands/player](./commands/player)
   Player lookup and self-registration flows.
 
-- [commands/leaderboard](./commands/leaderboard)
-  Leaderboard rendering and manual stat edits.
-
 - [commands/match](./commands/match)
   Match save, view, and match-history workflows.
 

@@ -1,15 +1,20 @@
 const bot = require('../telegram-client');
 const { logEvent } = require('./logger');
 
-const THREAD_TYPES = {
-  DEFAULT: process.env.DEFAULT_THREAD_ID,
-  MAIN: process.env.MAIN_THREAD_ID,
-  ANNOUNCEMENT: process.env.ANNOUNCEMENT_THREAD_ID,
-  VIP: process.env.VIP_THREAD_ID,
-  STATISTICS: process.env.STATISTICS_THREAD_ID,
+const normalizeConfigValue = value => {
+  const normalized = String(value ?? '').trim();
+  return normalized || null;
 };
 
-const CHAT_ID = process.env.CHAT_ID;
+const THREAD_TYPES = {
+  DEFAULT: normalizeConfigValue(process.env.DEFAULT_THREAD_ID),
+  MAIN: normalizeConfigValue(process.env.MAIN_THREAD_ID),
+  ANNOUNCEMENT: normalizeConfigValue(process.env.ANNOUNCEMENT_THREAD_ID),
+  VIP: normalizeConfigValue(process.env.VIP_THREAD_ID),
+  STATISTICS: normalizeConfigValue(process.env.STATISTICS_THREAD_ID),
+};
+
+const CHAT_ID = normalizeConfigValue(process.env.CHAT_ID);
 
 logEvent('telegram.config', 'threads loaded', {
   chat: CHAT_ID,
@@ -21,9 +26,15 @@ logEvent('telegram.config', 'threads loaded', {
 });
 
 const sendMessage = async ({ msg, type, message, options = {} }) => {
-  const { useSourceChat = false, ...baseOptions } = options;
-  const chatId = useSourceChat ? msg.chat.id : CHAT_ID ?? msg.chat.id;
-  const threadId = useSourceChat ? msg.message_thread_id : THREAD_TYPES[type];
+  const { useSourceChat = false, ...providedOptions } = options;
+  const sourceChat =
+    useSourceChat || msg?.chat?.type === 'private' || !CHAT_ID;
+  const baseOptions = { ...providedOptions };
+  if (sourceChat) {
+    delete baseOptions.message_thread_id;
+  }
+  const chatId = sourceChat ? msg.chat.id : CHAT_ID;
+  const threadId = sourceChat ? msg.message_thread_id : THREAD_TYPES[type];
 
   const sendOptions =
     threadId != null
@@ -33,7 +44,7 @@ const sendMessage = async ({ msg, type, message, options = {} }) => {
         }
       : baseOptions;
 
-  if (!useSourceChat && type && threadId == null) {
+  if (!sourceChat && type && threadId == null) {
     logEvent(
       'telegram.send',
       'unknown thread type',
