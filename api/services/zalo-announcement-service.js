@@ -9,6 +9,7 @@ const OPERATIONS = Object.freeze([
   'refreshSubscriber',
   'subscribers',
   'prepare',
+  'content',
   'claim',
   'next',
   'record',
@@ -22,6 +23,9 @@ const ERROR_CODES = new Set([
   'RATE_LIMITED',
   'API_ERROR',
   'NETWORK_ERROR',
+  'SEND_TIMEOUT',
+  'SEND_UNKNOWN',
+  'SEND_FAILED',
 ]);
 const validId = value =>
   typeof value === 'string' &&
@@ -61,7 +65,7 @@ function normalizeRequest(operation, payload) {
     return { page, pageSize: 10 };
   }
   if (operation !== 'prepare' && !UUID.test(p.id || '')) return null;
-  if (['prepare', 'claim', 'cancel', 'status'].includes(operation)) {
+  if (['prepare', 'claim', 'cancel', 'status', 'content'].includes(operation)) {
     if (
       p.platform !== 'telegram' ||
       !validId(p.actorId) ||

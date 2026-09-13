@@ -23,11 +23,11 @@ test('registered commands are accepted, including Telegram @mentions', () => {
 
 test('unknown slash commands are ignored by the filter', () => {
   assert.equal(isSupportedCommandText('/unknown'), false);
-  assert.equal(isSupportedCommandText('/leaderboard'), false);
+  assert.equal(isSupportedCommandText('/players'), false);
   assert.equal(isSupportedCommandText('/clearmf'), false);
   assert.equal(isSupportedCommandText('hello team'), false);
 });
 
 test('command tokens normalize bot mentions correctly', () => {
-  assert.equal(normalizeCommandToken('/players@chia_team_bot'), '/players');
+  assert.equal(normalizeCommandToken('/me@chia_team_bot'), '/me');
 });

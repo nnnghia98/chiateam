@@ -1,4 +1,9 @@
 require('../config/load-env').loadEnv();
+const { shouldDelegate, startManagedSupervisor, sendReady } = require('../runtime/managed-bootstrap');
+if (shouldDelegate()) {
+  startManagedSupervisor({ service: 'api', entrypoint: __filename });
+  return;
+}
 const { createUiApiServer } = require('./routes/server');
 
 function installProcessCrashLogging() {
@@ -36,9 +41,11 @@ const uiApi = createUiApiServer({
 
 uiApi
   .start()
-  .then(({ port }) => {
+  .then(async ({ port }) => {
+    if (process.env.MANAGEMENT_CHILD === 'true' && process.env.DATABASE_URL) await require('./db/config').db.query('SELECT 1');
     console.log('✅ API Server successfully started');
     console.log(`🧭 API running at http://localhost:${port}`);
+    sendReady('api', { port });
   })
   .catch(err => {
     console.error('❌ Failed to start API Server:', err);

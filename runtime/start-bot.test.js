@@ -80,9 +80,6 @@ const {
 } = require('../core/ports/match-summary-generator');
 const { createPlayerRepository } = require('../core/ports/player-repository');
 const {
-  createStatisticsRepository,
-} = require('../core/ports/statistics-repository');
-const {
   createTelegramBenchIdentityPolicy,
 } = require('../platforms/telegram/bench-identity-policy');
 const {
@@ -1643,32 +1640,6 @@ test('Telegram runtime routes the complete shared command catalog', async () => 
       return player ? [player] : [];
     },
   });
-  const statisticsRepository = createStatisticsRepository({
-    async findByNumber(number) {
-      return stats?.player_number === number ? stats : null;
-    },
-    async findMany(numbers) {
-      return stats && numbers.includes(stats.player_number) ? [stats] : [];
-    },
-    async replaceTotals(number, totals) {
-      stats = {
-        player_number: number,
-        total_match: totals.matches,
-        total_win: totals.wins,
-        total_lose: totals.losses,
-        total_draw: totals.draws,
-        goal: 0,
-        assist: 0,
-        winrate: totals.matches > 0 ? totals.wins / totals.matches : 0,
-      };
-    },
-    async incrementGoals() {
-      return { ok: true };
-    },
-    async incrementAssists() {
-      return { ok: true };
-    },
-  });
   const detail = {
     id: 1,
     match_date: '2026-08-06',
@@ -1740,7 +1711,6 @@ test('Telegram runtime routes the complete shared command catalog', async () => 
       votePublisher,
       voteController,
       playerRepository,
-      statisticsRepository,
       matchRepository,
       matchSummaryGenerator: createMatchSummaryGenerator({
         async generate() {
@@ -1761,10 +1731,7 @@ test('Telegram runtime routes the complete shared command catalog', async () => 
   const commands = [
     '/start',
     '/register 10',
-    '/edit-stats 10 matches=8 wins=5 losses=2 draws=1',
     '/me',
-    '/players',
-    '/player 10',
     '/match view 06/08/2026',
     '/matches',
     '/sync',
@@ -1779,15 +1746,12 @@ test('Telegram runtime routes the complete shared command catalog', async () => 
   assert.equal(bot.sentMessages.length, commands.length);
   assert.match(bot.sentMessages[0].text, /CHIATEAM BOT/);
   assert.match(bot.sentMessages[1].text, /Đăng ký thành công/);
-  assert.match(bot.sentMessages[2].text, /CẬP NHẬT THỐNG KÊ/);
-  assert.match(bot.sentMessages[3].text, /Số áo: 10/);
-  assert.match(bot.sentMessages[4].text, /Nghia/);
-  assert.match(bot.sentMessages[5].text, /Tỷ lệ thắng/);
-  assert.match(bot.sentMessages[6].text, /HOME thắng đẹp/);
-  assert.match(bot.sentMessages[7].text, /06\/08\/2026/);
-  assert.match(bot.sentMessages[8].text, /ĐÃ ĐỒNG BỘ TỪ VOTE/);
-  assert.match(bot.sentMessages[9].text, /Đã đóng và xóa vote/);
-  assert.match(bot.sentMessages[10].text, /ĐÃ RESET/);
+  assert.match(bot.sentMessages[2].text, /Số áo: 10/);
+  assert.match(bot.sentMessages[3].text, /HOME thắng đẹp/);
+  assert.match(bot.sentMessages[4].text, /06\/08\/2026/);
+  assert.match(bot.sentMessages[5].text, /ĐÃ ĐỒNG BỘ TỪ VOTE/);
+  assert.match(bot.sentMessages[6].text, /Đã đóng và xóa vote/);
+  assert.match(bot.sentMessages[7].text, /ĐÃ RESET/);
   assert.deepEqual(bot.stoppedPolls, [{ chatId: '-100999', messageId: 77 }]);
   assert.deepEqual(state.bench, []);
   assert.equal(state.activeVote, null);

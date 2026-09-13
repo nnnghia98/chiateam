@@ -1,4 +1,8 @@
 const { formatMoney } = require('./format');
+const {
+  buildStartHelpSegments,
+} = require('../../core/use-cases/common/start-command');
+const { formatTelegramMessage } = require('../../platforms/telegram/formatter');
 
 const VALIDATION = {
   onlyAdmin: '⛔ Chỉ admin mới có quyền.',
@@ -292,8 +296,8 @@ Ví dụ: \`/register 10\` hoặc \`/register Nghia 10\` (admin)`,
 • **Username:** \${username}
 
 🎯 Bây giờ bạn có thể sử dụng:
-• \`/players\` - Xem danh sách cầu thủ & thống kê
-• \`/player\` - Xem thông số chi tiết`,
+• \`/me\` - Xem thông tin đăng ký của bạn`,
+
   registeredForAnotherSuccess:
     '✅ Đã đăng ký slot cầu thủ: **${name}** – số áo **${number}**. Cầu thủ có thể dùng `/register ${number}` để nhận slot.',
   deleteSuccess: '✅ Đã xóa cầu thủ số áo **${number}**.',
@@ -301,65 +305,14 @@ Ví dụ: \`/register 10\` hoặc \`/register Nghia 10\` (admin)`,
   error: '❌ Có lỗi xảy ra khi đăng ký. Vui lòng thử lại sau.',
 };
 
-const START = {
-  help: `👋 *CHIATEAM BOT*
-
-*BẮT ĐẦU NHANH*
-• \`/addme\` - Tự thêm mình vào bench
-• \`/bench\` - Xem danh sách đang chờ
-• \`/chiateam\` - Chia 2 team (admin)
-• \`/team\` - Xem kết quả chia team
-
-*DANH SÁCH LỆNH*
-
-*BENCH*
-• \`/addme\` - Tự vào bench
-• \`/add\` - Thêm người vào bench
-• \`/bench\` - Xem bench hiện tại
-• \`/editbench\` - Đổi tên người trong bench (admin)
-• \`/clearbench\` - Xóa người khỏi bench
-
-*TEAM*
-• \`/chiateam\` - Chia 2 team HOME / AWAY (admin)
-• \`/chiateam 3\` - Chia 3 team HOME / AWAY / EXTRA (admin)
-• \`/manifest\` - Ghép hoặc tách 2 người khi chia team
-• \`/mf\` - Xem manifest nhanh
-• \`/removemanifest\` - Xóa 1 manifest
-• \`/clearmanifests\` - Xóa tất cả manifest
-• \`/team\` - Xem 2 team hiện tại
-• \`/team 3\` - Xem 3 team hiện tại
-• \`/addtoteam\` - Thêm người vào team (admin)
-• \`/clearteam\` - Xóa người khỏi team (admin)
-• \`/winner HOME|AWAY\` - Chọn team thắng để tính tiền 2 team (admin)
-
-*TRẬN ĐẤU*
-• \`/match\` - Xem trận tuần này
-• \`/match SAVE\` - Lưu trận từ dữ liệu hiện tại
-• \`/match dd/mm/yyyy\` - Xem trận theo ngày
-• \`/match dd/mm/yyyy DELETE\` - Xóa trận theo ngày (admin)
-• \`/matches\` - Xem các trận gần đây
-• \`/san\` - Xem hoặc lưu sân
-• \`/clearsan\` - Xóa sân hiện tại (admin)
-• \`/tiensan\` - Xem hoặc cập nhật tiền sân
-• \`/tiennuoc\` - Xem hoặc cập nhật tiền nước
-• \`/chiatien\` - Chia tiền 2 team (đội thua trả thêm tiền nước)
-• \`/taovote\` - Tạo vote (admin)
-• \`/demvote\` - Xem kết quả vote
-• \`/sync\` - Đồng bộ người vote vào bench (admin)
-• \`/clearvote\` - Xóa vote hiện tại (admin)
-
-*CẦU THỦ*
-• \`/register\` - Đăng ký cầu thủ
-• \`/me\` - Xem thông tin của bạn
-• \`/players\` - Xem danh sách cầu thủ
-• \`/player\` - Xem thông số chi tiết
-
-*ADMIN*
-• \`/edit-stats\` - Chỉnh thống kê cầu thủ
-• \`/reset\` - Reset toàn bộ dữ liệu bot
-
-💡 Dùng \`/start\` bất cứ lúc nào để xem lại hướng dẫn.`,
-};
+const startHelp = formatTelegramMessage({
+  segments: buildStartHelpSegments(),
+  actions: [],
+});
+const START = Object.freeze({
+  help: startHelp.text,
+  options: Object.freeze(startHelp.options),
+});
 
 const MATCH = {
   usage:
@@ -465,209 +418,6 @@ const MATCHES = {
   },
 };
 
-const PLAYERS = {
-  header: '👥 **DANH SÁCH CẦU THỦ** 👥',
-  empty: '📭 Chưa có cầu thủ nào đăng ký. Dùng `/register [số áo]` để đăng ký.',
-  error: '❌ Có lỗi khi tải danh sách cầu thủ. Vui lòng thử lại sau.',
-  buildList(players, statsByNumber) {
-    let message = `${PLAYERS.header}\n\n`;
-
-    players.forEach((player, index) => {
-      const stats = statsByNumber[player.number] || {};
-      const totalMatch = stats.total_match ?? 0;
-      const totalWin = stats.total_win ?? 0;
-      const totalLose = stats.total_lose ?? 0;
-      const totalDraw = stats.total_draw ?? 0;
-      const goal = stats.goal ?? 0;
-      const assist = stats.assist ?? 0;
-      const winrate =
-        stats.winrate != null ? (stats.winrate * 100).toFixed(1) : '0.0';
-
-      message += `**${index + 1}. ${player.name}** (#${player.number})\n`;
-      message += `   📊 Trận: ${totalMatch} | Thắng: ${totalWin} | Thua: ${totalLose} | Hòa: ${totalDraw}\n`;
-      message += `   ⚽ ${goal} bàn | 🎯 ${assist} KT | Winrate: ${winrate}%\n\n`;
-    });
-
-    return message;
-  },
-};
-
-const PLAYER = {
-  usage:
-    '📝 **Cách sử dụng lệnh player:**\n\n' +
-    '📝 **Cú pháp:**\n' +
-    '`/player [player_no]`\n\n' +
-    '**Ví dụ:**\n' +
-    '`/player 1001`\n' +
-    '`/player 12345`\n\n' +
-    '💡 **Lưu ý:**\n' +
-    '• Số áo phải là số nguyên dương\n' +
-    '• Player phải có dữ liệu thống kê để xem được\n' +
-    '• Dùng `/players` để xem bảng thống kê tổng hợp\n' +
-    '• Dùng `/match dd/mm/yyyy` để xem chi tiết một trận',
-  invalidNumber:
-    '❌ **Số áo không hợp lệ!**\n\n' +
-    '📝 **Cách sử dụng:**\n' +
-    '`/player [player_no]`\n\n' +
-    '**Ví dụ:**\n' +
-    '`/player 1001`\n' +
-    '`/player 12345`',
-  noStats:
-    '❌ **Không tìm thấy thông số của player số áo: ${playerId}**\n\n' +
-    '📭 Player này chưa có dữ liệu thống kê nào.\n' +
-    'Dùng `/players` để xem danh sách player hiện có.',
-  fetchError: '❌ Có lỗi xảy ra khi tải thông số player. Vui lòng thử lại sau.',
-  performanceExcellent: '🔥 **Xuất sắc** - Player rất mạnh!',
-  performanceGood: '⭐ **Tốt** - Player có kỹ năng tốt',
-  performanceAverage: '📉 **Trung bình** - Cần cải thiện thêm',
-  performanceNeedsWork: '📉 **Cần cải thiện** - Nên luyện tập thêm',
-  buildStatsMessage({ playerId, playerStats }) {
-    const winratePercent = (playerStats.winrate * 100).toFixed(1);
-    const totalGames = playerStats.total_match;
-    const totalWins = playerStats.total_win;
-    const totalLosses = playerStats.total_lose;
-    const totalDraws = playerStats.total_draw || 0;
-    const totalGoals = playerStats.goal || 0;
-    const totalAssists = playerStats.assist || 0;
-    const winLossRatio =
-      totalLosses > 0
-        ? (totalWins / totalLosses).toFixed(2)
-        : totalWins > 0
-          ? '∞'
-          : '0.00';
-    const rankEmoji = totalWins > 0 ? '🏆' : totalGames > 0 ? '📊' : '👤';
-
-    let message = `${rankEmoji} **THÔNG SỐ PLAYER** ${rankEmoji}\n\n`;
-    message += `🆔 **Player số áo:** ${playerId}\n`;
-    message += `📅 **Ngày tạo:** ${new Date(
-      playerStats.created_at
-    ).toLocaleDateString('vi-VN')}\n`;
-    message += `🔄 **Cập nhật lần cuối:** ${new Date(
-      playerStats.updated_at
-    ).toLocaleDateString('vi-VN')}\n\n`;
-    message += '📊 **THỐNG KÊ CHI TIẾT:**\n';
-    message += `   • 🎮 **Tổng trận:** ${totalGames}\n`;
-    message += `   • ✅ **Thắng:** ${totalWins}\n`;
-    message += `   • ❌ **Thua:** ${totalLosses}\n`;
-    message += `   • 🤝 **Hòa:** ${totalDraws}\n`;
-    message += `   • ⚽ **Bàn thắng:** ${totalGoals}\n`;
-    message += `   • 🎯 **Kiến tạo:** ${totalAssists}\n`;
-    message += `   • 🎯 **Tỷ lệ thắng:** ${winratePercent}%\n`;
-    message += `   • ⚖️ **Tỷ lệ W/L:** ${winLossRatio}\n\n`;
-
-    if (totalGames > 0) {
-      const winPercentage = ((totalWins / totalGames) * 100).toFixed(1);
-      let performance = PLAYER.performanceNeedsWork;
-
-      if (winPercentage >= 80) {
-        performance = PLAYER.performanceExcellent;
-      } else if (winPercentage >= 60) {
-        performance = PLAYER.performanceGood;
-      } else if (winPercentage >= 40) {
-        performance = PLAYER.performanceAverage;
-      }
-
-      message += `📈 **ĐÁNH GIÁ:**\n${performance}\n\n`;
-    }
-
-    message += '💡 **Lệnh liên quan:**\n';
-    message += '• `/players` - Xem bảng thống kê tổng hợp\n';
-    message += '• `/match dd/mm/yyyy` - Xem chi tiết và cập nhật một trận';
-
-    return message;
-  },
-};
-
-const EDIT_STATS = {
-  invalidSyntax:
-    '❌ **Cú pháp không đúng!**\n\n' +
-    '📝 **Cách sử dụng:**\n' +
-    '`/edit-stats player_id total_match total_win total_lose total_draw`\n\n' +
-    '**Ví dụ:**\n' +
-    '`/edit-stats 1001 10 7 2 1`\n' +
-    '`/edit-stats 1002 5 2 2 1`',
-  invalidPlayerId:
-    '❌ **ID người chơi không hợp lệ!**\n\n' +
-    '📝 **Lưu ý:** ID phải là số nguyên dương',
-  invalidTotalMatch:
-    '❌ **Số trận đấu không hợp lệ!**\n\n' +
-    '📝 **Lưu ý:** Số trận phải là số nguyên không âm',
-  invalidTotalWin:
-    '❌ **Số trận thắng không hợp lệ!**\n\n' +
-    '📝 **Lưu ý:** Số trận thắng phải là số nguyên không âm',
-  invalidTotalLose:
-    '❌ **Số trận thua không hợp lệ!**\n\n' +
-    '📝 **Lưu ý:** Số trận thua phải là số nguyên không âm',
-  invalidTotalDraw:
-    '❌ **Số trận hòa không hợp lệ!**\n\n' +
-    '📝 **Lưu ý:** Số trận hòa phải là số nguyên không âm',
-  error: '❌ Có lỗi xảy ra khi chỉnh sửa thống kê. Vui lòng thử lại sau.',
-  usage:
-    '📝 **Cách sử dụng lệnh edit-stats:**\n\n' +
-    '📝 **Cú pháp:**\n' +
-    '`/edit-stats player_id total_match total_win total_lose total_draw`\n\n' +
-    '**Ví dụ:**\n' +
-    '`/edit-stats 1001 10 7 2 1` - 10 trận, 7 thắng, 2 thua, 1 hòa\n' +
-    '`/edit-stats 1002 5 2 2 1` - 5 trận, 2 thắng, 2 thua, 1 hòa\n\n' +
-    '📝 **Lưu ý:**\n' +
-    '• Tổng số trận = Số trận thắng + Số trận thua + Số trận hòa\n' +
-    '• Tất cả số liệu phải là số nguyên không âm\n' +
-    '• Winrate sẽ được tính tự động',
-  buildInvalidTotalsMessage({ totalMatch, totalWin, totalLose, totalDraw }) {
-    return (
-      '❌ **Dữ liệu không hợp lệ!**\n\n' +
-      '📝 **Lưu ý:** Tổng số trận = Số trận thắng + Số trận thua + Số trận hòa\n\n' +
-      '📊 **Dữ liệu hiện tại:**\n' +
-      `   • Tổng trận: ${totalMatch}\n` +
-      `   • Thắng: ${totalWin}\n` +
-      `   • Thua: ${totalLose}\n` +
-      `   • Hòa: ${totalDraw}\n` +
-      `   • Tổng: ${totalWin + totalLose + totalDraw}`
-    );
-  },
-  buildSuccessMessage({
-    playerId,
-    currentStats,
-    totalMatch,
-    totalWin,
-    totalLose,
-    totalDraw,
-  }) {
-    const winrate =
-      totalMatch > 0 ? Math.round((totalWin / totalMatch) * 1000) / 1000 : 0;
-    const winratePercent = (winrate * 100).toFixed(1);
-
-    let message = '✏️ **CHỈNH SỬA THỐNG KÊ** ✏️\n\n';
-    message += `🆔 **ID người chơi:** ${playerId}\n\n`;
-
-    if (currentStats) {
-      message += '📊 **Thống kê cũ:**\n';
-      message += `   • Trận: ${currentStats.total_match} | Thắng: ${currentStats.total_win} | Thua: ${currentStats.total_lose} | Hòa: ${currentStats.total_draw || 0}\n`;
-      message += `   • Winrate: ${(currentStats.winrate * 100).toFixed(1)}%\n\n`;
-    }
-
-    message += '📊 **Thống kê mới:**\n';
-    message += `   • Trận: ${totalMatch} | Thắng: ${totalWin} | Thua: ${totalLose} | Hòa: ${totalDraw}\n`;
-    message += `   • Winrate: ${winratePercent}%\n\n`;
-
-    if (currentStats) {
-      const matchDiff = totalMatch - currentStats.total_match;
-      const winDiff = totalWin - currentStats.total_win;
-      const loseDiff = totalLose - currentStats.total_lose;
-      const drawDiff = totalDraw - (currentStats.total_draw || 0);
-
-      message += '📈 **Thay đổi:**\n';
-      message += `   • Trận: ${matchDiff > 0 ? '+' : ''}${matchDiff}\n`;
-      message += `   • Thắng: ${winDiff > 0 ? '+' : ''}${winDiff}\n`;
-      message += `   • Thua: ${loseDiff > 0 ? '+' : ''}${loseDiff}\n`;
-      message += `   • Hòa: ${drawDiff > 0 ? '+' : ''}${drawDiff}\n\n`;
-    }
-
-    message += '💡 Sử dụng `/players` để xem danh sách cầu thủ & thống kê mới';
-    return message;
-  },
-};
-
 const ME = {
   notRegistered:
     '\n\n⚠️ Bạn chưa đăng ký làm cầu thủ. Sử dụng "/register" để đăng ký.',
@@ -679,7 +429,7 @@ const ME = {
     let message = `👤 **Thông tin của bạn:**\n\n**Tên:** ${name}\n**ID:** ${userId}\n**Username:** @${username}`;
 
     if (player) {
-      message += `\n\n⚽ **Thông tin cầu thủ:**\n**Số áo:** ${player.number}\n**Bàn thắng:** ${player.goal || 0}\n**Kiến tạo:** ${player.assist || 0}`;
+      message += `\n\n⚽ **Thông tin cầu thủ:**\n**Tên đăng ký:** ${player.name}\n**Số áo:** ${player.number}`;
     }
 
     return message;
@@ -730,91 +480,6 @@ const CHIA_TEAM = {
   },
 };
 
-const LEADERBOARD = {
-  empty: '📊 Bảng xếp hạng trống. Chưa có dữ liệu thống kê nào.',
-  error: '❌ Có lỗi xảy ra khi tải bảng xếp hạng. Vui lòng thử lại sau.',
-  buildMessage(leaderboard) {
-    let message = '🏆 **BẢNG XẾP HẠNG** 🏆\n\n';
-    message += '📈 Sắp xếp theo tỷ lệ thắng (Winrate)\n\n';
-
-    leaderboard.forEach((player, index) => {
-      const rank = index + 1;
-      const medal =
-        rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`;
-      const winratePercent = (player.winrate * 100).toFixed(1);
-
-      message += `${medal} **ID: ${player.player_number}**\n`;
-      message += `   📊 Trận: ${player.total_match} | Thắng: ${player.total_win} | Thua: ${player.total_lose} | Hòa: ${player.total_draw || 0}\n`;
-      message += `   ⚽ Bàn thắng: ${player.goal || 0} | 🎯 Kiến tạo: ${player.assist || 0}\n`;
-      message += `   🎯 Winrate: ${winratePercent}%\n\n`;
-    });
-
-    message +=
-      '💡 Sử dụng `/update-leaderboard WIN/LOSE/DRAW [id1,id2,id3]` để cập nhật thống kê\n';
-    message +=
-      '💡 Sử dụng `/update-leaderboard GOAL player_number value` để cập nhật bàn thắng\n';
-    message +=
-      '💡 Sử dụng `/update-leaderboard ASSIST player_number value` để cập nhật kiến tạo';
-
-    return message;
-  },
-};
-
-const UPDATE_LEADERBOARD = {
-  invalidSyntax:
-    '❌ **Chức năng cập nhật thống kê đã tạm ngưng.**\n\n💡 Dùng `/players` để xem danh sách cầu thủ & thống kê hiện tại.',
-  invalidGoalAssistSyntax:
-    '❌ **Chức năng cập nhật thống kê đã tạm ngưng cho {result}.**\n\n💡 Dùng `/players` để xem danh sách cầu thủ & thống kê hiện tại.',
-  invalidPlayerNumber:
-    '❌ **Chức năng cập nhật thống kê đã tạm ngưng.**\n\n💡 Dùng `/players` để xem danh sách cầu thủ & thống kê hiện tại.',
-  invalidValue:
-    '❌ **Chức năng cập nhật thống kê đã tạm ngưng.**\n\n💡 Dùng `/players` để xem danh sách cầu thủ & thống kê hiện tại.',
-  invalidResult:
-    '❌ **Chức năng cập nhật thống kê đã tạm ngưng.**\n\n💡 Dùng `/players` để xem danh sách cầu thủ & thống kê hiện tại.',
-  noValidPlayerIds:
-    '❌ **Chức năng cập nhật thống kê đã tạm ngưng.**\n\n💡 Dùng `/players` để xem danh sách cầu thủ & thống kê hiện tại.',
-  invalidPlayerIds:
-    '❌ **Chức năng cập nhật thống kê đã tạm ngưng.**\n\n💡 Dùng `/players` để xem danh sách cầu thủ & thống kê hiện tại.',
-  goalUpdateSuccess:
-    '⚽ **CẬP NHẬT BÀN THẮNG** ⚽\n\n👤 **Người chơi:** {playerNumber}\n📊 **Thay đổi:** {valueText} goal\n\n💡 Dùng `/players` để xem bảng thống kê mới',
-  assistUpdateSuccess:
-    '🎯 **CẬP NHẬT KIẾN TẠO** 🎯\n\n👤 **Người chơi:** {playerNumber}\n📊 **Thay đổi:** {valueText} assist\n\n💡 Dùng `/players` để xem bảng thống kê mới',
-  goalUpdateError: '❌ Có lỗi xảy ra khi cập nhật goal. Vui lòng thử lại sau.',
-  assistUpdateError:
-    '❌ Có lỗi xảy ra khi cập nhật assist. Vui lòng thử lại sau.',
-  updateError:
-    '❌ Chức năng cập nhật thống kê đã tạm ngưng. Vui lòng dùng `/players` để xem thống kê hiện tại.',
-  updateUsage:
-    '📝 **Chức năng cập nhật thống kê đã tạm ngưng.**\n\n💡 Dùng `/players` để xem danh sách cầu thủ & thống kê hiện tại.',
-  helpMessage:
-    '📝 **Chức năng cập nhật thống kê đã tạm ngưng.**\n\n💡 Dùng `/players` để xem danh sách cầu thủ & thống kê hiện tại.',
-  buildSuccessMessage(result, playerIds) {
-    const resultEmoji =
-      result === 'WIN' ? '✅' : result === 'LOSE' ? '❌' : '🤝';
-    const resultText =
-      result === 'WIN' ? 'THẮNG' : result === 'LOSE' ? 'THUA' : 'HÒA';
-
-    let message = `${resultEmoji} **CẬP NHẬT THỐNG KÊ** ${resultEmoji}\n\n`;
-    message += `🎯 **Kết quả:** ${resultText}\n`;
-    message += `👥 **Số người chơi:** ${playerIds.length}\n`;
-    message += `🆔 **ID người chơi:** ${playerIds.join(', ')}\n\n`;
-    message += '📊 **Thay đổi thống kê:**\n';
-
-    playerIds.forEach(playerId => {
-      let statChange = '+1 hòa';
-      if (result === 'WIN') {
-        statChange = '+1 thắng';
-      } else if (result === 'LOSE') {
-        statChange = '+1 thua';
-      }
-      message += `   • ID ${playerId}: +1 trận, ${statChange}\n`;
-    });
-
-    message += '\n💡 Sử dụng `/leaderboard` để xem bảng xếp hạng mới';
-    return message;
-  },
-};
-
 const AI = {
   disabled:
     '❌ Tính năng AI chưa được kích hoạt. Vui lòng cấu hình GEMINI_API_KEY.',
@@ -851,14 +516,10 @@ module.exports = {
   CLEAR_TEAM,
   CLEAR_TEAM_INDIVIDUAL,
   EDIT_BENCH,
-  EDIT_STATS,
-  LEADERBOARD,
   MANIFEST,
   MATCH,
   MATCHES,
   ME,
-  PLAYER,
-  PLAYERS,
   REGISTER,
   REMOVE,
   RESET,
@@ -870,5 +531,4 @@ module.exports = {
   TIEN_NUOC,
   TIEN_SAN,
   UNKNOWN,
-  UPDATE_LEADERBOARD,
 };

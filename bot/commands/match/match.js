@@ -12,10 +12,6 @@ const {
   isPlayerInMatch,
 } = require('../../../api/routes/matches');
 const {
-  updateGoalStat,
-  updateAssistStat,
-} = require('../../../api/services/leaderboard-service');
-const {
   getAllPlayers,
   getPlayerByNumber,
   getPlayerByUserId,
@@ -287,8 +283,6 @@ function matchCommand({
             return;
           }
           await addMatchPlayerStatDelta(m.id, player.id, 'goals', value);
-          // Also update aggregated leaderboard stats so /players reflects goals
-          await updateGoalStat({ playerNumber: player.number, delta: value });
           sendMessage({ msg, type: 'DEFAULT', message: MATCH.goalUpdated });
         } else if (action === 'assist') {
           const value = parseInt(valueStr, 10);
@@ -301,8 +295,6 @@ function matchCommand({
             return;
           }
           await addMatchPlayerStatDelta(m.id, player.id, 'assists', value);
-          // Also update aggregated leaderboard stats so /players reflects assists
-          await updateAssistStat({ playerNumber: player.number, delta: value });
           sendMessage({ msg, type: 'DEFAULT', message: MATCH.assistUpdated });
         } else if (action === 'mvp') {
           await setMatchMvp(m.id, player.id);

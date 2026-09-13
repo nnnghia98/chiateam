@@ -51,11 +51,15 @@ MESSENGER_APP_SECRET=...
 MESSENGER_VERIFY_TOKEN=...
 MESSENGER_GRAPH_API_VERSION=v26.0
 MESSENGER_ADMIN_IDS=
-MESSENGER_WEBHOOK_URL=https://your-vercel-project.vercel.app/webhook/messenger
 
 BOT_API_BASE_URL=https://your-public-api.example.com
 INTERNAL_API_AUTH_TOKEN=...
 ```
+
+Put Messenger credentials under `BOT` in the root `.env`. Put the shared API
+address and token under `API`. Set the public callback URL, such as
+`https://your-vercel-project.vercel.app/webhook/messenger`, directly in Meta
+settings. The runtime does not read a `MESSENGER_WEBHOOK_URL` variable.
 
 The example uses Graph API `v26.0`, the current Meta release on 2026-09-02.
 `MESSENGER_GRAPH_API_VERSION` stays configurable so it can move to a supported

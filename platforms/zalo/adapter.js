@@ -45,6 +45,8 @@ function createZaloAdapter({
   now = Date.now,
   onPrivateMessage,
   greetingRepository,
+  greetingResult = createZaloGreetingResult,
+  greetingEnabled = process.env.ZALO_GREETING_ENABLED !== 'false',
   errorMessage = '❌ Có lỗi xảy ra. Vui lòng thử lại.',
   onError = error => console.error('❌ [zalo.adapter]', error),
   commandGate,
@@ -222,7 +224,7 @@ function createZaloAdapter({
     }
     const explicitContext = toCommandContext(event);
     let greeted = false;
-    if (greetingRepository && privateUserMessage) {
+    if (greetingEnabled && greetingRepository && privateUserMessage) {
       try {
         const claimed = await greetingRepository.claim({
           userId: String(message.from.id),
@@ -236,7 +238,7 @@ function createZaloAdapter({
             createContext(event, { command: 'start', args: [] });
           await sendResult(
             greetingContext,
-            createZaloGreetingResult(greetingContext.actor)
+            greetingResult(greetingContext.actor)
           );
           greeted = true;
         }

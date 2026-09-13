@@ -10,10 +10,13 @@ const {
   assertMatchSummaryGenerator,
 } = require('../../ports/match-summary-generator');
 const { assertPlayerRepository } = require('../../ports/player-repository');
-const {
-  assertStatisticsRepository,
-} = require('../../ports/statistics-repository');
-const { parsePositiveInteger } = require('../players/player-statistics');
+function parsePositiveInteger(value) {
+  const text = String(value ?? '').trim();
+  const number = Number(text);
+  return /^\d+$/.test(text) && Number.isSafeInteger(number) && number > 0
+    ? number
+    : null;
+}
 const {
   formatDisplayDate,
   getThursdayDate,
@@ -69,26 +72,24 @@ const MATCH_MESSAGES = Object.freeze({
   syncNoLink: '⚠️ Chưa tìm thấy cầu thủ mới để liên kết.',
   syncUnmatched: '• Thiếu user_id hoặc chưa đăng ký: {unmatched}',
   syncAmbiguous: '• Trùng user_id hoặc trùng liên kết: {ambiguous}',
-  syncResultUpdated: '📊 Đã đồng bộ lại thống kê thắng/thua.',
+  syncResultUpdated: '📊 Đã đồng bộ kết quả trận đấu cho các cầu thủ.',
   syncResultPartial:
-    '⚠️ Đã liên kết cầu thủ nhưng chưa đồng bộ được thắng/thua.',
+    '⚠️ Đã liên kết cầu thủ nhưng chưa đồng bộ được kết quả trận đấu.',
   scoreUpdated: '✅ Đã cập nhật tỷ số!',
   resultUpdated:
     '✅ Đã cập nhật kết quả: {winner} thắng, {loser} thua.\n' +
-    '📊 {wins} cầu thủ thắng, {losses} cầu thủ thua.',
+    '📊 Đã ghi nhận {wins} cầu thủ thắng, {losses} cầu thủ thua trong trận.',
   resultUnchanged:
-    'ℹ️ Kết quả đã là {winner} thắng, {loser} thua. Không cộng lại thống kê.',
+    'ℹ️ Kết quả đã là {winner} thắng, {loser} thua. Không có thay đổi.',
   resultScoreConflict:
     '⚠️ Team thắng không khớp với tỷ số đã lưu. Hãy cập nhật tỷ số trước.',
   resultScoreDraw:
     '⚠️ Tỷ số đã lưu là hòa nên không thể chọn team thắng hoặc thua.',
   noRegisteredPlayers:
-    '⚠️ Trận đấu không có cầu thủ đã đăng ký để cập nhật thống kê.',
+    '⚠️ Trận đấu không có cầu thủ đã đăng ký để ghi nhận kết quả.',
   goalUpdated: '✅ Đã cập nhật bàn thắng!',
   assistUpdated: '✅ Đã cập nhật kiến tạo!',
   mvpUpdated: '✅ Đã cập nhật MVP!',
-  statPartial:
-    '⚠️ Đã cập nhật trận đấu nhưng chưa cập nhật được bảng thống kê.',
   deleteSuccess: '✅ Đã xóa trận đấu.',
   deleteMissing: '📭 Không có trận đấu cho ngày này để xóa.',
   loadStateError: '❌ Không thể tải dữ liệu trận kế tiếp từ API.',
@@ -373,13 +374,11 @@ function buildMatchSegments(match, date, summary = null, prefix = null) {
 function createMatchCommand({
   matchRepository,
   playerRepository,
-  statisticsRepository,
   summaryGenerator,
   now = () => new Date(),
 } = {}) {
   const matches = assertMatchRepository(matchRepository);
   const players = assertPlayerRepository(playerRepository);
-  const statistics = assertStatisticsRepository(statisticsRepository);
   const summaries = assertMatchSummaryGenerator(summaryGenerator);
 
   if (typeof now !== 'function') {
@@ -594,19 +593,11 @@ function createMatchCommand({
 
         const stat = request.kind === 'goal' ? 'goals' : 'assists';
         await matches.addPlayerStat(match.id, player.id, stat, request.count);
-        const aggregateResult =
-          request.kind === 'goal'
-            ? await statistics.incrementGoals(request.number, request.count)
-            : await statistics.incrementAssists(request.number, request.count);
-
         return {
           changed: false,
-          code:
-            aggregateResult?.ok === false
-              ? 'MATCH_STAT_PARTIAL'
-              : request.kind === 'goal'
-                ? 'MATCH_GOAL_UPDATED'
-                : 'MATCH_ASSIST_UPDATED',
+          code: request.kind === 'goal'
+            ? 'MATCH_GOAL_UPDATED'
+            : 'MATCH_ASSIST_UPDATED',
         };
       } catch (error) {
         return { changed: false, code: 'MATCH_ACTION_FAILED', error };
@@ -675,10 +666,6 @@ function createMatchCommand({
 
       if (outcome.code === 'MATCH_MVP_UPDATED') {
         return createTextResult(MATCH_MESSAGES.mvpUpdated);
-      }
-
-      if (outcome.code === 'MATCH_STAT_PARTIAL') {
-        return createTextResult(MATCH_MESSAGES.statPartial);
       }
 
       if (outcome.code === 'MATCH_SYNCED') {

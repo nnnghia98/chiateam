@@ -1,3 +1,4 @@
+const { createManagedCommandRules } = require('./managed-command-rules');
 const { createCommandContext } = require('../contracts/command-context');
 const { createCommandResult } = require('../contracts/command-result');
 const {
@@ -38,6 +39,7 @@ function createCommandRouter({
   registry,
   stateRepository,
   permissionPolicy,
+  commandRules = createManagedCommandRules(),
 } = {}) {
   if (!registry || typeof registry.find !== 'function') {
     throw new TypeError('A valid command registry is required.');
@@ -61,7 +63,18 @@ function createCommandRouter({
         });
       }
 
-      const requiredPermission = await definition.resolvePermission(context);
+      const rule = commandRules(context, definition);
+      if (rule.enabled === false) {
+        return Object.freeze({
+          handled: true,
+          command: definition.name,
+          result: createCommandResult({ messages: [{ text: 'Lệnh này đang tạm dừng. / This command is paused.' }] }),
+        });
+      }
+      const intrinsicPermission = await definition.resolvePermission(context);
+      // Managed rules can tighten access, never weaken a command's own rule.
+      const requiredPermission = intrinsicPermission === 'admin' || rule.permission === 'admin'
+        ? 'admin' : intrinsicPermission;
       const hasPermission = await activePermissionPolicy.isAllowed(
         context,
         requiredPermission

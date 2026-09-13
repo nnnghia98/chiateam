@@ -43,7 +43,7 @@ function createBotControlsClient({
         method: 'POST',
         headers: { 'content-type': 'application/json', 'x-internal-api-auth': token },
         body: JSON.stringify({ mode }),
-        cache: 'no-store',
+        cache: 'no-store', redirect: 'error',
         signal: controller.signal,
       });
       if (response.status === 404 && !sawSuccessfulContract && env.BOT_CONTROLS_LEGACY_API === 'true') {

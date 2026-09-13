@@ -57,14 +57,33 @@ function splitZaloText(text, maxLength = ZALO_MESSAGE_MAX_LENGTH) {
   let remaining = value;
 
   while (remaining.length > maxLength) {
-    let breakAt = remaining.lastIndexOf('\n', maxLength);
+    let breakAt = remaining.lastIndexOf('\n', maxLength - 1);
 
     if (breakAt <= 0) {
-      breakAt = remaining.lastIndexOf(' ', maxLength);
+      breakAt = remaining.lastIndexOf(' ', maxLength - 1);
     }
 
     if (breakAt <= 0) {
       breakAt = maxLength;
+      // JavaScript string indexes are UTF-16 code units. Keep a surrogate
+      // pair together when a hard limit falls between its two code units.
+      if (
+        breakAt < remaining.length &&
+        /[\uD800-\uDBFF]/.test(remaining[breakAt - 1]) &&
+        /[\uDC00-\uDFFF]/.test(remaining[breakAt])
+      ) {
+        breakAt -= 1;
+      }
+      // A one-unit limit cannot contain a two-unit code point.
+      if (
+        breakAt === 0 &&
+        /[\uD800-\uDBFF]/.test(remaining[0]) &&
+        /[\uDC00-\uDFFF]/.test(remaining[1])
+      ) {
+        throw new RangeError(
+          'Zalo message limit is too small to contain an emoji.'
+        );
+      }
     } else {
       breakAt += 1;
     }

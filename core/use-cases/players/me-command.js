@@ -6,10 +6,6 @@ const {
   createTextResult,
 } = require('../../contracts/command-result');
 const { assertPlayerRepository } = require('../../ports/player-repository');
-const {
-  assertStatisticsRepository,
-} = require('../../ports/statistics-repository');
-const { normalizeStatistics } = require('./player-statistics');
 
 const ME_MESSAGES = Object.freeze({
   usage: '⚠️ Dùng /me không kèm tham số.',
@@ -17,7 +13,7 @@ const ME_MESSAGES = Object.freeze({
   error: '❌ Có lỗi xảy ra khi tải thông tin cầu thủ.',
 });
 
-function buildMeSegments(actor, player, stats) {
+function buildMeSegments(actor, player) {
   const segments = [
     { text: '👤 Thông tin của bạn:', bold: true },
     { text: `\nTên: ${actor.displayName || 'Không rõ'}` },
@@ -35,17 +31,14 @@ function buildMeSegments(actor, player, stats) {
   segments.push(
     { text: '\n\n⚽ Thông tin cầu thủ:', bold: true },
     { text: `\nTên đăng ký: ${player.name}` },
-    { text: `\nSố áo: ${player.number}` },
-    { text: `\nBàn thắng: ${stats?.goals ?? 0}` },
-    { text: `\nKiến tạo: ${stats?.assists ?? 0}` }
+    { text: `\nSố áo: ${player.number}` }
   );
 
   return segments;
 }
 
-function createMeCommand({ playerRepository, statisticsRepository } = {}) {
+function createMeCommand({ playerRepository } = {}) {
   const players = assertPlayerRepository(playerRepository);
-  const statistics = assertStatisticsRepository(statisticsRepository);
 
   return createCommandDefinition({
     name: 'me',
@@ -63,18 +56,11 @@ function createMeCommand({ playerRepository, statisticsRepository } = {}) {
     action: async context => {
       try {
         const player = await players.findByActor(context.actor);
-        const stats = player
-          ? normalizeStatistics(
-              await statistics.findByNumber(Number(player.number))
-            )
-          : null;
-
         return {
           changed: false,
           code: 'PLAYER_INFO',
           actor: context.actor,
           player,
-          stats,
         };
       } catch (error) {
         return { changed: false, code: 'PLAYER_INFO_FAILED', error };
@@ -90,7 +76,7 @@ function createMeCommand({ playerRepository, statisticsRepository } = {}) {
       }
 
       return createRichTextResult(
-        buildMeSegments(outcome.actor, outcome.player, outcome.stats)
+        buildMeSegments(outcome.actor, outcome.player)
       );
     },
   });

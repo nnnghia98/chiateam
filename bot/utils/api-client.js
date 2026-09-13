@@ -17,29 +17,29 @@ function normalizeBaseUrl(rawUrl) {
   return `http://${trimmed}`;
 }
 
-function getApiBaseUrl() {
+function getApiBaseUrl(env = process.env) {
   return normalizeBaseUrl(
-    process.env.BOT_API_BASE_URL ||
-      process.env.API_INTERNAL_URL ||
-      process.env.API_BASE_URL ||
-      process.env.API_URL
+    env.BOT_API_BASE_URL ||
+      env.API_INTERNAL_URL ||
+      env.API_BASE_URL ||
+      env.API_URL
   );
 }
 
-function getInternalApiAuthToken() {
-  if (process.env.INTERNAL_API_AUTH_TOKEN) {
-    return process.env.INTERNAL_API_AUTH_TOKEN;
+function getInternalApiAuthToken(env = process.env) {
+  if (env.INTERNAL_API_AUTH_TOKEN) {
+    return env.INTERNAL_API_AUTH_TOKEN;
   }
 
-  if (process.env.NODE_ENV !== 'production') {
+  if (env.NODE_ENV !== 'production') {
     return 'local-internal-api-token-change-me';
   }
 
   return null;
 }
 
-function getDefaultHeaders() {
-  const token = getInternalApiAuthToken();
+function getDefaultHeaders(env = process.env) {
+  const token = getInternalApiAuthToken(env);
 
   if (!token) {
     throw new Error(
@@ -66,11 +66,11 @@ function parseResponseBody(rawBody) {
   }
 }
 
-function requestJson(pathname, { method = 'GET', body, timeoutMs = 0 } = {}) {
-  const baseUrl = getApiBaseUrl();
+function requestJson(pathname, { method = 'GET', body, timeoutMs = 10000, env = process.env } = {}) {
+  const baseUrl = getApiBaseUrl(env);
   const url = new URL(pathname, `${baseUrl}/`);
   const client = url.protocol === 'https:' ? https : http;
-  const headers = getDefaultHeaders();
+  const headers = getDefaultHeaders(env);
 
   let requestBody = null;
   if (body !== undefined) {

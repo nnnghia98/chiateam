@@ -19,7 +19,6 @@ const {
   MAX_AVATAR_BYTES,
   uploadPlayerAvatar,
 } = require('../services/avatar-storage-service');
-const { getMultiplePlayerStats } = require('../services/leaderboard-service');
 const {
   createMatch,
   deleteMatchByDate,
@@ -27,7 +26,6 @@ const {
   listMatches,
   updateMatchByDate,
 } = require('./matches');
-const { updatePlayerStats } = require('./leaderboard');
 const defaultMatchMediaService = require('../services/match-media-service');
 const defaultTwoNikeService = require('../services/two-nike-service');
 const {
@@ -83,6 +81,8 @@ const {
   createBotControlsService,
 } = require('../services/bot-controls-service');
 const defaultBotControlsService = createBotControlsService();
+const { createManagementService } = require('../management/service');
+const { handleManagementRequest } = require('../management/routes');
 
 function logRequest(req, res) {
   const startedAt = Date.now();
@@ -168,6 +168,7 @@ function isMaintenanceBypassRoute(path, method) {
   if (path === '/healthz') return true;
   if (path === '/api/status' && method === 'GET') return true;
   if (path === '/api/settings') return true;
+  if (path === '/api/management' || path.startsWith('/api/management/')) return true;
   if (
     path === '/api/bot-controls' ||
     /^\/api\/bot-controls\/[^/]+(\/check)?$/.test(path)
@@ -197,7 +198,7 @@ function corsHeaders(req) {
       Vary: 'Origin',
       'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
       'Access-Control-Allow-Headers':
-        'Content-Type, X-Internal-Api-Auth, X-Admin-Role, X-Admin-User-Id, X-Admin-Email, X-Admin-Name',
+        'Content-Type, X-Internal-Api-Auth, X-Admin-Role, X-Admin-User-Id, X-Admin-Email, X-Admin-Name, X-Management-Auth, X-Management-Admin-Auth, X-Management-Actor',
     };
   }
 
@@ -675,7 +676,11 @@ function createUiApiServer({
   zaloImageStorageService = defaultZaloImageStorageService,
   zaloGreetingService = defaultZaloGreetingService,
   botControlsService = defaultBotControlsService,
+  managementService,
 } = {}) {
+  if (!managementService && process.env.MANAGEMENT_CHILD !== 'true' && process.env.MANAGEMENT_ENCRYPTION_KEY) {
+    try { managementService = createManagementService(); } catch (_) { managementService = null; }
+  }
   const startedAt = new Date().toISOString();
   const maintenanceMode = isMaintenanceModeEnabled();
   const maintenanceUntil = getMaintenanceUntil();
@@ -683,14 +688,14 @@ function createUiApiServer({
 
   const settings = {
     maintenanceMode,
-    debugLogging: true,
+    debugLogging: process.env.DEBUG_LOGGING !== 'false',
     environment: process.env.NODE_ENV || 'development',
     botCommandPrefix: process.env.BOT_COMMAND_PREFIX || '/chiateam-dev',
     allowedChatIds: [],
   };
 
   const server = http.createServer(async (req, res) => {
-    logRequest(req, res);
+    if (settings.debugLogging) logRequest(req, res);
     const headers = corsHeaders(req);
 
     if (req.method === 'OPTIONS') {
@@ -703,6 +708,16 @@ function createUiApiServer({
       `http://${req.headers.host || 'localhost'}`
     );
     const path = url.pathname;
+
+    if (managementService && path.startsWith('/api/management')) {
+      const handled = await handleManagementRequest(req, res, {
+        service: managementService,
+        readJson,
+        sendJson,
+        env: process.env,
+      });
+      if (handled !== false) return;
+    }
 
     if (path === '/healthz') {
       return sendText(res, 200, 'ok', headers);
@@ -865,47 +880,6 @@ function createUiApiServer({
           res,
           500,
           { error: 'Failed to fetch players' },
-          headers
-        );
-      }
-    }
-
-    if (path === '/api/player-summaries' && req.method === 'GET') {
-      try {
-        const players = await getAllPlayers();
-        if (!players.length) {
-          return sendJson(res, 200, [], headers);
-        }
-        const numbers = players.map(p => p.number);
-        const statsRows = await getMultiplePlayerStats(numbers);
-        const byNumber = {};
-        (statsRows || []).forEach(row => {
-          byNumber[row.player_number] = row;
-        });
-
-        const items = players.map(p => {
-          const s = byNumber[p.number] || {};
-          return {
-            player: p,
-            stats: {
-              total_match: s.total_match ?? 0,
-              total_win: s.total_win ?? 0,
-              total_lose: s.total_lose ?? 0,
-              total_draw: s.total_draw ?? 0,
-              goal: s.goal ?? 0,
-              assist: s.assist ?? 0,
-              winrate: s.winrate ?? 0,
-            },
-          };
-        });
-
-        return sendJson(res, 200, items, headers);
-      } catch (e) {
-        console.error('Error fetching player summaries via UI API:', e);
-        return sendJson(
-          res,
-          500,
-          { error: 'Failed to fetch player summaries' },
           headers
         );
       }
@@ -1729,32 +1703,6 @@ function createUiApiServer({
       } catch (e) {
         console.error('Error deleting match via UI API:', e);
         return sendJson(res, 500, { error: 'Failed to delete match' }, headers);
-      }
-    }
-
-    // Leaderboard API
-    if (path.startsWith('/api/leaderboard/') && req.method === 'PUT') {
-      if (!requireAdmin(req, res, headers)) return;
-
-      const playerNumberStr = path.slice('/api/leaderboard/'.length);
-      const playerNumber = Number(playerNumberStr);
-
-      if (!Number.isInteger(playerNumber) || playerNumber <= 0) {
-        return sendJson(res, 400, { error: 'INVALID_PLAYER_NUMBER' }, headers);
-      }
-
-      try {
-        const payload = (await readJson(req)) || {};
-        await updatePlayerStats(playerNumber, payload);
-        return sendJson(res, 200, { ok: true }, headers);
-      } catch (e) {
-        console.error('Error updating leaderboard entry via UI API:', e);
-        return sendJson(
-          res,
-          500,
-          { error: 'Failed to update leaderboard entry' },
-          headers
-        );
       }
     }
 

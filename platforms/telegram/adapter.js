@@ -19,15 +19,20 @@ const TELEGRAM_CAPABILITIES = Object.freeze({
   threads: true,
 });
 
+function normalizeTelegramConfigValue(value) {
+  const normalized = String(value ?? '').trim();
+  return normalized || null;
+}
+
 function createTelegramChannelConfig(env = process.env) {
   return Object.freeze({
-    chatId: env.CHAT_ID || null,
+    chatId: normalizeTelegramConfigValue(env.CHAT_ID),
     threads: Object.freeze({
-      default: env.DEFAULT_THREAD_ID || null,
-      main: env.MAIN_THREAD_ID || null,
-      announcement: env.ANNOUNCEMENT_THREAD_ID || null,
-      vip: env.VIP_THREAD_ID || null,
-      statistics: env.STATISTICS_THREAD_ID || null,
+      default: normalizeTelegramConfigValue(env.DEFAULT_THREAD_ID),
+      main: normalizeTelegramConfigValue(env.MAIN_THREAD_ID),
+      announcement: normalizeTelegramConfigValue(env.ANNOUNCEMENT_THREAD_ID),
+      vip: normalizeTelegramConfigValue(env.VIP_THREAD_ID),
+      statistics: normalizeTelegramConfigValue(env.STATISTICS_THREAD_ID),
     }),
   });
 }
@@ -130,6 +135,7 @@ function createTelegramAdapter({
       conversation: {
         externalId: event.chat.id,
         threadId: event.message_thread_id,
+        ...(event.chat.type ? { type: event.chat.type } : {}),
       },
     });
   }
@@ -274,8 +280,13 @@ function createTelegramAdapter({
         channelConfig.threads || {},
         message.channel
       );
+      const isPrivateChat = context.conversation.type === 'private';
       const useSource =
-        isStartCommand || message.channel === 'source' || !hasConfiguredChannel;
+        isPrivateChat ||
+        isStartCommand ||
+        message.channel === 'source' ||
+        !channelConfig.chatId ||
+        !hasConfiguredChannel;
       const chatId = useSource
         ? context.conversation.externalId
         : channelConfig.chatId || context.conversation.externalId;
@@ -283,6 +294,9 @@ function createTelegramAdapter({
         ? context.conversation.threadId
         : channelConfig.threads?.[message.channel];
 
+      if (useSource) {
+        delete options.message_thread_id;
+      }
       if (threadId != null) {
         options.message_thread_id = threadId;
       }

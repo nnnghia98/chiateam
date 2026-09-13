@@ -6,7 +6,13 @@ const {
   createTextResult,
 } = require('../../contracts/command-result');
 const { assertMatchRepository } = require('../../ports/match-repository');
-const { parsePositiveInteger } = require('../players/player-statistics');
+function parsePositiveInteger(value) {
+  const text = String(value ?? '').trim();
+  const number = Number(text);
+  return /^\d+$/.test(text) && Number.isSafeInteger(number) && number > 0
+    ? number
+    : null;
+}
 const { formatDisplayDate } = require('./match-date');
 
 const DEFAULT_MATCH_LIMIT = 10;

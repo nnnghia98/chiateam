@@ -19,9 +19,6 @@ const {
   createMatchSummaryGenerator,
 } = require('../core/ports/match-summary-generator');
 const { createPlayerRepository } = require('../core/ports/player-repository');
-const {
-  createStatisticsRepository,
-} = require('../core/ports/statistics-repository');
 const { createCommandDefinitions } = require('./create-command-definitions');
 
 function createDependencies() {
@@ -46,13 +43,6 @@ function createDependencies() {
       async findByActor() {},
       async findByNumber() {},
       async list() {},
-    }),
-    statisticsRepository: createStatisticsRepository({
-      async findByNumber() {},
-      async findMany() {},
-      async replaceTotals() {},
-      async incrementGoals() {},
-      async incrementAssists() {},
     }),
     matchRepository: createMatchRepository({
       async findByDate() {},
@@ -88,7 +78,38 @@ test('shared runtime definitions match the approved command manifest', () => {
     COMMAND_MANIFEST.map(entry => entry.name)
   );
   assert.deepEqual(supportedNames.sort(), listSupportedCommandNames().sort());
-  assert.equal(definitions.length, 34);
+  assert.equal(definitions.length, 31);
+  definitions.forEach((definition, index) => {
+    assert.equal(
+      COMMAND_MANIFEST[index].usage,
+      definition.instruction.usage,
+      `Help usage must match /${definition.name}`
+    );
+  });
+});
+
+test('Telegram /start reflects command rules from the supplied environment', async () => {
+  const definitions = createCommandDefinitions({
+    ...createDependencies(),
+    env: {
+      TELEGRAM_COMMAND_RULES: JSON.stringify({
+        bench: { enabled: false },
+        zalosay: { enabled: false },
+        team: { permission: 'admin' },
+      }),
+    },
+  });
+  const start = definitions.find(definition => definition.name === 'start');
+  const result = await start.reply(
+    { code: 'START_HELP' },
+    { actor: { platform: 'telegram' }, args: [] }
+  );
+  const help = result.messages[0].text;
+
+  assert.doesNotMatch(help, /\/bench\b|\/zalosay\b|\/say\b/);
+  assert.match(help, /\/team \[2\|3\].*\(admin\)/);
+  assert.match(help, /\/addme/);
+  assert.equal(result.messages[0].channel, 'source');
 });
 
 test('production Telegram wiring uses subscriber broadcasts without an owner recipient', async () => {

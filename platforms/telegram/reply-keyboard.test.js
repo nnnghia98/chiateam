@@ -35,17 +35,41 @@ function event(text) {
 }
 
 test('reply keyboard maps exact labels and keeps Telegram options', () => {
-  assert.equal(getReplyKeyboardCommand('  ➕ Tham gia  '), '/addme');
-  assert.equal(getReplyKeyboardCommand('📋 Bench'), '/bench');
+  const expectedCommands = [
+    ['➕ Vote +1', '/addme'],
+    ['📋 Bench', '/bench'],
+    ['👤 Thêm cầu ngoài', '/add'],
+    ['✏️ Sửa bench', '/editbench'],
+    ['🗑️ Xoá khỏi bench', '/clearbench'],
+    ['🎲 Chia team', '/chiateam'],
+    ['⚽ Team', '/team'],
+    ['👥➕ Thêm vào team', '/addtoteam'],
+    ['🗑️ Xoá khỏi team', '/clearteam'],
+    ['🗳️ Tạo vote', '/taovote'],
+    ['📊 Kết quả vote', '/demvote'],
+    ['🔄 Đồng bộ bench', '/sync'],
+    ['📖 Hướng dẫn', '/start'],
+  ];
+  for (const [label, command] of expectedCommands) {
+    assert.equal(getReplyKeyboardCommand(label), command);
+  }
+  assert.equal(getReplyKeyboardCommand('  ➕ Vote +1  '), '/addme');
+  assert.equal(getReplyKeyboardCommand('👤 Thông tin của tôi'), null);
+  assert.equal(getReplyKeyboardCommand('📅 Lịch sử trận'), null);
+  assert.equal(getReplyKeyboardCommand('📜 Luật team'), null);
+  assert.equal(getReplyKeyboardCommand('⏹️ Đóng vote'), null);
   assert.equal(getReplyKeyboardCommand('hello'), null);
   assert.equal(getReplyKeyboardCommand('constructor'), null);
   assert.equal(getReplyKeyboardCommand('toString'), null);
   assert.equal(getReplyKeyboardCommand('/bench 2'), null);
   assert.deepEqual(createReplyKeyboard(), {
     keyboard: [
-      [{ text: '➕ Tham gia' }, { text: '📋 Bench' }],
-      [{ text: '⚽ Team' }, { text: '🗳️ Kết quả vote' }],
-      [{ text: '👤 Thông tin của tôi' }, { text: '📅 Lịch sử trận' }],
+      [{ text: '➕ Vote +1' }, { text: '📋 Bench' }],
+      [{ text: '👤 Thêm cầu ngoài' }, { text: '✏️ Sửa bench' }],
+      [{ text: '🗑️ Xoá khỏi bench' }, { text: '🎲 Chia team' }],
+      [{ text: '⚽ Team' }, { text: '👥➕ Thêm vào team' }],
+      [{ text: '🗑️ Xoá khỏi team' }, { text: '🗳️ Tạo vote' }],
+      [{ text: '📊 Kết quả vote' }, { text: '🔄 Đồng bộ bench' }],
       [{ text: '📖 Hướng dẫn' }],
     ],
     resize_keyboard: true,

@@ -78,10 +78,9 @@ async function updatePlayerByNumber(number, updates) {
 }
 
 /**
- * Delete player by shirt number. Also removes their leaderboard row.
+ * Delete player by shirt number.
  */
 async function deletePlayerByNumber(number) {
-  await db.query('DELETE FROM leaderboard WHERE player_number = $1', [number]);
   const result = await db.query('DELETE FROM players WHERE number = $1', [number]);
   return result.rowCount > 0;
 }

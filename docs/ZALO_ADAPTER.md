@@ -35,6 +35,10 @@ user's choice in the same active vote.
 Telegram and Zalo run as separate processes. They read and write the same bot
 state through the API.
 
+Private replies use the `chat.id` from each incoming Zalo message. Telegram
+`CHAT_ID` and `*_THREAD_ID` settings do not affect them. Standard emoji work in
+the greeting and help menu. See [reply templates and private chats](CHAT_REPLIES.md).
+
 ## Greeting
 
 After the first private message, the bot sends a short greeting using the Zalo
@@ -42,9 +46,12 @@ display name (or `bạn` when no name is available) and the commands `/subscribe
 `/poll`, `/team`, and `/start`. Text, image, sticker, and voice messages can
 trigger this greeting. Captions and media are never executed as commands.
 
-`/start` always shows the greeting with the full command list. A first message
-of `/start` receives one combined reply. Any other first command is still run
-after the greeting. There are no automatic greetings in group chats or replies
+When enabled, `/start` shows the greeting with the available Zalo command list.
+It hides paused commands and `/zalosay` (including `/say`), and marks commands
+that require admin access. `/unsubscribe` remains listed even if command rules
+try to pause it. A first message of `/start` receives one combined reply.
+Any other first command is still run after the greeting. There are no
+automatic greetings in group chats or replies
 to bot accounts. Zalo does not document an event for simply opening a chat.
 
 The API records a one-time claim per user in the private PostgreSQL table
