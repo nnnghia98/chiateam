@@ -86,7 +86,7 @@ Known commands registered by the active bot runtime:
 | Teams             | `/chiateam`, `/team`, `/addtoteam`, `/clearteam`                               |
 | Team constraints  | `/manifest`, `/mf`, `/manifests`, `/removemanifest`, `/clearmanifests`         |
 | Venue and fees    | `/san`, `/clearsan`, `/tiensan`, `/tiennuoc`, `/winner`, `/loser`, `/chiatien` |
-| Attendance vote   | `/taovote`, `/clearvote`, `/demvote`, `/sync`                                  |
+| Attendance vote   | `/taovote`, `/vote`, `/clearvote`, `/demvote`, `/sync`                         |
 | Players           | `/register`, `/me`                                                           |
 | Matches           | `/match`, `/matches`                                                           |
 | Admin reset       | `/reset`                                                                       |
@@ -105,7 +105,7 @@ Both platforms hide paused commands and mark admin-only commands with
 
 | Menu button | Command |
 | ----------- | ------- |
-| ➕ Vote +1 | `/addme` |
+| ➕ Vote +1 | `/vote +1` |
 | 📋 Bench | `/bench` |
 | 👤 Thêm cầu ngoài | `/add` |
 | ✏️ Sửa bench | `/editbench` |

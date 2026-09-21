@@ -78,7 +78,7 @@ test('shared runtime definitions match the approved command manifest', () => {
     COMMAND_MANIFEST.map(entry => entry.name)
   );
   assert.deepEqual(supportedNames.sort(), listSupportedCommandNames().sort());
-  assert.equal(definitions.length, 31);
+  assert.equal(definitions.length, 32);
   definitions.forEach((definition, index) => {
     assert.equal(
       COMMAND_MANIFEST[index].usage,
