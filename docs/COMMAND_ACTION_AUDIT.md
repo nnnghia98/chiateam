@@ -2,7 +2,7 @@
 
 This report traces the active local code. It does not change the menu or bot behavior. It does not test the deployed bot, send messages, or change stored team data. Commands can be paused or limited to admins through the admin panel, so live access can differ from the defaults below.
 
-Telegram registers **31 main commands and 2 alternative names**. The menu opens **13 commands**. Zalo registers **9 main commands and 1 alternative name**.
+Telegram registers **32 main commands and 2 alternative names**. The menu opens **13 commands**. Zalo registers **9 main commands and 1 alternative name**.
 
 Sources: [Telegram registration](../runtime/create-command-definitions.js), [command catalog used by help](../core/commands/command-manifest.js), [Telegram menu](../platforms/telegram/reply-keyboard.js), [Zalo registration](../runtime/create-zalo-command-definitions.js).
 
@@ -10,7 +10,7 @@ Sources: [Telegram registration](../runtime/create-command-definitions.js), [com
 
 | Button | Command | What happens now |
 | --- | --- | --- |
-| ➕ Vote +1 | `/addme` | Adds you once to the shared bench (the list used to create teams). Rejects a duplicate identity or name. Does not cast a native poll answer, register your shirt number, or place you into a team. |
+| ➕ Vote +1 | `/vote +1` | Records your `+1` choice in the active vote. It does not change the bench; use `/sync` to copy attending voters into the bench. |
 | 📋 Bench | `/bench` | Shows the current bench names and count. Does not change anything. |
 | 👤 Thêm cầu ngoài | `/add` | Shows how to enter one or more guest names. The names must then be typed with the command. |
 | ✏️ Sửa bench | `/editbench` | Opens the member list. Selecting a member asks for the new name. |
@@ -99,18 +99,19 @@ Two-team and three-team lists are stored separately. `/addtoteam` checks duplica
 
 These commands have no step-by-step input buttons. With no winner set, `/chiatien` only splits the venue cost equally; water is not included in that fallback. Fee splitting does not support three-team-only data. If both team modes have data, it uses the two-team lists. Source: [fee calculation](../core/use-cases/management/two-team-fee.js).
 
-**Telegram: attendance vote — 4 commands**
+**Telegram: attendance vote — 5 commands**
 
 | Command | Access | Current action and input behavior |
 | --- | --- | --- |
 | [`/taovote [QUESTION]`](../core/use-cases/management/taovote-command.js) | Everyone sees usage; admin creates | Bare command shows help. A question, up to 300 characters, creates a Telegram poll. Only one shared vote can be active. Choices are `0`, `+1`, `+2`, `+3`, `+4`. |
+| [`/vote 0\|1\|2\|3\|4`](../core/use-cases/management/vote-command.js) | Player | Casts or changes the sender's choice in the active vote. Telegram's `➕ Vote +1` menu button uses `/vote +1`. |
 | [`/demvote`](../core/use-cases/management/demvote-command.js) | Everyone | Shows names and vote counts per choice, plus total people attending. No action buttons. |
 | [`/sync`](../core/use-cases/management/sync-command.js) | Admin | Copies attending voters and their guests into the bench. Skips existing identities. Only adds entries; it does not remove people after a reduced/cancelled vote. Keeps the poll open. |
 | [`/clearvote [confirm\|cancel]`](../core/use-cases/management/clearvote-command.js) | Admin | Bare command shows confirmation buttons. Confirm tries to close the Telegram poll and clears the shared vote. Cancel keeps it. Local vote data is cleared even if closing the external poll fails; the reply reports that failure. |
 
 `+N` means N people total, including the voter. For example, `+2` adds the voter and one guest during `/sync`. `0` means not attending. The `/demvote` footer says “Số người vote”, but its value is total people attending, including guests, rather than the number of accounts that voted. Source: [vote totals](../core/use-cases/management/attendance-vote.js).
 
-Telegram users vote through the Telegram poll itself. `/poll` and `/vote` are not Telegram commands in the active registration. Joining through `/addme` does not set a vote choice.
+Telegram users can vote through the native Telegram poll or `/vote`. The `➕ Vote +1` menu button sends `/vote +1`; it does not add the sender to the bench. `/poll` is not a Telegram command.
 
 **Telegram: players — 2 commands**
 

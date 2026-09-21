@@ -69,6 +69,9 @@ const {
   createTaovoteCommand,
 } = require('../core/use-cases/management/taovote-command');
 const {
+  createVoteCommand,
+} = require('../core/use-cases/management/vote-command');
+const {
   createDemvoteCommand,
 } = require('../core/use-cases/management/demvote-command');
 const {
@@ -132,6 +135,7 @@ function createCommandDefinitions({
     createLoserCommand(),
     createChiatienCommand(),
     createTaovoteCommand({ votePublisher }),
+    createVoteCommand(),
     createDemvoteCommand(),
     createSyncCommand(),
     createClearvoteCommand({ voteController }),

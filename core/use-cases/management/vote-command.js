@@ -10,6 +10,7 @@ const {
 
 const VOTE_MESSAGES = Object.freeze({
   usage: '⚠️ Bình chọn bằng /vote 0, /vote 1, /vote 2, /vote 3 hoặc /vote 4.',
+  permissionDenied: '⛔ Bạn không có quyền thực hiện lệnh này.',
   noVote: '📭 Chưa có vote nào đang mở.',
   loadError: '❌ Không thể tải vote hiện tại từ API.',
   saveError: '❌ Không thể lưu lựa chọn. Vui lòng thử lại.',
@@ -47,6 +48,17 @@ function countComingVoters(activeVote) {
   return normalized
     ? normalized.voters.filter(voter => voter.partySize > 0).length
     : 0;
+}
+
+function getVoteIdentityKey(actor) {
+  if (
+    actor.platform === 'telegram' &&
+    /^\d+$/.test(String(actor.externalId))
+  ) {
+    return String(actor.externalId);
+  }
+
+  return getActorIdentityKey(actor);
 }
 
 function buildVoteStatus(name, choice, unchanged = false) {
@@ -112,7 +124,7 @@ function createVoteCommand() {
         };
       }
 
-      const voterKey = getActorIdentityKey(context.actor);
+      const voterKey = getVoteIdentityKey(context.actor);
       const votes = {
         ...state.activeVote.votes,
         [voterKey]: {
@@ -140,6 +152,10 @@ function createVoteCommand() {
       };
     },
     reply: async outcome => {
+      if (outcome.code === 'PERMISSION_DENIED') {
+        return createDefaultResult(VOTE_MESSAGES.permissionDenied);
+      }
+
       if (outcome.code === 'INVALID_ARGUMENTS') {
         return createDefaultResult(VOTE_MESSAGES.usage);
       }
@@ -178,5 +194,6 @@ module.exports = {
   countComingVoters,
   createVoteCommand,
   getActorName,
+  getVoteIdentityKey,
   parseVoteChoice,
 };

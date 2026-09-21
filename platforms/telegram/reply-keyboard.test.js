@@ -36,7 +36,7 @@ function event(text) {
 
 test('reply keyboard maps exact labels and keeps Telegram options', () => {
   const expectedCommands = [
-    ['➕ Vote +1', '/addme'],
+    ['➕ Vote +1', '/vote +1'],
     ['📋 Bench', '/bench'],
     ['👤 Thêm cầu ngoài', '/add'],
     ['✏️ Sửa bench', '/editbench'],
@@ -53,7 +53,7 @@ test('reply keyboard maps exact labels and keeps Telegram options', () => {
   for (const [label, command] of expectedCommands) {
     assert.equal(getReplyKeyboardCommand(label), command);
   }
-  assert.equal(getReplyKeyboardCommand('  ➕ Vote +1  '), '/addme');
+  assert.equal(getReplyKeyboardCommand('  ➕ Vote +1  '), '/vote +1');
   assert.equal(getReplyKeyboardCommand('👤 Thông tin của tôi'), null);
   assert.equal(getReplyKeyboardCommand('📅 Lịch sử trận'), null);
   assert.equal(getReplyKeyboardCommand('📜 Luật team'), null);

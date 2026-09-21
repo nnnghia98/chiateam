@@ -8,6 +8,7 @@ const { ATTENDANCE_VOTE_OPTIONS } = require('./attendance-vote');
 const {
   VOTE_MESSAGES,
   createVoteCommand,
+  getVoteIdentityKey,
   parseVoteChoice,
 } = require('./vote-command');
 
@@ -74,6 +75,17 @@ test('text vote parser accepts 0 through 4 with an optional plus', () => {
   assert.equal(parseVoteChoice([]), null);
   assert.equal(parseVoteChoice(['5']), null);
   assert.equal(parseVoteChoice(['1', '2']), null);
+});
+
+test('Telegram vote identity keeps compatibility with native poll answers', () => {
+  assert.equal(
+    getVoteIdentityKey({ platform: 'telegram', externalId: '123' }),
+    '123'
+  );
+  assert.equal(
+    getVoteIdentityKey({ platform: 'zalo', externalId: '123' }),
+    'zalo:123'
+  );
 });
 
 test('independent /vote stores a platform-qualified voter', async () => {

@@ -5,11 +5,9 @@ const { startBotRuntime } = require('./start-bot');
 const {
   createStartCommand,
 } = require('../core/use-cases/common/start-command');
-const { createAddmeCommand } = require('../core/use-cases/bench/addme-command');
-const { createBenchCommand } = require('../core/use-cases/bench/bench-command');
 const {
-  createTelegramBenchIdentityPolicy,
-} = require('../platforms/telegram/bench-identity-policy');
+  createVoteCommand,
+} = require('../core/use-cases/management/vote-command');
 const {
   createTelegramPermissionPolicy,
 } = require('../platforms/telegram/permission-policy');
@@ -18,7 +16,17 @@ const { createReplyKeyboard } = require('../platforms/telegram/reply-keyboard');
 function createFixture(t) {
   const bot = new EventEmitter();
   const sent = [];
-  const state = { bench: [] };
+  const state = {
+    bench: [],
+    activeVote: {
+      id: 'poll-1',
+      platform: 'telegram',
+      question: 'Sân A 20h',
+      options: ['0', '+1', '+2', '+3', '+4'],
+      totalVoters: 0,
+      votes: {},
+    },
+  };
   const permissions = [];
   let saves = 0;
   let commandsEnabled = true;
@@ -32,10 +40,7 @@ function createFixture(t) {
     bot,
     definitions: [
       createStartCommand(),
-      createAddmeCommand({
-        identityPolicy: createTelegramBenchIdentityPolicy(),
-      }),
-      createBenchCommand(),
+      createVoteCommand(),
     ],
     telegramChannelConfig: {
       chatId: '-100999',
@@ -118,28 +123,32 @@ test('Telegram /start and help button show the menu in the source chat', async t
   assert.equal(fixture.saves, 0);
 });
 
-test('Telegram menu joins once, reads bench, and obeys pause and permissions', async t => {
+test('Telegram Vote +1 button records the poll choice without changing bench', async t => {
   const fixture = createFixture(t);
   const { adapter } = fixture.runtime;
 
   await adapter.handleEvent(event('➕ Vote +1'));
-  assert.deepEqual(fixture.state.bench, [
-    [123, { name: 'Nghia', userId: 123 }],
-  ]);
+  assert.deepEqual(fixture.state.bench, []);
+  assert.deepEqual(fixture.state.activeVote.votes['123'], {
+    id: '123',
+    platform: 'telegram',
+    name: 'Nghia',
+    choice: '+1',
+    optionIndex: 1,
+    options: [1],
+  });
+  assert.equal(fixture.state.activeVote.totalVoters, 1);
   assert.equal(fixture.saves, 1);
-  assert.equal(fixture.sent[0].chatId, '-100999');
-  assert.equal(fixture.sent[0].options.message_thread_id, '8');
+  assert.match(fixture.sent[0].text, /Nghia: tham gia 1 người/);
+  assert.equal(fixture.sent[0].chatId, '-456');
+  assert.equal(fixture.sent[0].options.message_thread_id, '10');
 
-  await adapter.handleEvent(event('/addme'));
+  await adapter.handleEvent(event('/vote +1'));
   assert.equal(fixture.saves, 1);
-  assert.match(fixture.sent[1].text, /Đã có tên Nghia/);
-  await adapter.handleEvent(event('📋 Bench'));
-  assert.match(fixture.sent[2].text, /Nghia/);
-  assert.equal(fixture.sent[2].options.message_thread_id, '7');
+  assert.match(fixture.sent[1].text, /vẫn chọn tham gia 1/);
   assert.deepEqual(fixture.permissions, [
-    { command: 'addme', permission: 'player' },
-    { command: 'addme', permission: 'player' },
-    { command: 'bench', permission: 'player' },
+    { command: 'vote', permission: 'player' },
+    { command: 'vote', permission: 'player' },
   ]);
 
   fixture.deny();
@@ -147,14 +156,15 @@ test('Telegram menu joins once, reads bench, and obeys pause and permissions', a
     event('➕ Vote +1', { id: 789, first_name: 'Minh' })
   );
   assert.equal(fixture.saves, 1);
-  assert.equal(fixture.permissions.length, 4);
+  assert.equal(fixture.permissions.length, 3);
+  assert.match(fixture.sent.at(-1).text, /không có quyền/);
 
   fixture.pause();
   await adapter.handleEvent(
     event('➕ Vote +1', { id: 789, first_name: 'Minh' })
   );
   assert.equal(fixture.saves, 1);
-  assert.equal(fixture.permissions.length, 4);
+  assert.equal(fixture.permissions.length, 3);
   assert.match(fixture.sent.at(-1).text, /paused/i);
   assert.equal(fixture.sent.at(-1).chatId, '-456');
   assert.equal(fixture.sent.at(-1).options.message_thread_id, '10');

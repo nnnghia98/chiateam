@@ -1,5 +1,5 @@
 const REPLY_KEYBOARD_COMMANDS = Object.freeze({
-  '➕ Vote +1': '/addme',
+  '➕ Vote +1': '/vote +1',
   '📋 Bench': '/bench',
   '👤 Thêm cầu ngoài': '/add',
   '✏️ Sửa bench': '/editbench',

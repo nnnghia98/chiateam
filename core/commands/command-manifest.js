@@ -165,6 +165,13 @@ const COMMAND_MANIFEST = Object.freeze(
       permission: 'admin',
     },
     {
+      name: 'vote',
+      category: 'Vote',
+      usage: '/vote 0|1|2|3|4',
+      description: 'Bình chọn hoặc đổi lựa chọn',
+      permission: 'player',
+    },
+    {
       name: 'demvote',
       category: 'Vote',
       usage: '/demvote',
