@@ -1,5 +1,20 @@
 # World Cup Predictions API
 
+## Current status
+
+The full `/api/world-cup-predictions` route family is frozen. Every request to
+the base path or one of its subpaths returns HTTP `410` with this error:
+
+```json
+{
+  "error": "WORLD_CUP_PREDICTIONS_API_FROZEN",
+  "message": "World Cup prediction APIs are frozen"
+}
+```
+
+The PostgreSQL tables and service code remain in the repository, but the HTTP
+API does not read or change World Cup prediction data while it is frozen.
+
 ## Auth
 
 Admin endpoints require:
