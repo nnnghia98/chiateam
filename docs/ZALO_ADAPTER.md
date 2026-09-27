@@ -150,9 +150,11 @@ The existing API remains the only PostgreSQL writer. Its authenticated
 message IDs in `webhook_events`. This prevents two Vercel instances from
 processing the same vote. A failed command releases its claim so Zalo can retry.
 
-The root `.vercelignore` uploads only the webhook function and the shared files
-that it imports. It excludes the existing long-running API server and local env
-files.
+The root `.vercelignore` keeps only the webhook entries from the API directory
+and leaves shared source trees available. Vercel's file tracing selects the
+files that each function uses, so new helpers in those trees do not need a new
+per-file ignore rule. It excludes the existing long-running API server and
+local env files.
 
 ### Vercel Environment
 

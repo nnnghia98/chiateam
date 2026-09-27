@@ -8,22 +8,44 @@ const rules = fs
   .split(/\r?\n/)
   .map(line => line.trim());
 
-test('Vercel allowlist includes all Zalo webhook local dependencies', () => {
-  const requiredRules = [
-    ['/api/*', '!/api/management/catalog.js'],
-    ['/config/*', '!/config/load-env.js'],
-    ['/runtime/*', '!/runtime/bot-controls.js'],
-    ['/runtime/*', '!/runtime/managed-bootstrap.js'],
-    ['/runtime/*', '!/runtime/managed-process.js'],
-    ['/runtime/*', '!/runtime/managed-runtime-client.js'],
-  ];
-
-  for (const [ignoreRule, allowRule] of requiredRules) {
-    assert.ok(rules.includes(ignoreRule), `Missing ignore rule: ${ignoreRule}`);
-    assert.ok(rules.includes(allowRule), `Missing allow rule: ${allowRule}`);
-    assert.ok(
-      rules.indexOf(allowRule) > rules.indexOf(ignoreRule),
-      `${allowRule} must follow ${ignoreRule}`
+test('Vercel leaves shared source available for automatic file tracing', () => {
+  assert.equal(
+    rules.includes('/*'),
+    false,
+    'A root allowlist would hide future local dependencies'
+  );
+  for (const rule of [
+    '/bot/*',
+    '/config/*',
+    '/core/*',
+    '/platforms/*',
+    '/runtime/*',
+    '/shared/*',
+  ]) {
+    assert.equal(
+      rules.includes(rule),
+      false,
+      `${rule} must not hide shared source files`
     );
   }
+
+  for (const path of ['.env*', 'node_modules/', 'api/data/bot/*', 'docs/']) {
+    assert.ok(rules.includes(path), `Missing private or unused ignore rule: ${path}`);
+  }
+
+  const apiIgnoreIndex = rules.indexOf('/api/*');
+  for (const entry of ['zalo-webhook.mjs', 'messenger-webhook.mjs']) {
+    const allowIndex = rules.indexOf(`!/api/${entry}`);
+    assert.ok(allowIndex > apiIgnoreIndex, `Webhook entry must follow /api/*: ${entry}`);
+  }
+
+  const managementIgnoreIndex = rules.indexOf('/api/management/*');
+  assert.ok(
+    rules.indexOf('!/api/management/catalog.js') > managementIgnoreIndex,
+    'Management catalog must follow its ignore rule'
+  );
+  assert.ok(
+    rules.includes('!/api/management/catalog.js'),
+    'Management catalog must stay available to the webhook'
+  );
 });

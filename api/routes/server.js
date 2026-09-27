@@ -305,6 +305,7 @@ function getAdminActorId(req) {
 }
 
 const MATCH_MEDIA_PATH_PREFIX = '/api/matches/by-id';
+const WORLD_CUP_PREDICTIONS_PATH_PREFIX = '/api/world-cup-predictions';
 const POSTGRES_INTEGER_MAX = 2_147_483_647;
 const MATCH_MEDIA_BAD_REQUEST_CODES = new Set([
   'DUPLICATE_SOURCE_SLOT',
@@ -573,6 +574,13 @@ function validateMatchIdParam(rawMatchId) {
   return isValidMatchId(matchId) ? matchId : null;
 }
 
+function isWorldCupPredictionsApiPath(path) {
+  return (
+    path === WORLD_CUP_PREDICTIONS_PATH_PREFIX ||
+    path.startsWith(`${WORLD_CUP_PREDICTIONS_PATH_PREFIX}/`)
+  );
+}
+
 function validateCreatePredictionMatchPayload(payload) {
   const matchNumber = Number(payload?.matchNumber ?? payload?.id);
   const id = normalizeMatchId(matchNumber);
@@ -738,6 +746,18 @@ function createUiApiServer({
             environment: settings.environment,
           },
           ...(typeof getStatus === 'function' ? getStatus() : {}),
+        },
+        { ...headers, 'Cache-Control': 'no-store' }
+      );
+    }
+
+    if (isWorldCupPredictionsApiPath(path)) {
+      return sendJson(
+        res,
+        410,
+        {
+          error: 'WORLD_CUP_PREDICTIONS_API_FROZEN',
+          message: 'World Cup prediction APIs are frozen',
         },
         { ...headers, 'Cache-Control': 'no-store' }
       );
