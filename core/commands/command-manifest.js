@@ -154,7 +154,7 @@ const COMMAND_MANIFEST = Object.freeze(
       name: 'chiatien',
       category: 'Sân và chi phí',
       usage: '/chiatien',
-      description: 'Chia tiền cho hai team',
+      description: 'Chia phí từng người; mã và QR chỉ gửi riêng cho admin',
       permission: 'player',
     },
     {
