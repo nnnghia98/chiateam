@@ -133,7 +133,7 @@ function createCommandDefinitions({
     createTiennuocCommand(),
     createWinnerCommand(),
     createLoserCommand(),
-    createChiatienCommand(),
+    createChiatienCommand({ env }),
     createTaovoteCommand({ votePublisher }),
     createVoteCommand(),
     createDemvoteCommand(),

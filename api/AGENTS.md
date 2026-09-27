@@ -25,8 +25,11 @@ Default port resolution order: `API_PORT` → `UI_API_PORT` → `PORT` → `8787
 - [db/tables.sql](./db/tables.sql)
   Reference schema for core tables. Runtime bootstrapping also ensures helper tables such as `storage`, `current_match`, and World Cup prediction tables.
 
+- [db/host-tables.js](./db/host-tables.js)
+  Ensures the `host` and `host_bank_accounts` PostgreSQL tables for existing databases.
+
 - [db/init-database.js](./db/init-database.js)
-  One-shot script to create tables in the target database.
+  One-shot script to ensure runtime tables in the target database.
 
 - [db/drop-database.js](./db/drop-database.js)
   One-shot script to drop all tables. **Destructive — do not run in production without confirmation.**
@@ -62,6 +65,8 @@ Default port resolution order: `API_PORT` → `UI_API_PORT` → `PORT` → `8787
 | Table                | Key columns                                                                                                                |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | `players`            | `id`, `user_id` (Telegram ID, negative = placeholder), `number` (shirt), `name`, `username`, `avatar`                      |
+| `host`               | `id`, optional `player_id`, `display_name`, `is_active`                                                                  |
+| `host_bank_accounts` | `host_id`, `bank_bin`, `account_number`, `account_name`, `is_active`, `is_default`                                          |
 | `matches`            | `id`, `match_date` (unique, YYYY-MM-DD), `san`, `tiensan`, `home_score`, `away_score`, `winner_side`, `notes`              |
 | `match_players`      | `match_id`, `player_id` (nullable for guests), `side` (`HOME`/`AWAY`/`EXTRA`), `display_name`                              |
 | `match_player_stats` | `match_id`, `player_id`, `goals`, `assists`, `is_mvp`, `result`                                                            |

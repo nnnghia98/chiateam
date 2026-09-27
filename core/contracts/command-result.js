@@ -103,6 +103,10 @@ function normalizeMessage(message, index) {
     ).toLowerCase();
   }
 
+  if (message.photoBuffer != null && !Buffer.isBuffer(message.photoBuffer)) {
+    throw new TypeError(`messages[${index}].photoBuffer must be a Buffer.`);
+  }
+
   return Object.freeze({
     text: requireText(fallbackText, `messages[${index}].text`),
     actions: Object.freeze(actions.map(normalizeAction)),
@@ -110,6 +114,9 @@ function normalizeMessage(message, index) {
     channel,
     input: normalizeInput(message.input, index),
     ...(message.photoUrl ? { photoUrl: String(message.photoUrl) } : {}),
+    ...(message.photoBuffer
+      ? { photoBuffer: Buffer.from(message.photoBuffer) }
+      : {}),
   });
 }
 

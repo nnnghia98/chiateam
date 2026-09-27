@@ -41,6 +41,16 @@ function childEnvironment(service, snapshot, env) {
             ? JSON.stringify(value)
             : String(value);
     }
+  if (service === 'telegram') {
+    for (const key of [
+      'PAYMENT_BANK_BIN',
+      'PAYMENT_BANK_NAME',
+      'PAYMENT_ACCOUNT_NUMBER',
+      'PAYMENT_ACCOUNT_NAME',
+    ]) {
+      if (env[key] != null) result[key] = env[key];
+    }
+  }
   const specific =
     service === 'telegram'
       ? 'TELEGRAM_API_URL'

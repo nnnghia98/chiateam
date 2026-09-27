@@ -33,6 +33,8 @@ connection and runtime tables:
 yarn init-db
 ```
 
+This also creates the `host` and `host_bank_accounts` tables for payment setup.
+
 Start the API and Telegram bot together:
 
 ```bash
@@ -90,6 +92,13 @@ Known commands registered by the active bot runtime:
 | Players           | `/register`, `/me`                                                           |
 | Matches           | `/match`, `/matches`                                                           |
 | Admin reset       | `/reset`                                                                       |
+
+`/chiatien` shows each player's amount in the group. The admin who runs it gets
+the transfer codes in a private chat. When the optional payment settings are
+valid, the bot also sends QR images and account details there. The public
+message shows amounts only. The admin should send `/start` to the bot in a
+private chat before running `/chiatien` in the group. The command does not
+detect or record completed payments.
 
 Standalone AI and unsupported World Cup names are not
 part of the supported bot runtime.
@@ -292,13 +301,22 @@ Both files use two main sections:
 
 | Section | Settings |
 | --- | --- |
-| `BOT` | Telegram credentials and group topics; Zalo credentials and webhook; Messenger webhook credentials. |
+| `BOT` | Telegram credentials and group topics; optional `/chiatien` payment QR receiver; Zalo credentials and webhook; Messenger webhook credentials. |
 | `API` | API connection and shared authentication; database and JSON mirror; image storage; allowed web origins; maintenance; optional AI; admin panel backend settings. |
 
 Use [.env.example](.env.example) for the current setting names and comments.
 Shared settings appear once. `NODE_ENV`, `INTERNAL_API_AUTH_TOKEN`, and
 maintenance settings under `API` are also used by bot services. Optional
 feature settings stay in the example even when that feature is not enabled.
+
+To send payment QR images privately to the `/chiatien` admin, set
+`PAYMENT_BANK_BIN` and `PAYMENT_ACCOUNT_NUMBER` in `.env`.
+`PAYMENT_ACCOUNT_NAME` is optional.
+Techcombank's BIN is `970407`; `PAYMENT_BANK_NAME` sets the label shown under
+each QR. Keep your real account details in `.env`, not in `.env.example`.
+Without a valid BIN and account number, the bot still lists each player's
+amount and sends the transfer codes privately to the admin, but skips the QR
+images.
 
 `BOT_API_BASE_URL` is the main bot-to-API address. `API_INTERNAL_URL` remains
 a supported fallback and can also seed the first admin panel settings import.
@@ -310,6 +328,10 @@ this repository's `.env`. The admin panel web app has its own environment and
 login settings. `ENV_FILE` is ignored and is not needed. Set the Messenger
 callback URL directly in Meta settings; the code does not read a
 `MESSENGER_WEBHOOK_URL` variable.
+
+`PAYMENT_*` values stay in the Telegram bot's `.env`; they are passed to a
+managed Telegram child process but are not saved as admin panel settings.
+Restart the managed parent after changing them.
 
 `GEMINI_API_KEY` is optional. When present, match flows can generate Vietnamese
 AI commentary. When absent, AI helpers return `null` and normal match behavior

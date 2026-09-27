@@ -1,4 +1,4 @@
-**Command and menu audit — 13 September 2026**
+**Command and menu audit — 25 September 2026**
 
 This report traces the active local code. It does not change the menu or bot behavior. It does not test the deployed bot, send messages, or change stored team data. Commands can be paused or limited to admins through the admin panel, so live access can differ from the defaults below.
 
@@ -95,9 +95,9 @@ Two-team and three-team lists are stored separately. `/addtoteam` checks duplica
 | [`/tiennuoc [AMOUNT]`](../core/use-cases/management/tiennuoc-command.js) | Everyone reads; admin changes | Shows or sets the water cost, with the same number rules. |
 | [`/winner [HOME\|AWAY]`](../core/use-cases/management/winner-command.js) | Everyone reads; admin changes | Shows or sets the winning side for the current fee split. Saves the opposite side in `teamThua`. Can also show the calculated fees. Does not update a saved match or player wins/losses. |
 | [`/loser [HOME\|AWAY]`](../core/use-cases/management/loser-command.js) | Everyone | Old command. Only explains the matching `/winner` command. It does not change data. |
-| [`/chiatien`](../core/use-cases/management/chiatien-command.js) | Everyone | Calculates the two-team fee split. Everyone shares venue cost; the losing side shares water cost. Amounts are rounded up per person. Does not save a payment or record who paid. |
+| [`/chiatien`](../core/use-cases/management/chiatien-command.js) | Everyone | Calculates each two-team fee. Everyone shares venue cost; the losing side shares water cost. The group sees each player's amount only. When an admin runs it, transfer codes and configured QR details go to that admin by private message. Does not save payment requests or record who paid. |
 
-These commands have no step-by-step input buttons. With no winner set, `/chiatien` only splits the venue cost equally; water is not included in that fallback. Fee splitting does not support three-team-only data. If both team modes have data, it uses the two-team lists. Source: [fee calculation](../core/use-cases/management/two-team-fee.js).
+These commands have no step-by-step input buttons. With no winner set, `/chiatien` only splits the venue cost equally; water is not included in that fallback. Fee splitting does not support three-team-only data. If both team modes have data, it uses the two-team lists. An admin must start a private chat with the bot before the bot can send codes or QR details there. Private payment QR images use `PAYMENT_*` settings from the bot's `.env`; they do not confirm a transfer. Source: [fee calculation](../core/use-cases/management/two-team-fee.js).
 
 **Telegram: attendance vote — 5 commands**
 

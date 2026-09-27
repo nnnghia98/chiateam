@@ -280,21 +280,27 @@ function createTelegramAdapter({
         channelConfig.threads || {},
         message.channel
       );
+      const isPrivateRecipient = message.channel === 'private';
       const isPrivateChat = context.conversation.type === 'private';
       const useSource =
-        isPrivateChat ||
-        isStartCommand ||
-        message.channel === 'source' ||
-        !channelConfig.chatId ||
-        !hasConfiguredChannel;
-      const chatId = useSource
-        ? context.conversation.externalId
-        : channelConfig.chatId || context.conversation.externalId;
-      const threadId = useSource
-        ? context.conversation.threadId
-        : channelConfig.threads?.[message.channel];
+        !isPrivateRecipient &&
+        (isPrivateChat ||
+          isStartCommand ||
+          message.channel === 'source' ||
+          !channelConfig.chatId ||
+          !hasConfiguredChannel);
+      const chatId = isPrivateRecipient
+        ? context.actor.externalId
+        : useSource
+          ? context.conversation.externalId
+          : channelConfig.chatId || context.conversation.externalId;
+      const threadId = isPrivateRecipient
+        ? null
+        : useSource
+          ? context.conversation.threadId
+          : channelConfig.threads?.[message.channel];
 
-      if (useSource) {
+      if (isPrivateRecipient || useSource) {
         delete options.message_thread_id;
       }
       if (threadId != null) {
@@ -308,6 +314,21 @@ function createTelegramAdapter({
           threadId == null ? {} : { message_thread_id: threadId }
         );
         if (!isCurrent(context, version)) return;
+      }
+
+      if (message.photoBuffer) {
+        const photoOptions = { caption: rendered.text };
+        if (threadId != null) {
+          photoOptions.message_thread_id = threadId;
+        }
+
+        await bot.sendPhoto(chatId, message.photoBuffer, photoOptions, {
+          filename: 'payment-qr.png',
+          contentType: 'image/png',
+        });
+        if (!isCurrent(context, version)) return;
+        rememberInput(context, message.input);
+        continue;
       }
 
       try {
@@ -447,9 +468,10 @@ function createTelegramAdapter({
   }
 
   async function reportControl(context, control) {
-    const text = control?.available === false
-      ? '⚠️ Bot commands are temporarily unavailable. Please try again later.'
-      : '⏸️ Bot commands are currently paused.';
+    const text =
+      control?.available === false
+        ? '⚠️ Bot commands are temporarily unavailable. Please try again later.'
+        : '⏸️ Bot commands are currently paused.';
     try {
       await bot.sendMessage(context.conversation.externalId, text, {
         ...(context.conversation.threadId != null
