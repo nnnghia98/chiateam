@@ -45,9 +45,9 @@ accounts for the admin and the Telegram bot.
 `fee_batches` stores one fee batch per Vietnam calendar day. `fee_requests`
 stores each player's amount, transfer note, and message delivery state. Run
 `yarn init-db` after updating the code to add these tables to an existing
-database. `/chiatien` only previews fees; `/guichiatien` sends private payment
-requests. `/guichiatien status` lets an admin review codes and delivery status.
-It never marks a bank transfer as paid.
+database. `/chiatien` previews fees. The private fee delivery command is
+temporarily disabled in the bot. The fee batch tables remain ready for a later
+release. Payment delivery does not confirm a bank transfer as paid.
 
 ## Backups and safety
 

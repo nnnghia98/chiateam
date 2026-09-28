@@ -80,31 +80,25 @@ generated from that manifest.
 
 Known commands registered by the active bot runtime:
 
-| Area              | Commands                                                                       |
-| ----------------- | ------------------------------------------------------------------------------ |
-| Help              | `/start`                                                                       |
-| Zalo messaging    | `/zalosay`, `/say`                                                             |
-| Bench             | `/addme`, `/add`, `/bench`, `/editbench`, `/clearbench`                        |
-| Teams             | `/chiateam`, `/team`, `/addtoteam`, `/clearteam`                               |
-| Team constraints  | `/manifest`, `/mf`, `/manifests`, `/removemanifest`, `/clearmanifests`         |
-| Venue and fees    | `/san`, `/clearsan`, `/tiensan`, `/tiennuoc`, `/winner`, `/loser`, `/chiatien`, `/guichiatien` |
-| Attendance vote   | `/taovote`, `/vote`, `/clearvote`, `/demvote`, `/sync`                         |
-| Players           | `/register`, `/me`                                                           |
-| Matches           | `/match`, `/matches`                                                           |
-| Admin reset       | `/reset`                                                                       |
+| Area             | Commands                                                               |
+| ---------------- | ---------------------------------------------------------------------- |
+| Help             | `/start`                                                               |
+| Zalo messaging   | `/zalosay`, `/say`                                                     |
+| Bench            | `/addme`, `/add`, `/bench`, `/editbench`, `/clearbench`                |
+| Teams            | `/chiateam`, `/team`, `/addtoteam`, `/clearteam`                       |
+| Team constraints | `/manifest`, `/mf`, `/manifests`, `/removemanifest`, `/clearmanifests` |
+| Venue and fees   | `/san`, `/clearsan`, `/tiensan`, `/tiennuoc`, `/winner`, `/loser`, `/chiatien` |
+| Attendance vote  | `/taovote`, `/vote`, `/clearvote`, `/demvote`, `/sync`                 |
+| Players          | `/register`, `/me`                                                     |
+| Matches          | `/match`, `/matches`                                                   |
+| Admin reset      | `/reset`                                                               |
 
 `/chiatien` previews the costs, player count, and final HOME/AWAY player amounts
 in one group message. It does not show the calculation or result labels.
 Each final player fee is rounded up to the next 500 VND.
-It sends no payment request. An admin can then message the bot privately with
-`/guichiatien` to send each player their own amount, bank details, transfer
-code, and QR image.
-Use `/guichiatien accounts` to list active host accounts,
-`/guichiatien ACCOUNT_ID` to choose one, and `/guichiatien status` to review
-codes and delivery state. The bot stores each day's fee batch
-and delivery status so repeated calls do not resend successful messages.
-Players must first start a private chat with the bot. The bot does not confirm
-whether a bank transfer was paid.
+It sends no payment request. The private fee delivery command is temporarily
+disabled. Host bank accounts and fee delivery tables remain in the database
+for a later release.
 
 Standalone AI and unsupported World Cup names are not
 part of the supported bot runtime.
@@ -315,10 +309,11 @@ Shared settings appear once. `NODE_ENV`, `INTERNAL_API_AUTH_TOKEN`, and
 maintenance settings under `API` are also used by bot services. Optional
 feature settings stay in the example even when that feature is not enabled.
 
-Payment receiver details come from `host` and `host_bank_accounts` in
+Payment receiver details are stored in `host` and `host_bank_accounts` in
 PostgreSQL. The admin panel backend provides `POST /api/hosts` and
 `POST /api/hosts/:id/accounts` to add them. See
-[docs/DATABASE_SETUP.md](docs/DATABASE_SETUP.md).
+[docs/DATABASE_SETUP.md](docs/DATABASE_SETUP.md). Private fee delivery is
+temporarily disabled in the bot.
 
 `BOT_API_BASE_URL` is the main bot-to-API address. `API_INTERNAL_URL` remains
 a supported fallback and can also seed the first admin panel settings import.

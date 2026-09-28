@@ -987,13 +987,12 @@ Agreed scope:
 - Use Telegram for `/chiatien` and admin payment management. Use Telegram and
   opted-in Zalo chats for payment details, status, and reminders.
 
-Planned flow:
+Planned flow when fee delivery is re-enabled:
 
 Current Telegram split: `/chiatien` previews amounts without creating a bill.
-An admin uses `/guichiatien` in a private chat to create or reuse one daily fee
-batch and send each player's bank QR. Delivery status is saved. Payment
-confirmation, MoMo, Zalo delivery, and reminders remain future work. The older
-flow below describes the wider plan and does not describe the current commands.
+The `/guichiatien` delivery command is temporarily disabled for deployment.
+Its planned flow below is not available in the active bot. Payment
+confirmation, MoMo, Zalo delivery, and reminders remain future work.
 
 1. Anyone runs `/chiatien` to preview the fee split. An admin then runs
    `/guichiatien` privately to create or reuse a fee batch and send requests.

@@ -158,13 +158,6 @@ const COMMAND_MANIFEST = Object.freeze(
       permission: 'player',
     },
     {
-      name: 'guichiatien',
-      category: 'Sân và chi phí',
-      usage: '/guichiatien [ACCOUNT_ID|accounts|status]',
-      description: 'Gửi phí và QR riêng cho từng người; chỉ admin',
-      permission: 'admin',
-    },
-    {
       name: 'taovote',
       category: 'Vote',
       usage: '/taovote [QUESTION]',
