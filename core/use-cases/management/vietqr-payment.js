@@ -42,45 +42,6 @@ function createCrc16(text) {
   return crc.toString(16).toUpperCase().padStart(4, '0');
 }
 
-function getVietQrSettings(env = process.env) {
-  const bankBin = String(env.PAYMENT_BANK_BIN ?? '').trim();
-  const accountNumber = String(env.PAYMENT_ACCOUNT_NUMBER ?? '').trim();
-  const accountName = normalizeText(env.PAYMENT_ACCOUNT_NAME, 25);
-  const bankName = normalizeText(env.PAYMENT_BANK_NAME, 40);
-
-  if (!accountNumber) {
-    return { ok: false, reason: 'missing' };
-  }
-
-  if (!/^\d{6}$/.test(bankBin) || !/^[A-Za-z0-9]{1,19}$/.test(accountNumber)) {
-    return { ok: false, reason: 'invalid' };
-  }
-
-  return {
-    ok: true,
-    bankBin,
-    bankName,
-    accountNumber,
-    accountName,
-  };
-}
-
-function createTransferNote(playerName, playerIndex, date = new Date()) {
-  const dateParts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Ho_Chi_Minh',
-    year: '2-digit',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(date);
-  const part = type => dateParts.find(item => item.type === type)?.value || '';
-  const dateCode = `${part('year')}${part('month')}${part('day')}`;
-  const playerCode = normalizeText(playerName, 13).replace(/ /g, '');
-  const sequence = String(playerIndex + 1).padStart(2, '0');
-  const prefix = `CT${dateCode}${sequence}`;
-
-  return normalizeText(`${prefix} ${playerCode}`, TRANSFER_NOTE_LIMIT);
-}
-
 function createVietQrPayload({
   bankBin,
   accountNumber,
@@ -95,12 +56,12 @@ function createVietQrPayload({
   const cleanAccountName = normalizeText(accountName, 25);
 
   if (!/^\d{6}$/.test(cleanBankBin)) {
-    throw new TypeError('PAYMENT_BANK_BIN must contain six digits.');
+    throw new TypeError('Bank BIN must contain six digits.');
   }
 
   if (!/^[A-Za-z0-9]{1,19}$/.test(cleanAccountNumber)) {
     throw new TypeError(
-      'PAYMENT_ACCOUNT_NUMBER must contain 1 to 19 letters or digits.'
+      'Bank account number must contain 1 to 19 letters or digits.'
     );
   }
 
@@ -157,9 +118,7 @@ async function createVietQrPng({ settings, amount, transferNote }) {
 }
 
 module.exports = {
-  createTransferNote,
   createVietQrPayload,
   createVietQrPng,
-  getVietQrSettings,
   normalizeText,
 };

@@ -1,3 +1,9 @@
+const FEE_ROUNDING_STEP = 500;
+
+function roundUpFee(amount) {
+  return Math.ceil(amount / FEE_ROUNDING_STEP) * FEE_ROUNDING_STEP;
+}
+
 function calculateTwoTeamFee({ tiensan, tiennuoc, teamThua, teamA, teamB }) {
   if (!['HOME', 'AWAY'].includes(teamThua)) {
     return null;
@@ -18,8 +24,12 @@ function calculateTwoTeamFee({ tiensan, tiennuoc, teamThua, teamA, teamB }) {
   const loserName = teamThua;
   const winnerName = teamThua === 'HOME' ? 'AWAY' : 'HOME';
   const loserCount = loserMembers.length;
-  const perMember = Math.ceil(tiensan / totalMembers);
-  const waterPerLoser = loserCount > 0 ? Math.ceil(tiennuoc / loserCount) : 0;
+  const venueShare = tiensan / totalMembers;
+  const perMember = roundUpFee(venueShare);
+  const loserTotal = roundUpFee(
+    venueShare + (loserCount > 0 ? tiennuoc / loserCount : 0)
+  );
+  const waterPerLoser = loserTotal - perMember;
 
   return Object.freeze({
     totalMembers,
@@ -31,10 +41,11 @@ function calculateTwoTeamFee({ tiensan, tiennuoc, teamThua, teamA, teamB }) {
     perMember,
     waterPerLoser,
     winnerTotal: perMember,
-    loserTotal: perMember + waterPerLoser,
+    loserTotal,
   });
 }
 
 module.exports = {
   calculateTwoTeamFee,
+  roundUpFee,
 };
