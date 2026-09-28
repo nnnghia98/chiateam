@@ -120,7 +120,7 @@ Both platforms hide paused commands and mark admin-only commands with
 
 | Menu button | Command |
 | ----------- | ------- |
-| ➕ Vote +1 | `/vote +1` |
+| 🗳️ Bình chọn | `/vote` |
 | 📋 Bench | `/bench` |
 | 👤 Thêm cầu ngoài | `/add` |
 | ✏️ Sửa bench | `/editbench` |
@@ -148,8 +148,8 @@ inline buttons stay unchanged. This menu is available only in Telegram.
 - Zalo uses the production webhook and exposes only `/start`, `/zalosay`,
   `/subscribe`, `/unsubscribe`, `/poll`, `/vote`, `/demvote`, `/bench`, and `/team`.
 - Zalo roster and team mutation commands are intentionally disabled.
-- Messenger has a local webhook MVP with only `/start`, `/poll`,
-  `/vote 0|1|2|3|4`, `/demvote`, `/bench`, and `/team`.
+- Messenger has a local webhook MVP with only `/start`, `/poll`, `/vote`,
+  `/demvote`, `/bench`, and `/team`.
 - Messenger `/vote` is the only write command. Admin, registration, roster,
   and team mutation commands are not available. Delivery is webhook-only.
 - One installation manages one football community.

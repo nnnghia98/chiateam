@@ -1,6 +1,9 @@
 const {
   createAttendanceVotePublisher,
 } = require('../../core/ports/attendance-vote-publisher');
+const {
+  ATTENDANCE_VOTE_LABELS,
+} = require('../../core/use-cases/management/attendance-vote');
 const { createTelegramChannelConfig } = require('./adapter');
 
 function createTelegramAttendanceVotePublisher({
@@ -22,7 +25,7 @@ function createTelegramAttendanceVotePublisher({
         // announcement destination when a team chat exists; without one,
         // publish in the source conversation and never use a stray group ID.
         hasConfiguredChat
-          ? channelConfig.threads?.announcement ?? null
+          ? (channelConfig.threads?.announcement ?? null)
           : context.conversation.threadId;
       const baseOptions = {
         is_anonymous: false,
@@ -34,12 +37,15 @@ function createTelegramAttendanceVotePublisher({
           ? baseOptions
           : { ...baseOptions, message_thread_id: threadId };
       let pollMessage;
+      const pollOptions = vote.options.map(
+        option => ATTENDANCE_VOTE_LABELS[String(option)] || String(option)
+      );
 
       try {
         pollMessage = await bot.sendPoll(
           chatId,
           vote.question,
-          [...vote.options],
+          pollOptions,
           options
         );
       } catch (error) {
@@ -55,7 +61,7 @@ function createTelegramAttendanceVotePublisher({
         pollMessage = await bot.sendPoll(
           chatId,
           vote.question,
-          [...vote.options],
+          pollOptions,
           baseOptions
         );
       }

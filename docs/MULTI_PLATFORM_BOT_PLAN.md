@@ -917,7 +917,7 @@ Restricted command set:
 ```text
 /start
 /poll
-/vote 0|1|2|3|4
+/vote
 /demvote
 /bench
 /team

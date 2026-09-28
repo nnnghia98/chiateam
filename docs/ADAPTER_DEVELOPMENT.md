@@ -35,15 +35,16 @@ The Zalo adapter currently exposes:
 /start
 /zalosay MESSAGE   (alias: /say; admin only)
 /poll
-/vote 0|1|2|3|4
+/vote
 /demvote
 /bench
 /team
 ```
 
-Zalo `/poll` shows the shared Telegram-created vote as text. `/vote` writes to
-the same active vote. `/bench` and `/team` are read-only. Roster commands such
-as `/addme` and `/chiateam` are not registered on Zalo. See
+Zalo `/poll` shows the shared Telegram-created vote and points users to
+`/vote`. Bare `/vote` shows two text choices. `/vote 1` means “⚽️ Đá” and
+`/vote 0` means “🫷 Thôi”. `/bench` and `/team` are read-only. Roster commands
+such as `/addme` and `/chiateam` are not registered on Zalo. See
 [`ZALO_ADAPTER.md`](ZALO_ADAPTER.md) for setup and live checks.
 
 The Messenger webhook MVP exposes the same shared vote and read commands,
@@ -52,7 +53,7 @@ without Zalo's announcement command:
 ```text
 /start
 /poll
-/vote 0|1|2|3|4
+/vote
 /demvote
 /bench
 /team

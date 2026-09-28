@@ -174,8 +174,8 @@ const COMMAND_MANIFEST = Object.freeze(
     {
       name: 'vote',
       category: 'Vote',
-      usage: '/vote 0|1|2|3|4',
-      description: 'Bình chọn hoặc đổi lựa chọn',
+      usage: '/vote',
+      description: 'Chọn hoặc đổi lựa chọn bình chọn',
       permission: 'player',
     },
     {

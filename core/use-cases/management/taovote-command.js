@@ -12,7 +12,7 @@ const MAX_VOTE_QUESTION_LENGTH = 300;
 const TAOVOTE_MESSAGES = Object.freeze({
   help:
     '📊 Cách dùng: /taovote [câu hỏi]\n' +
-    'Vote có 5 lựa chọn: 0, +1, +2, +3, +4.\n' +
+    'Vote có 2 lựa chọn: ⚽️ Đá (1) hoặc 🫷 Thôi (0).\n' +
     'Ví dụ: /taovote Sân XX ngày YY giờ ZZ',
   invalid:
     '⚠️ Câu hỏi vote phải có từ 1 đến 300 ký tự. Ví dụ: /taovote Sân XX ngày YY giờ ZZ',

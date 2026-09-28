@@ -14,7 +14,7 @@ The Zalo adapter currently reuses the shared football core for:
 /subscribe (private chat only)
 /unsubscribe (private chat only)
 /poll
-/vote 0|1|2|3|4
+/vote
 /demvote
 /bench
 /team
@@ -28,9 +28,11 @@ to opted-in Zalo subscribers, not the single owner chat. See
 team-management commands are not registered, so commands such as `/addme` and
 `/chiateam` are hidden and cause no bot action.
 
-Zalo has no native poll-send method in its current Bot API. `/poll` renders the
-active Telegram-created vote as text choices, and `/vote` stores the Zalo
-user's choice in the same active vote.
+Zalo has no native poll-send method or message buttons in its current Bot API.
+`/poll` shows the active Telegram-created vote, tells users to send `/vote`,
+and lists two text choices. Bare `/vote` lists the same choices with commands:
+`/vote 1` means “⚽️ Đá” and `/vote 0` means “🫷 Thôi”. Both choices update the
+same active vote.
 
 Telegram and Zalo run as separate processes. They read and write the same bot
 state through the API.
@@ -112,18 +114,19 @@ Live checklist:
 4. As a non-admin, send `/zalosay Hello team`. The bot must deny it.
 5. Send `/addme` and `/chiateam`. The bot must not reply or change state.
 6. Create an active vote from the Telegram admin flow with `/taovote QUESTION`.
-7. Send `/poll` in Zalo. It must show the question and five text choices.
-8. Send `/vote 2`. It must confirm two attendees.
-9. Send `/demvote`. The Zalo voter must appear in the shared result.
-10. Send `/bench` and `/team`. Both must remain read-only.
+7. Send `/poll` in Zalo. It must show the question, two text choices, and tell users to send `/vote`.
+8. Send `/vote`. It must list “⚽️ Đá” (`/vote 1`) and “🫷 Thôi” (`/vote 0`).
+9. Send `/vote 1`, then `/vote 0`. The second choice must replace the first.
+10. Send `/demvote`. The Zalo voter must appear in the shared result.
+11. Send `/bench` and `/team`. Both must remain read-only.
 
 Historical checkpoint: the original non-broadcast steps passed against the
 production webhook on 2026-09-02. The subscriber broadcast checkpoint was
 completed from the owner's live report on 2026-09-07. This records working
 production use, not new live tests of every failure or restart case.
 
-`/vote 0` records that the user will not attend. Sending another `/vote` value
-changes that user's choice.
+`/vote 0` records that the user will not attend. Sending `/vote 1` or `/vote 0`
+again replaces that user's earlier choice when it changes.
 
 Long polling and webhooks cannot run at the same time. If this bot already has
 a webhook, remove it before this local test. Zalo recommends long polling only
