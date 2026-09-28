@@ -2,6 +2,7 @@ require('../../config/load-env').loadEnv();
 
 const { db } = require('./config');
 const { ensureHostTables } = require('./host-tables');
+const { ensureFeeDeliveryTables } = require('./fee-delivery-tables');
 const {
   ensureCurrentMatchTable,
   ensureStorageTable,
@@ -34,6 +35,7 @@ async function initDatabase() {
     const result = await db.query('SELECT NOW() AS now');
     await ensurePlayersAvatarColumn();
     await ensureHostTables();
+    await ensureFeeDeliveryTables();
     await ensureMatchResultColumns();
     await ensureMatchPlayerUserIdColumn();
     await ensureStorageTable();
@@ -50,6 +52,7 @@ async function initDatabase() {
     );
     console.log('✅ Ensured players.avatar column exists');
     console.log('✅ Ensured host and host_bank_accounts tables exist');
+    console.log('✅ Ensured fee_batches and fee_requests tables exist');
     console.log('✅ Ensured match result columns exist');
     console.log('✅ Ensured match player user_id column exists');
     console.log('✅ Ensured storage table exists');

@@ -989,9 +989,15 @@ Agreed scope:
 
 Planned flow:
 
-1. An admin runs `/chiatien` to announce the fee split and create or reuse a
-   bill for that match. Keep the existing player fee-view permission; player
-   requests must not create bills or trigger broadcasts.
+Current Telegram split: `/chiatien` previews amounts without creating a bill.
+An admin uses `/guichiatien` in a private chat to create or reuse one daily fee
+batch and send each player's bank QR. Delivery status is saved. Payment
+confirmation, MoMo, Zalo delivery, and reminders remain future work. The older
+flow below describes the wider plan and does not describe the current commands.
+
+1. Anyone runs `/chiatien` to preview the fee split. An admin then runs
+   `/guichiatien` privately to create or reuse a fee batch and send requests.
+   Player preview requests must not create bills or trigger broadcasts.
 2. Save each player's amount and a unique payment code for that player and
    match. Include bank details, bank QR, and personal MoMo QR in the payment
    message. Reuse the current fee rules, including water fees for the losing
@@ -1006,7 +1012,7 @@ Planned flow:
 Implementation checklist:
 
 - [ ] Add one saved bill per match with player amounts and payment codes.
-      Repeated `/chiatien` calls must reuse the bill and preserve paid status.
+      Repeated `/guichiatien` calls must reuse the bill and preserve paid status.
       Later team or fee changes must not silently change an existing bill.
 - [ ] Add payment details and QR delivery on Telegram and subscribed Zalo
       chats. Provide text commands where buttons are unavailable.

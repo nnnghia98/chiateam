@@ -36,8 +36,18 @@ label. Account numbers are text so leading zeroes remain. Each host may have
 several active accounts and at most one default account. A default account
 must be active. Both tables are created by the fresh schema or `yarn init-db`.
 
-The bot still reads `PAYMENT_*` from `.env` for `/chiatien`; these new tables do
-not yet provide an API or save payment bills.
+The admin panel backend exposes `POST /api/hosts` with `displayName` and optional
+`playerId`, then `POST /api/hosts/:id/accounts` with `bankBin`, `bankName`,
+`accountNumber`, `accountName`, optional `label`, and optional `isDefault`.
+These routes require the admin API role. `GET /api/fee-accounts` lists active
+accounts for the admin and the Telegram bot.
+
+`fee_batches` stores one fee batch per Vietnam calendar day. `fee_requests`
+stores each player's amount, transfer note, and message delivery state. Run
+`yarn init-db` after updating the code to add these tables to an existing
+database. `/chiatien` only previews fees; `/guichiatien` sends private payment
+requests. `/guichiatien status` lets an admin review codes and delivery status.
+It never marks a bank transfer as paid.
 
 ## Backups and safety
 

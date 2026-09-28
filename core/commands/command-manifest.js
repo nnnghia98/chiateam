@@ -154,8 +154,15 @@ const COMMAND_MANIFEST = Object.freeze(
       name: 'chiatien',
       category: 'Sân và chi phí',
       usage: '/chiatien',
-      description: 'Chia phí từng người; mã và QR chỉ gửi riêng cho admin',
+      description: 'Xem trước số tiền từng người, chưa gửi yêu cầu thanh toán',
       permission: 'player',
+    },
+    {
+      name: 'guichiatien',
+      category: 'Sân và chi phí',
+      usage: '/guichiatien [ACCOUNT_ID|accounts|status]',
+      description: 'Gửi phí và QR riêng cho từng người; chỉ admin',
+      permission: 'admin',
     },
     {
       name: 'taovote',

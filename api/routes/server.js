@@ -28,6 +28,7 @@ const {
 } = require('./matches');
 const defaultMatchMediaService = require('../services/match-media-service');
 const defaultTwoNikeService = require('../services/two-nike-service');
+const { createFeeDeliveryService } = require('../services/fee-delivery-service');
 const {
   MAX_ZALO_IMAGE_BYTES,
   createZaloImageStorageService,
@@ -81,6 +82,7 @@ const {
   createBotControlsService,
 } = require('../services/bot-controls-service');
 const defaultBotControlsService = createBotControlsService();
+const defaultFeeDeliveryService = createFeeDeliveryService();
 const { createManagementService } = require('../management/service');
 const { handleManagementRequest } = require('../management/routes');
 
@@ -684,6 +686,7 @@ function createUiApiServer({
   zaloImageStorageService = defaultZaloImageStorageService,
   zaloGreetingService = defaultZaloGreetingService,
   botControlsService = defaultBotControlsService,
+  feeDeliveryService = defaultFeeDeliveryService,
   managementService,
 } = {}) {
   if (!managementService && process.env.MANAGEMENT_CHILD !== 'true' && process.env.MANAGEMENT_ENCRYPTION_KEY) {
@@ -889,7 +892,57 @@ function createUiApiServer({
       }
     }
 
-    // Players management API (for admin UI)
+    if (
+      path === '/api/fee-accounts' ||
+      path === '/api/hosts' ||
+      /^\/api\/hosts\/[^/]+\/accounts$/.test(path) ||
+      path === '/api/fee-batches' ||
+      path === '/api/fee-batches/today' ||
+      /^\/api\/fee-requests\/[^/]+\/(claim|finish)$/.test(path)
+    ) {
+      if (!requireAdmin(req, res, headers)) return;
+      try {
+        if (path === '/api/fee-accounts' && req.method === 'GET') {
+          return sendJson(res, 200, await feeDeliveryService.listAccounts(), headers);
+        }
+        if (path === '/api/hosts' && req.method === 'POST') {
+          return sendJson(res, 201, await feeDeliveryService.createHost(await readJson(req)), headers);
+        }
+        const hostAccountMatch = path.match(/^\/api\/hosts\/([^/]+)\/accounts$/);
+        if (hostAccountMatch && req.method === 'POST') {
+          const account = await feeDeliveryService.createAccount(
+            hostAccountMatch[1], await readJson(req)
+          );
+          return sendJson(res, 201, account, headers);
+        }
+        if (path === '/api/fee-batches' && req.method === 'POST') {
+          return sendJson(res, 200, await feeDeliveryService.prepareBatch(await readJson(req)), headers);
+        }
+        if (path === '/api/fee-batches/today' && req.method === 'GET') {
+          return sendJson(res, 200, await feeDeliveryService.getTodayBatch(), headers);
+        }
+        const requestMatch = path.match(/^\/api\/fee-requests\/([^/]+)\/(claim|finish)$/);
+        if (requestMatch && req.method === 'POST') {
+          const result = requestMatch[2] === 'claim'
+            ? await feeDeliveryService.claimRequest(requestMatch[1])
+            : await feeDeliveryService.finishRequest(requestMatch[1], await readJson(req));
+          return sendJson(res, 200, result, headers);
+        }
+        return sendJson(res, 405, { error: 'METHOD_NOT_ALLOWED' }, headers);
+      } catch (error) {
+        if (error.status) return sendJson(res, error.status, { error: error.code }, headers);
+        if (['23503', '23505', '23514'].includes(error.code)) {
+          return sendJson(res, 409, { error: 'BANK_ACCOUNT_CONFLICT' }, headers);
+        }
+        if (error instanceof SyntaxError) {
+          return sendJson(res, 400, { error: 'INVALID_JSON' }, headers);
+        }
+        console.error('Fee delivery API error:', error);
+        return sendJson(res, 500, { error: 'FEE_DELIVERY_FAILED' }, headers);
+      }
+    }
+
+    // Players management API (for admin panel)
     if (path === '/api/players' && req.method === 'GET') {
       try {
         const players = await getAllPlayers();

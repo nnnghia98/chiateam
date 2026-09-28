@@ -1,23 +1,14 @@
 const {
   createCommandDefinition,
 } = require('../../contracts/command-definition');
-const {
-  createCommandResult,
-  createRichTextResult,
-  createTextResult,
-} = require('../../contracts/command-result');
+const { createTextResult } = require('../../contracts/command-result');
 const {
   buildDetailedSplitSegments,
   buildSimpleSplitMessage,
   formatMoney,
   normalizeFeeState,
 } = require('./fee-view');
-const { calculateTwoTeamFee } = require('./two-team-fee');
-const {
-  createTransferNote,
-  createVietQrPng,
-  getVietQrSettings,
-} = require('./vietqr-payment');
+const { calculateTwoTeamFee, roundUpFee } = require('./two-team-fee');
 
 const CHIATIEN_MESSAGES = Object.freeze({
   usage: '⚠️ Dùng /chiatien không kèm tham số.',
@@ -32,9 +23,6 @@ const createDefaultResult = text =>
   createTextResult(text, [], { channel: 'default' });
 const createAnnouncementResult = text =>
   createTextResult(text, [], { channel: 'announcement' });
-const createRichAnnouncementResult = segments =>
-  createRichTextResult(segments, [], { channel: 'announcement' });
-
 function createDetailedFeeRows(breakdown) {
   return [
     ...breakdown.winnerMembers.map(name => ({
@@ -63,113 +51,42 @@ function normalizePlayerName(name) {
     .trim();
 }
 
-function formatPlayerFeeRow(row, index) {
-  return `${index + 1}. ${normalizePlayerName(row.name)} (${row.team}): ${formatMoney(row.amount)} VND`;
+function formatTeamFeeRows(rows, team) {
+  const members = rows.filter(row => row.team === team);
+  return [
+    `${team === 'HOME' ? '⚪' : '⚫'} ${team} (${members.length} người):`,
+    ...members.map(
+      row =>
+        `• ${normalizePlayerName(row.name)}: ${formatMoney(row.amount)} VND`
+    ),
+  ].join('\n');
 }
 
-function isTelegramAdmin(context, env) {
-  if (context?.actor?.platform !== 'telegram') {
-    return false;
-  }
-
-  const actorId = String(context.actor.externalId ?? '').trim();
-  const adminIds = [
-    env.BOT_OWNER_ID,
-    ...String(env.BOT_ADMIN_IDS ?? '').split(','),
-  ]
-    .map(id => String(id ?? '').trim())
-    .filter(Boolean);
-
-  return actorId !== '' && adminIds.includes(actorId);
-}
-
-async function createAdminPaymentMessages(rows, settings) {
-  if (!settings.ok) {
-    const codes = rows
-      .map(
-        (row, index) =>
-          `${index + 1}. ${normalizePlayerName(row.name)}: ${row.transferNote}`
-      )
-      .join('\n');
-
-    return [
-      {
-        text: `🔐 Mã chuyển khoản từng người:\n${codes}`,
-        channel: 'private',
-      },
-    ];
-  }
-
-  return Promise.all(
-    rows.map(async row => {
-      const photoBuffer = await createVietQrPng({
-        settings,
-        amount: row.amount,
-        transferNote: row.transferNote,
-      });
-      const lines = [
-        `💳 ${normalizePlayerName(row.name)} (${row.team})`,
-        `Số tiền: ${formatMoney(row.amount)} VND`,
-        `Ngân hàng: ${settings.bankName || settings.bankBin}`,
-        `Số tài khoản: ${settings.accountNumber}`,
-        ...(settings.accountName
-          ? [`Chủ tài khoản: ${settings.accountName}`]
-          : []),
-        `Nội dung: ${row.transferNote}`,
-      ];
-
-      return {
-        text: lines.join('\n'),
-        photoBuffer,
-        channel: 'private',
-      };
-    })
+function buildFeePreview(outcome) {
+  const { breakdown, feeRows, tiensan, tiennuoc } = outcome;
+  const totalMembers = breakdown?.totalMembers ?? outcome.totalMembers;
+  const lines = [
+    '💸 Xem trước chia tiền',
+    `Tiền sân: ${formatMoney(tiensan)} VND`,
+    `Tiền nước: ${formatMoney(tiennuoc)} VND${breakdown ? '' : ' (chưa tính vào phí)'}`,
+    `Số người: ${totalMembers}`,
+    '',
+  ];
+  lines.push(
+    formatTeamFeeRows(feeRows, 'HOME'),
+    '',
+    formatTeamFeeRows(feeRows, 'AWAY')
   );
+  return lines.join('\n');
 }
 
-async function addPlayerFeeMessages(summaryResult, feeRows, env, context) {
-  const settings = getVietQrSettings(env);
-  const admin = isTelegramAdmin(context, env);
-  const generatedAt = new Date();
-  const rows = feeRows.map((row, index) => ({
-    ...row,
-    transferNote: admin
-      ? createTransferNote(row.name, index, generatedAt)
-      : null,
-  }));
-  const feeList = rows
-    .map((row, index) => formatPlayerFeeRow(row, index))
-    .join('\n');
-  const messages = [...summaryResult.messages];
-
-  if (!settings.ok) {
-    const notice =
-      settings.reason === 'missing'
-        ? '⚠️ Chưa tạo QR. Admin cần cấu hình tài khoản nhận tiền.'
-        : '⚠️ Chưa tạo QR. Admin cần kiểm tra PAYMENT_BANK_BIN và PAYMENT_ACCOUNT_NUMBER.';
-    messages.push({ text: notice, channel: 'announcement' });
-  }
-
-  messages.push({
-    text: `💳 Phí từng người:\n${feeList}`,
-    channel: 'announcement',
-  });
-
-  if (admin) {
-    messages.push(...(await createAdminPaymentMessages(rows, settings)));
-  }
-
-  return createCommandResult({ messages });
-}
-
-function createChiatienCommand({ env = process.env } = {}) {
+function createChiatienCommand() {
   return createCommandDefinition({
     name: 'chiatien',
     aliases: [],
     instruction: {
       usage: '/chiatien',
-      description:
-        'Calculate each player’s fee; send transfer codes and QR details privately to admins',
+      description: 'Preview each player’s fee without sending payment requests',
       permission: 'player',
     },
     stateKeys: [
@@ -234,19 +151,18 @@ function createChiatienCommand({ env = process.env } = {}) {
         };
       }
 
+      const perMember = roundUpFee(feeState.tiensan / totalMembers);
       return {
         changed: false,
         code: 'SIMPLE_SPLIT',
         tiensan: feeState.tiensan,
+        tiennuoc: feeState.tiennuoc,
         totalMembers,
-        perMember: Math.ceil(feeState.tiensan / totalMembers),
-        feeRows: createSimpleFeeRows(
-          feeState,
-          Math.ceil(feeState.tiensan / totalMembers)
-        ),
+        perMember,
+        feeRows: createSimpleFeeRows(feeState, perMember),
       };
     },
-    reply: async (outcome, context) => {
+    reply: async outcome => {
       if (outcome.code === 'INVALID_ARGUMENTS') {
         return createDefaultResult(CHIATIEN_MESSAGES.usage);
       }
@@ -271,21 +187,11 @@ function createChiatienCommand({ env = process.env } = {}) {
       }
 
       if (outcome.code === 'DETAILED_SPLIT') {
-        return addPlayerFeeMessages(
-          createRichAnnouncementResult(buildDetailedSplitSegments(outcome)),
-          outcome.feeRows,
-          env,
-          context
-        );
+        return createAnnouncementResult(buildFeePreview(outcome));
       }
 
       if (outcome.code === 'SIMPLE_SPLIT') {
-        return addPlayerFeeMessages(
-          createAnnouncementResult(buildSimpleSplitMessage(outcome)),
-          outcome.feeRows,
-          env,
-          context
-        );
+        return createAnnouncementResult(buildFeePreview(outcome));
       }
 
       return createAnnouncementResult(buildSimpleSplitMessage(outcome));
