@@ -6,6 +6,7 @@ const {
   createTextResult,
 } = require('../../contracts/command-result');
 const { normalizeAttendanceVote } = require('./attendance-vote');
+const { VOTE_ACTIONS } = require('./vote-command');
 
 const POLL_MESSAGES = Object.freeze({
   usage: '⚠️ Dùng /poll không kèm tham số.',
@@ -13,30 +14,17 @@ const POLL_MESSAGES = Object.freeze({
   loadError: '❌ Không thể tải vote hiện tại từ API.',
 });
 
-const VOTE_ACTION_LABELS = Object.freeze([
-  'Không tham gia',
-  'Đi 1 người',
-  'Đi 2 người',
-  'Đi 3 người',
-  'Đi 4 người',
-]);
-
 function buildPollSegments(vote) {
   return [
     { text: '📊 VOTE ĐANG MỞ', bold: true },
     { text: '\n\n' },
     { text: vote.question, bold: true },
-    { text: '\n\nChọn số người tham gia bên dưới.' },
-    { text: '\nBạn có thể vote lại để đổi lựa chọn.' },
+    { text: '\n\nDùng /vote để chọn bình chọn.' },
   ];
 }
 
-function buildPollActions(vote) {
-  return vote.options.map((option, index) => ({
-    id: `vote_${index}`,
-    label: `${VOTE_ACTION_LABELS[index]} (${option})`,
-    command: `/vote ${option}`,
-  }));
+function buildPollActions() {
+  return VOTE_ACTIONS;
 }
 
 const createDefaultResult = text =>
@@ -48,7 +36,7 @@ function createPollCommand() {
     aliases: [],
     instruction: {
       usage: '/poll',
-      description: 'Show the active attendance vote as text actions',
+      description: 'Show the active vote and direct players to /vote',
       permission: 'player',
     },
     stateKeys: ['activeVote'],
@@ -90,7 +78,7 @@ function createPollCommand() {
 
       return createRichTextResult(
         buildPollSegments(outcome.vote),
-        buildPollActions(outcome.vote),
+        buildPollActions(),
         { channel: 'announcement' }
       );
     },
@@ -99,7 +87,6 @@ function createPollCommand() {
 
 module.exports = {
   POLL_MESSAGES,
-  VOTE_ACTION_LABELS,
   buildPollActions,
   buildPollSegments,
   createPollCommand,

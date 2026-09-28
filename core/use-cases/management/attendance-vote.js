@@ -1,4 +1,15 @@
-const ATTENDANCE_VOTE_OPTIONS = Object.freeze(['0', '+1', '+2', '+3', '+4']);
+const ATTENDANCE_VOTE_OPTIONS = Object.freeze(['0', '1']);
+const ATTENDANCE_VOTE_LABELS = Object.freeze({
+  0: '🫷 Thôi',
+  1: '⚽️ Đá',
+});
+const LEGACY_ATTENDANCE_VOTE_OPTIONS = Object.freeze([
+  '0',
+  '+1',
+  '+2',
+  '+3',
+  '+4',
+]);
 
 function normalizeVotePlatform(value, fallback = 'telegram') {
   return (
@@ -8,34 +19,81 @@ function normalizeVotePlatform(value, fallback = 'telegram') {
   );
 }
 
-function getChoiceIndex(vote, options) {
-  if (!vote || typeof vote !== 'object' || Array.isArray(vote)) {
+function getVoteSchema(options) {
+  if (!Array.isArray(options)) {
     return null;
   }
 
+  const normalized = options.map(option => String(option).trim());
+  const matches = expected =>
+    normalized.length === expected.length &&
+    normalized.every((option, index) => option === expected[index]);
+
+  if (matches(ATTENDANCE_VOTE_OPTIONS)) {
+    return { options: normalized, legacy: false };
+  }
+
+  if (matches(LEGACY_ATTENDANCE_VOTE_OPTIONS)) {
+    return { options: normalized, legacy: true };
+  }
+
+  return null;
+}
+
+function normalizeVoterChoice(vote, schema) {
   const namedChoice = vote.choice ?? vote.option;
 
   if (typeof namedChoice === 'string') {
-    const index = options.indexOf(namedChoice.trim());
-    return index >= 0 ? index : null;
+    const choice = namedChoice.trim();
+
+    // New binary choices can appear in an older active poll after an upgrade.
+    if (choice === '0' || choice === '1') {
+      const choiceIndex = Number(choice);
+      return { choiceIndex, partySize: choiceIndex };
+    }
+
+    const legacyIndex = schema.options.indexOf(choice);
+
+    if (legacyIndex >= 0) {
+      const choiceIndex = schema.legacy && legacyIndex > 0 ? 1 : legacyIndex;
+      return {
+        choiceIndex,
+        partySize: schema.legacy ? legacyIndex : choiceIndex,
+      };
+    }
   }
 
-  const legacyChoice = vote.optionIndex ?? vote.options?.[0];
+  const legacyIndex = vote.optionIndex ?? vote.options?.[0];
 
-  return Number.isInteger(legacyChoice) && legacyChoice >= 0
-    ? legacyChoice
-    : null;
+  if (!Number.isInteger(legacyIndex) || legacyIndex < 0) {
+    return null;
+  }
+
+  const choiceIndex = schema.legacy && legacyIndex > 0 ? 1 : legacyIndex;
+
+  if (choiceIndex >= ATTENDANCE_VOTE_OPTIONS.length) {
+    return null;
+  }
+
+  return {
+    choiceIndex,
+    partySize: schema.legacy ? legacyIndex : choiceIndex,
+  };
 }
 
-function normalizeVoter(vote, key, options, defaultPlatform) {
+function normalizeVoter(vote, key, schema, defaultPlatform) {
   if (!vote || typeof vote !== 'object' || Array.isArray(vote)) {
     return null;
   }
 
   const name = String(vote.name ?? '').trim();
-  const choiceIndex = getChoiceIndex(vote, options);
+  const normalizedChoice = normalizeVoterChoice(vote, schema);
 
-  if (!name || choiceIndex == null || choiceIndex >= options.length) {
+  if (
+    !name ||
+    !normalizedChoice ||
+    normalizedChoice.choiceIndex >= ATTENDANCE_VOTE_OPTIONS.length
+  ) {
     return null;
   }
 
@@ -43,9 +101,9 @@ function normalizeVoter(vote, key, options, defaultPlatform) {
     id: String(vote.id ?? key),
     name,
     platform: normalizeVotePlatform(vote.platform, defaultPlatform),
-    choiceIndex,
-    choice: options[choiceIndex],
-    partySize: choiceIndex,
+    choiceIndex: normalizedChoice.choiceIndex,
+    choice: ATTENDANCE_VOTE_OPTIONS[normalizedChoice.choiceIndex],
+    partySize: normalizedChoice.partySize,
   });
 }
 
@@ -55,18 +113,12 @@ function normalizeAttendanceVote(value) {
   }
 
   const question = String(value.question ?? '').trim();
-  const options = Array.isArray(value.options)
-    ? value.options.map(option => String(option).trim())
-    : null;
+  const schema = getVoteSchema(value.options);
   const votes = value.votes;
 
   if (
     !question ||
-    !options ||
-    options.length !== ATTENDANCE_VOTE_OPTIONS.length ||
-    !options.every(
-      (option, index) => option === ATTENDANCE_VOTE_OPTIONS[index]
-    ) ||
+    !schema ||
     !votes ||
     typeof votes !== 'object' ||
     Array.isArray(votes)
@@ -76,13 +128,13 @@ function normalizeAttendanceVote(value) {
 
   const defaultPlatform = normalizeVotePlatform(value.platform);
   const voters = Object.entries(votes)
-    .map(([key, vote]) => normalizeVoter(vote, key, options, defaultPlatform))
+    .map(([key, vote]) => normalizeVoter(vote, key, schema, defaultPlatform))
     .filter(Boolean);
 
   return Object.freeze({
     id: value.id == null ? null : String(value.id),
     question,
-    options: Object.freeze(options),
+    options: ATTENDANCE_VOTE_OPTIONS,
     voters: Object.freeze(voters),
     platform: defaultPlatform,
   });
@@ -95,13 +147,14 @@ function summarizeAttendanceVote(vote) {
     return null;
   }
 
-  const choices = normalized.options.map((label, choiceIndex) => {
+  const choices = normalized.options.map((value, choiceIndex) => {
     const voters = normalized.voters.filter(
       voter => voter.choiceIndex === choiceIndex
     );
 
     return Object.freeze({
-      label,
+      label: ATTENDANCE_VOTE_LABELS[value],
+      value,
       choiceIndex,
       count: voters.length,
       voterNames: Object.freeze(voters.map(voter => voter.name)),
@@ -120,7 +173,9 @@ function summarizeAttendanceVote(vote) {
 }
 
 module.exports = {
+  ATTENDANCE_VOTE_LABELS,
   ATTENDANCE_VOTE_OPTIONS,
+  LEGACY_ATTENDANCE_VOTE_OPTIONS,
   normalizeAttendanceVote,
   summarizeAttendanceVote,
 };

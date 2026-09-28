@@ -10,7 +10,7 @@ Sources: [Telegram registration](../runtime/create-command-definitions.js), [com
 
 | Button | Command | What happens now |
 | --- | --- | --- |
-| ➕ Vote +1 | `/vote +1` | Records your `+1` choice in the active vote. It does not change the bench; use `/sync` to copy attending voters into the bench. |
+| 🗳️ Bình chọn | `/vote` | Opens two vote choices. Choose “⚽️ Đá” or “🫷 Thôi”. It does not change the bench; use `/sync` to copy attending voters into the bench. |
 | 📋 Bench | `/bench` | Shows the current bench names and count. Does not change anything. |
 | 👤 Thêm cầu ngoài | `/add` | Shows how to enter one or more guest names. The names must then be typed with the command. |
 | ✏️ Sửa bench | `/editbench` | Opens the member list. Selecting a member asks for the new name. |
@@ -104,15 +104,15 @@ These commands have no step-by-step input buttons. Each final player fee is roun
 
 | Command | Access | Current action and input behavior |
 | --- | --- | --- |
-| [`/taovote [QUESTION]`](../core/use-cases/management/taovote-command.js) | Everyone sees usage; admin creates | Bare command shows help. A question, up to 300 characters, creates a Telegram poll. Only one shared vote can be active. Choices are `0`, `+1`, `+2`, `+3`, `+4`. |
-| [`/vote 0\|1\|2\|3\|4`](../core/use-cases/management/vote-command.js) | Player | Casts or changes the sender's choice in the active vote. Telegram's `➕ Vote +1` menu button uses `/vote +1`. |
+| [`/taovote [QUESTION]`](../core/use-cases/management/taovote-command.js) | Everyone sees usage; admin creates | Bare command shows help. A question, up to 300 characters, creates a Telegram poll. Only one shared vote can be active. “⚽️ Đá” has value `1`; “🫷 Thôi” has value `0`. |
+| [`/vote`](../core/use-cases/management/vote-command.js) | Player | Bare command shows two choices. Choosing one records or changes the sender's vote. `/vote 1` means “⚽️ Đá”; `/vote 0` means “🫷 Thôi”. |
 | [`/demvote`](../core/use-cases/management/demvote-command.js) | Everyone | Shows names and vote counts per choice, plus total people attending. No action buttons. |
 | [`/sync`](../core/use-cases/management/sync-command.js) | Admin | Copies attending voters and their guests into the bench. Skips existing identities. Only adds entries; it does not remove people after a reduced/cancelled vote. Keeps the poll open. |
 | [`/clearvote [confirm\|cancel]`](../core/use-cases/management/clearvote-command.js) | Admin | Bare command shows confirmation buttons. Confirm tries to close the Telegram poll and clears the shared vote. Cancel keeps it. Local vote data is cleared even if closing the external poll fails; the reply reports that failure. |
 
-`+N` means N people total, including the voter. For example, `+2` adds the voter and one guest during `/sync`. `0` means not attending. The `/demvote` footer says “Số người vote”, but its value is total people attending, including guests, rather than the number of accounts that voted. Source: [vote totals](../core/use-cases/management/attendance-vote.js).
+The new vote has two values: `1` means attending and `0` means not attending. When a user changes their answer, the new answer replaces the old answer. Older active votes with `+1` to `+4` remain readable until they are cleared. `/sync` adds one bench entry for each attending voter. Source: [vote totals](../core/use-cases/management/attendance-vote.js).
 
-Telegram users can vote through the native Telegram poll or `/vote`. The `➕ Vote +1` menu button sends `/vote +1`; it does not add the sender to the bench. `/poll` is not a Telegram command.
+Telegram users can vote through the native Telegram poll or `/vote`. The `🗳️ Bình chọn` menu button opens the two choices; it does not add the sender to the bench. `/poll` is not a Telegram command.
 
 **Telegram: players — 2 commands**
 
@@ -159,8 +159,8 @@ The current save action reads `teamA`, `teamB`, and `team3C`. It does not read `
 | `/zalosay MESSAGE`, also `/say` | Zalo admin | Sends the supplied text into the current Zalo conversation. This is not the Telegram subscriber-broadcast flow. It is registered but hidden from Zalo `/start` help. |
 | `/subscribe` | Everyone, private chat only | Registers this user/chat to receive team announcements on Zalo. |
 | `/unsubscribe` | Everyone, private chat only | Stops that subscription. |
-| `/poll` | Everyone | Shows the active shared vote with text instructions for `/vote 0` through `/vote 4`. |
-| `/vote 0\|1\|2\|3\|4` | Everyone | Sets or changes the sender's attendance choice. Also accepts `+1` through `+4`. Zero means not attending; N means N people total. Does not directly add anyone to the bench. |
+| `/poll` | Everyone | Shows the active shared vote, two text choices, and tells users to send `/vote`. |
+| `/vote` | Everyone | Shows two text choices: “⚽️ Đá” (`/vote 1`) and “🫷 Thôi” (`/vote 0`). A new choice replaces the sender's earlier choice. |
 | `/demvote` | Everyone | Shows the shared vote results. |
 | `/bench` | Everyone | Shows the shared bench. |
 | `/team [2\|3]` | Everyone | Shows two-team or three-team lists. Defaults to two teams. |

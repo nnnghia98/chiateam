@@ -1,5 +1,5 @@
 const REPLY_KEYBOARD_COMMANDS = Object.freeze({
-  '➕ Vote +1': '/vote +1',
+  '🗳️ Bình chọn': '/vote',
   '📋 Bench': '/bench',
   '👤 Thêm cầu ngoài': '/add',
   '✏️ Sửa bench': '/editbench',
@@ -17,7 +17,7 @@ const REPLY_KEYBOARD_COMMANDS = Object.freeze({
 function createReplyKeyboard() {
   return {
     keyboard: [
-      [{ text: '➕ Vote +1' }, { text: '📋 Bench' }],
+      [{ text: '🗳️ Bình chọn' }, { text: '📋 Bench' }],
       [{ text: '👤 Thêm cầu ngoài' }, { text: '✏️ Sửa bench' }],
       [{ text: '🗑️ Xoá khỏi bench' }, { text: '🎲 Chia team' }],
       [{ text: '⚽ Team' }, { text: '👥➕ Thêm vào team' }],
