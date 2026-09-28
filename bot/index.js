@@ -52,9 +52,6 @@ const {
   createTelegramPhotoUploadService,
 } = require('../platforms/telegram/photo-upload-service');
 const {
-  createTelegramFeeDispatcher,
-} = require('../platforms/telegram/fee-dispatcher');
-const {
   createApiZaloAnnouncementRepository,
 } = require('../runtime/repositories/api-zalo-announcement-repository');
 const {
@@ -173,7 +170,6 @@ async function bootstrapBot() {
       playerRepository,
       matchRepository,
       matchSummaryGenerator,
-      feeDispatcher: createTelegramFeeDispatcher({ bot }),
     }),
   });
 

@@ -88,7 +88,6 @@ The project owner approved all decisions below without changes.
 | `/winner`   | Active                       | Player       | Read winner or set `HOME`/`AWAY`; may calculate fees | Read teams, fees, loser; write loser         | Markdown fee/result text | Telegram Markdown and topic                | U     | Any user can change the result; supports only two teams                                                | **Rewrite**                         |
 | `/loser`    | Active compatibility command | Player       | Read loser or set `HOME`/`AWAY`                      | Read teams, fees, loser; write loser         | Markdown fee/result text | Telegram Markdown and topic                | U     | Solves the same need as preferred `/winner` with inverse input; omitted from help                      | **Deprecate** in favor of `/winner` |
 | `/chiatien` | Active | Player | Preview the two-team split and each player's amount | Read fees, winner/loser, and teams; no write | Public amounts only | Telegram group | U | Three-team calculation is unsupported | **Keep** |
-| `/guichiatien` | Active | Admin | Send the split privately to each player | Read fees and host account; save fee batch and delivery status | Private QR and amount per player; admin delivery report | Telegram private chat | U | Does not confirm bank payment | **Keep** |
 
 ### Attendance Vote
 
@@ -129,6 +128,7 @@ not register them. They are also absent from the command registry.
 | `/update-leaderboard` | Inactive handler | Admin        | Apply win/loss/draw or goal/assist deltas | Write leaderboard database          | Markdown text  | Telegram Markdown             | U     | Overlaps `/match` and `/edit-stats`; old complex syntax                    | **Remove**                                                    |
 | `/ai`                 | Inactive handler | Player       | Send one prompt to Gemini                 | External AI call; no football state | Markdown text  | Gemini plus Telegram Markdown | U     | Generic AI chat is outside the football core goal                          | **Remove**                                                    |
 | `/aichat`             | Inactive handler | Player       | Keep an AI chat session or reset it       | Process-memory AI session           | Markdown text  | Gemini plus Telegram Markdown | U     | Generic AI chat is outside scope; one process-global session can mix users | **Remove**                                                    |
+| `/guichiatien`        | Inactive handler | Admin        | Send the fee split privately; optional account ID, `accounts`, or `status` | Read fee state and host account; save delivery status | Private QR and amount per player; admin report | Telegram private chat | U | Temporarily disabled for deployment | **Re-enable when ready** |
 
 ## Documented but Missing Commands
 
@@ -177,7 +177,7 @@ apply to the final behavior, including sub-actions.
 | `/winner`         | Rewrite   | Player read; admin write                      | Optional `HOME` or `AWAY`                                                     | Missing/current/saved result and optional fee split                      |
 | `/loser`          | Deprecate | Same during transition                        | Existing input                                                                | Deprecation notice plus `/winner` replacement help                       |
 | `/chiatien`       | Keep      | Player                                        | None                                                                          | Missing-condition result and public per-player fee preview |
-| `/guichiatien`    | Keep      | Admin in private chat                         | Optional account ID, `accounts`, or `status`                                  | Private payment requests, code status, and delivery report |
+| `/guichiatien`    | Temporarily disabled | Admin in private chat                  | Optional account ID, `accounts`, or `status`                                  | Private payment requests, code status, and delivery report when re-enabled |
 | `/taovote`        | Rewrite   | Admin                                         | Question                                                                      | Existing-vote condition or platform-neutral attendance vote              |
 | `/demvote`        | Keep      | Player                                        | None                                                                          | No-vote state or current result                                          |
 | `/sync`           | Rewrite   | Admin                                         | None                                                                          | No-vote state or atomic bench sync summary                               |

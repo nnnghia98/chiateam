@@ -48,9 +48,6 @@ const {
   createChiatienCommand,
 } = require('../core/use-cases/management/chiatien-command');
 const {
-  createGuichiatienCommand,
-} = require('../core/use-cases/management/guichiatien-command');
-const {
   createSanCommand,
 } = require('../core/use-cases/management/san-command');
 const {
@@ -107,7 +104,6 @@ function createCommandDefinitions({
   playerRepository,
   matchRepository,
   matchSummaryGenerator,
-  feeDispatcher,
 } = {}) {
   const announcementCommand = broadcastService
     ? createZaloBroadcastCommand({ service: broadcastService })
@@ -138,7 +134,6 @@ function createCommandDefinitions({
     createWinnerCommand(),
     createLoserCommand(),
     createChiatienCommand(),
-    createGuichiatienCommand({ dispatcher: feeDispatcher }),
     createTaovoteCommand({ votePublisher }),
     createVoteCommand(),
     createDemvoteCommand(),

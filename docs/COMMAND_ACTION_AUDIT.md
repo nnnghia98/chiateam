@@ -1,8 +1,8 @@
-**Command and menu audit — 25 September 2026**
+**Command and menu audit — 28 September 2026**
 
 This report traces the active local code. It does not change the menu or bot behavior. It does not test the deployed bot, send messages, or change stored team data. Commands can be paused or limited to admins through the admin panel, so live access can differ from the defaults below.
 
-Telegram registers **32 main commands and 2 alternative names**. The menu opens **13 commands**. Zalo registers **9 main commands and 1 alternative name**.
+Telegram registers **31 main commands and 2 alternative names**. The menu opens **13 commands**. Zalo registers **9 main commands and 1 alternative name**.
 
 Sources: [Telegram registration](../runtime/create-command-definitions.js), [command catalog used by help](../core/commands/command-manifest.js), [Telegram menu](../platforms/telegram/reply-keyboard.js), [Zalo registration](../runtime/create-zalo-command-definitions.js).
 
@@ -85,7 +85,7 @@ A manifest is a rule that asks the team splitter to keep two people together or 
 
 Two-team and three-team lists are stored separately. `/addtoteam` checks duplicates inside the target team only. It does not move a person out of another team. These details matter when a future menu uses labels such as “Move player” or “Shuffle again.”
 
-**Telegram: venue, costs, and fee result — 7 commands**
+**Telegram: venue, costs, and fee result — 6 active commands**
 
 | Command | Access | Current action and input behavior |
 | --- | --- | --- |
@@ -96,9 +96,8 @@ Two-team and three-team lists are stored separately. `/addtoteam` checks duplica
 | [`/winner [HOME\|AWAY]`](../core/use-cases/management/winner-command.js) | Everyone reads; admin changes | Shows or sets the winning side for the current fee split. Saves the opposite side in `teamThua`. Can also show the calculated fees. Does not update a saved match or player wins/losses. |
 | [`/loser [HOME\|AWAY]`](../core/use-cases/management/loser-command.js) | Everyone | Old command. Only explains the matching `/winner` command. It does not change data. |
 | [`/chiatien`](../core/use-cases/management/chiatien-command.js) | Everyone | Previews costs, player count, and final HOME/AWAY member fees in one group message. It hides the calculation and result labels. It sends no payment request and saves no bill. |
-| [`/guichiatien`](../core/use-cases/management/guichiatien-command.js) | Admin, in private chat | Sends each player their amount, transfer code, and bank QR. Saves one daily batch and delivery status. Does not confirm payment. |
 
-These commands have no step-by-step input buttons. Each final player fee is rounded up to the next 500 VND. With no winner set, the venue cost is split equally; water is not included in that fallback. Fee splitting does not support three-team-only data. If both team modes have data, it uses the two-team lists. The admin and each player must start a private chat with the bot before private delivery. `/guichiatien` reads an active host bank account from PostgreSQL and will not send to a team entry without a Telegram user ID. Source: [fee calculation](../core/use-cases/management/two-team-fee.js).
+These commands have no step-by-step input buttons. Each final player fee is rounded up to the next 500 VND. With no winner set, the venue cost is split equally; water is not included in that fallback. Fee splitting does not support three-team-only data. If both team modes have data, it uses the two-team lists. Private fee delivery is temporarily disabled. Source: [fee calculation](../core/use-cases/management/two-team-fee.js).
 
 **Telegram: attendance vote — 5 commands**
 
