@@ -26,6 +26,10 @@
 - Confirm the API is public and that the webhook secret and internal API token
   match both deployments.
 - Telegram `/zalosay` requires subscribers and a separate confirmation.
+  Telegram accepts `/zalosay` and its `/say` alias even though its public
+  command menu lists only `/start`. If the message is logged but no preview
+  appears, update and restart the Telegram service to load the command filter.
+  Confirmed broadcasts use the Zalo Bot API, not the incoming Zalo webhook.
   Each person must send `/subscribe` in a private Zalo chat. Check
   `/zalosay status DRAFT_ID` after partial failures; do not resend the entire
   announcement blindly. See [broadcast setup](ZALO_BROADCAST.md).

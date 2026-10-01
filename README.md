@@ -45,6 +45,22 @@ This command does not start Zalo or Messenger delivery. Both platforms use
 separate webhook deployments. See `docs/DATABASE_SETUP.md` for database
 details.
 
+## Telegram mention logs
+
+Messages that tag the running bot are written to server logs under
+`[telegram.mention]`. Each entry includes the message text or caption, sender ID,
+chat ID, message ID, and message time in UTC. The bot reads its own username
+from Telegram, so this works for both development and production bots.
+Tagged commands such as `/start@chiateam_dev_bot` also produce a mention log.
+Untagged messages do not produce mention logs. Existing command logs still run.
+This listener also runs during maintenance mode and does not send replies.
+
+The listener can only log messages Telegram delivers. For plain group text
+such as `Hi @chiateam_dev_bot`, make the bot a group admin or disable Group
+Privacy through BotFather if Telegram does not deliver the message. See
+[Telegram's message delivery rules](https://core.telegram.org/bots/faq#what-messages-will-my-bot-get).
+Restart the bot after updating the code.
+
 ## Project Layout
 
 ```text
@@ -179,6 +195,8 @@ platform limits and checks after deployment.
 Important rewritten command forms:
 
 - `/zalosay MESSAGE` previews a Zalo subscriber broadcast from Telegram.
+  `/say` is an alias. Both accept typed commands; the public Telegram command
+  menu still lists only `/start`.
   It is admin-only, requires confirmation within ten minutes, and uses
   `ZALO_BOT_TOKEN` on the Telegram bot service. Each recipient opts in with
   `/subscribe` in a private Zalo chat and can stop with `/unsubscribe`.
