@@ -7,7 +7,7 @@ const {
 } = require('./formatter');
 const {
   createReplyKeyboard,
-  getReplyKeyboardCommand,
+  getReplyKeyboardAction,
 } = require('./reply-keyboard');
 
 const DEFAULT_INTERACTION_TTL_MS = 10 * 60 * 1000;
@@ -60,6 +60,25 @@ function parseCommandText(text) {
   };
 }
 
+function parseInternalActionText(text) {
+  if (typeof text !== 'string') {
+    return null;
+  }
+
+  const parts = text.trim().split(/\s+/);
+  const token = parts.shift();
+
+  if (!token || !/^[a-z0-9_-]+$/i.test(token)) {
+    return null;
+  }
+
+  return {
+    command: token,
+    args: parts,
+    rawArgs: text.trim().slice(token.length).trim(),
+  };
+}
+
 function parseTelegramCommandAction(data) {
   if (
     typeof data !== 'string' ||
@@ -68,7 +87,11 @@ function parseTelegramCommandAction(data) {
     return null;
   }
 
-  return parseCommandText(data.slice(TELEGRAM_COMMAND_ACTION_PREFIX.length));
+  const actionText = data
+    .slice(TELEGRAM_COMMAND_ACTION_PREFIX.length)
+    .replace(/^\//, '');
+
+  return parseInternalActionText(actionText);
 }
 
 function createTelegramAdapter({
@@ -79,6 +102,7 @@ function createTelegramAdapter({
   registerActionHandler,
   interactionTtlMs = DEFAULT_INTERACTION_TTL_MS,
   now = Date.now,
+  allowedSlashCommands = null,
   errorMessage = '❌ Có lỗi xảy ra. Vui lòng thử lại.',
   onError = error => console.error('❌ [telegram.adapter]', error),
   commandGate,
@@ -109,6 +133,17 @@ function createTelegramAdapter({
   if (typeof now !== 'function') {
     throw new TypeError('Telegram adapter clock must be a function.');
   }
+  if (allowedSlashCommands != null && !Array.isArray(allowedSlashCommands)) {
+    throw new TypeError('Allowed Telegram slash commands must be an array.');
+  }
+  const allowedSlashCommandNames =
+    allowedSlashCommands == null
+      ? null
+      : new Set(
+          allowedSlashCommands.map(command =>
+            String(command).replace(/^\//, '').toLowerCase()
+          )
+        );
   if (commandGate != null && typeof commandGate.check !== 'function') {
     throw new TypeError('Telegram command gate must expose check.');
   }
@@ -141,11 +176,26 @@ function createTelegramAdapter({
   }
 
   function toCommandContext(event) {
-    const keyboardCommand = getReplyKeyboardCommand(event?.text);
-    return createContext(
-      event,
-      parseCommandText(keyboardCommand || event?.text)
-    );
+    const keyboardAction = getReplyKeyboardAction(event?.text);
+
+    if (keyboardAction) {
+      return createContext(event, {
+        command: keyboardAction.command,
+        args: [...keyboardAction.args],
+        rawArgs: keyboardAction.args.join(' '),
+      });
+    }
+
+    const command = parseCommandText(event?.text);
+    if (
+      !command ||
+      (allowedSlashCommandNames &&
+        !allowedSlashCommandNames.has(command.command.toLowerCase()))
+    ) {
+      return null;
+    }
+
+    return createContext(event, command);
   }
 
   function getInteractionKey({ actor, conversation }) {
@@ -416,17 +466,8 @@ function createTelegramAdapter({
       return false;
     }
 
-    if (commandGate) {
-      const control = await commandGate.check(context);
-      if (!control?.available || !control.commandsEnabled) {
-        await reportControl(context, control);
-        return true;
-      }
-    }
-
-    clearInput(context);
-    const version = composeVersion(context);
-    // Stop the button spinner before a command starts a long-running broadcast.
+    // Acknowledge the Telegram click before permission or state API work.
+    // This prevents the button from appearing frozen during a slow request.
     if (typeof bot.answerCallbackQuery === 'function' && query?.id != null) {
       try {
         await bot.answerCallbackQuery(query.id, {
@@ -438,6 +479,16 @@ function createTelegramAdapter({
       }
     }
 
+    if (commandGate) {
+      const control = await commandGate.check(context);
+      if (!control?.available || !control.commandsEnabled) {
+        await reportControl(context, control);
+        return true;
+      }
+    }
+
+    clearInput(context);
+    const version = composeVersion(context);
     const routed = await router.run(context);
 
     if (!routed.handled) {
@@ -467,6 +518,25 @@ function createTelegramAdapter({
     }
   }
 
+  async function reportActionError(query, error) {
+    onError(error);
+    const chatId = query?.message?.chat?.id;
+
+    if (chatId == null) {
+      return;
+    }
+
+    try {
+      await bot.sendMessage(chatId, errorMessage, {
+        ...(query.message.message_thread_id != null
+          ? { message_thread_id: query.message.message_thread_id }
+          : {}),
+      });
+    } catch (sendError) {
+      onError(sendError);
+    }
+  }
+
   async function reportControl(context, control) {
     const text =
       control?.available === false
@@ -487,14 +557,24 @@ function createTelegramAdapter({
     void handleEvent(event).catch(error => reportError(event, error));
   };
 
+  const registeredActionHandler = async query => {
+    try {
+      return await handleAction(query);
+    } catch (error) {
+      await reportActionError(query, error);
+      return true;
+    }
+  };
+
   const actionEventHandler = query => {
-    void handleAction(query).catch(onError);
+    void registeredActionHandler(query);
   };
 
   function start() {
     if (!started) {
       if (registerActionHandler) {
-        unregisterActionHandler = registerActionHandler(handleAction) || null;
+        unregisterActionHandler =
+          registerActionHandler(registeredActionHandler) || null;
       } else {
         bot.on('callback_query', actionEventHandler);
         usesDirectActionListener = true;
@@ -548,6 +628,7 @@ module.exports = {
   TELEGRAM_CAPABILITIES,
   createTelegramChannelConfig,
   createTelegramAdapter,
+  parseInternalActionText,
   parseCommandText,
   parseTelegramCommandAction,
 };

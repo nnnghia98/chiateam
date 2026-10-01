@@ -23,6 +23,7 @@ function startBotRuntime({
   registerTelegramActionHandler,
   commandGate,
   botControlsClient,
+  allowedSlashCommands,
   onError,
 } = {}) {
   const activeRegistry = registry || createCommandRegistry();
@@ -53,6 +54,7 @@ function startBotRuntime({
             env,
           }),
       }),
+    allowedSlashCommands,
   });
 
   adapter.start();

@@ -36,7 +36,7 @@ class MockTelegramBot extends EventEmitter {
   }
 }
 
-function createEvent(text = '/bench') {
+function createEvent(text = '📋 Bench') {
   return {
     text,
     from: {
@@ -57,27 +57,31 @@ test('Telegram command parser supports mentions and arguments', () => {
     rawArgs: '3',
   });
   assert.equal(parseCommandText('hello'), null);
-  assert.deepEqual(parseTelegramCommandAction('core:cmd:/editbench 2'), {
+  assert.deepEqual(parseTelegramCommandAction('core:cmd:editbench 2'), {
     command: 'editbench',
     args: ['2'],
     rawArgs: '2',
   });
+  assert.deepEqual(parseTelegramCommandAction('core:cmd:/addtoteam 2 HOME'), {
+    command: 'addtoteam',
+    args: ['2', 'HOME'],
+    rawArgs: '2 HOME',
+  });
   assert.equal(parseTelegramCommandAction('editbench:select:1'), null);
 });
 
-test('Telegram adapter creates a platform-neutral command context', () => {
+test('Telegram adapter keeps only /start as a public slash command', () => {
   const bot = new MockTelegramBot();
   const adapter = createTelegramAdapter({
     bot,
+    allowedSlashCommands: ['start'],
     router: { run: async () => ({ handled: false }) },
   });
 
-  const context = adapter.toCommandContext(
-    createEvent('/me@ChiaTeamBot')
-  );
+  const context = adapter.toCommandContext(createEvent('/start@ChiaTeamBot'));
 
   assert.deepEqual(context, {
-    command: 'me',
+    command: 'start',
     args: [],
     rawArgs: '',
     actor: {
@@ -92,6 +96,7 @@ test('Telegram adapter creates a platform-neutral command context', () => {
     },
   });
   assert.equal('rawEvent' in context, false);
+  assert.equal(adapter.toCommandContext(createEvent('/me')), null);
 });
 
 test('Telegram adapter preserves Telegram chat type in the context', () => {
@@ -102,7 +107,7 @@ test('Telegram adapter preserves Telegram chat type in the context', () => {
   });
 
   const context = adapter.toCommandContext({
-    ...createEvent('/bench'),
+    ...createEvent('/start'),
     chat: { id: 123, type: 'private' },
   });
 
@@ -137,13 +142,17 @@ test('Telegram adapter keeps private results and photos in the source thread', a
   });
 
   await adapter.handleEvent({
-    ...createEvent('/statistics'),
+    ...createEvent('📋 Bench'),
     chat: { id: 123, type: 'private' },
     message_thread_id: 17,
   });
 
   assert.deepEqual(bot.sentPhotos, [
-    { chatId: '123', photo: 'https://example.test/chart.png', options: { message_thread_id: '17' } },
+    {
+      chatId: '123',
+      photo: 'https://example.test/chart.png',
+      options: { message_thread_id: '17' },
+    },
   ]);
   assert.deepEqual(bot.sentMessages[0], {
     chatId: '123',
@@ -160,12 +169,14 @@ test('Telegram adapter uses source routing when no team chat is configured', asy
     router: {
       run: async () => ({
         handled: true,
-        result: createTextResult('Source stats.', [], { channel: 'statistics' }),
+        result: createTextResult('Source stats.', [], {
+          channel: 'statistics',
+        }),
       }),
     },
   });
 
-  await adapter.handleEvent(createEvent('/statistics'));
+  await adapter.handleEvent(createEvent('📋 Bench'));
 
   assert.equal(bot.sentMessages[0].chatId, '-456');
   assert.equal(bot.sentMessages[0].options.message_thread_id, '10');
@@ -247,7 +258,7 @@ test('Telegram adapter routes command actions and their next text input', async 
 
   const actionHandled = await adapter.handleAction({
     id: 'callback-1',
-    data: 'core:cmd:/editbench 2',
+    data: 'core:cmd:editbench 2',
     from: createEvent().from,
     message: {
       chat: { id: -456 },
@@ -297,12 +308,12 @@ test('Telegram adapter encodes action fallback commands in buttons', async () =>
     },
   });
 
-  await adapter.handleEvent(createEvent('/editbench'));
+  await adapter.handleEvent(createEvent('✏️ Sửa bench'));
 
   assert.equal(
     bot.sentMessages[0].options.reply_markup.inline_keyboard[0][0]
       .callback_data,
-    'core:cmd:/editbench 2'
+    'core:cmd:editbench 2'
   );
 });
 
@@ -328,7 +339,7 @@ test('Telegram acknowledges a button before running a slow command', async () =>
   });
   const handling = adapter.handleAction({
     id: 'slow-callback',
-    data: 'core:cmd:/zalosay confirm 11111111-1111-4111-8111-111111111111',
+    data: 'core:cmd:zalosay confirm 11111111-1111-4111-8111-111111111111',
     from: createEvent().from,
     message: { chat: { id: -456 }, message_thread_id: 10 },
   });
@@ -342,16 +353,36 @@ test('Telegram acknowledges a button before running a slow command', async () =>
   assert.equal(bot.sentMessages[0].text, 'Finished');
 });
 
-test('Telegram gate blocks slash commands, buttons, and pending replies', async () => {
+test('Telegram gate blocks menu buttons, inline actions, and pending replies', async () => {
   const bot = new MockTelegramBot();
   const calls = [];
   const adapter = createTelegramAdapter({
     bot,
-    commandGate: { check: async context => { calls.push(context.command); return { available: true, commandsEnabled: calls.length === 1 }; } },
-    router: { run: async () => ({ handled: true, result: createTextResult('Enter', [], { input: { command: 'bench', args: [] } }) }) },
+    commandGate: {
+      check: async context => {
+        calls.push(context.command);
+        return { available: true, commandsEnabled: calls.length === 1 };
+      },
+    },
+    router: {
+      run: async () => ({
+        handled: true,
+        result: createTextResult('Enter', [], {
+          input: { command: 'bench', args: [] },
+        }),
+      }),
+    },
   });
-  assert.equal(await adapter.handleEvent(createEvent('/bench')), true);
-  assert.equal(await adapter.handleAction({ id: 'paused', data: 'core:cmd:/bench', from: createEvent().from, message: createEvent() }), true);
+  assert.equal(await adapter.handleEvent(createEvent('📋 Bench')), true);
+  assert.equal(
+    await adapter.handleAction({
+      id: 'paused',
+      data: 'core:cmd:bench',
+      from: createEvent().from,
+      message: createEvent(),
+    }),
+    true
+  );
   assert.equal(await adapter.handleEvent(createEvent('pending text')), true);
   assert.deepEqual(calls, ['bench', 'bench', 'bench']);
   assert.equal(bot.sentMessages.length, 3);
@@ -364,10 +395,18 @@ test('Telegram poll answer events bypass command gate', async () => {
   let checks = 0;
   const adapter = createTelegramAdapter({
     bot,
-    commandGate: { check: async () => { checks += 1; return { available: false, commandsEnabled: false }; } },
+    commandGate: {
+      check: async () => {
+        checks += 1;
+        return { available: false, commandsEnabled: false };
+      },
+    },
     router: { run: async () => ({ handled: false }) },
   });
-  assert.equal(await adapter.handleEvent({ poll_answer: { user: { id: 1 } } }), false);
+  assert.equal(
+    await adapter.handleEvent({ poll_answer: { user: { id: 1 } } }),
+    false
+  );
   assert.equal(checks, 0);
 });
 
@@ -386,7 +425,7 @@ test('Telegram adapter renders generic rich text and escapes platform markup', a
     },
   });
 
-  await adapter.handleEvent(createEvent('/team'));
+  await adapter.handleEvent(createEvent('⚽ Team'));
 
   assert.equal(bot.sentMessages[0].text, '*HOME \\(1\\):*\nHome\\_player');
   assert.equal(bot.sentMessages[0].options.parse_mode, 'MarkdownV2');
@@ -410,7 +449,12 @@ test('Telegram adapter maps a logical channel to configured chat and thread', as
     },
   });
 
-  await adapter.handleEvent(createEvent('/chiatien'));
+  await adapter.handleAction({
+    id: 'fee-action',
+    data: 'core:cmd:chiatien',
+    from: createEvent().from,
+    message: createEvent(),
+  });
 
   assert.deepEqual(bot.sentMessages, [
     {

@@ -25,9 +25,10 @@ const CHIATEAM_STATE_KEYS = Object.freeze([
 ]);
 
 const CHIATEAM_MESSAGES = Object.freeze({
-  usage: '⚠️ Dùng /chiateam, /chiateam 2 hoặc /chiateam 3.',
+  usage: '⚠️ Lựa chọn chia team không hợp lệ.',
   permissionDenied: '⛔ Chỉ admin mới có quyền.',
-  allAssigned: '⚠️ Tất cả member đã có team rồi. Dùng /clearteam để reset.',
+  allAssigned:
+    '⚠️ Tất cả member đã có team rồi. Hãy dùng nút Xoá khỏi team để reset.',
   notEnough: '❗ Không đủ người để chia 2 team.',
   notEnoughThree: '❗ Cần ít nhất 3 người để chia 3 team.',
   manifestConflict:

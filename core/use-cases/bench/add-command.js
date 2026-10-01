@@ -11,15 +11,11 @@ const {
 } = require('./bench-member');
 
 const ADD_MESSAGES = Object.freeze({
-  usage:
-    '📋 Cách sử dụng /add:\n' +
-    '• /add TÊN 1, TÊN 2, ...\n\n' +
-    'Ví dụ: /add Nghia, Minh 1',
+  prompt: '👤 Nhập tên cầu ngoài cần thêm. Dùng dấu phẩy nếu có nhiều người.',
   permissionDenied: '⛔ Chỉ admin mới có quyền.',
   invalidNames: '⚠️ Không thêm member nào. Tên không hợp lệ: {names}',
-  noNewMembers:
-    '⚠️ Không có member mới được thêm. Đã có trong /bench:\n{names}',
-  success: '✅ Đã thêm {count} member(s) vào /bench:\n{names}',
+  noNewMembers: '⚠️ Không có member mới được thêm. Đã có trong bench:\n{names}',
+  success: '✅ Đã thêm {count} member(s) vào bench:\n{names}',
   skipped: '⏭️ Đã bỏ qua {count} tên đã có:\n{names}',
   loadError: '❌ Không thể tải bench hiện tại từ API.',
   saveError: '❌ Không thể lưu member mới. Vui lòng thử lại.',
@@ -107,6 +103,10 @@ function createAddCommand({
         return { ok: false, code: 'INVALID_BENCH_STATE' };
       }
 
+      if (context.args.length === 0) {
+        return { ok: true, mode: 'prompt' };
+      }
+
       const requestedNames = parseGuestNames(context.args);
 
       if (requestedNames.length === 0) {
@@ -127,6 +127,10 @@ function createAddCommand({
       };
     },
     action: async (context, state, condition) => {
+      if (condition.mode === 'prompt') {
+        return { changed: false, code: 'GUEST_NAMES_REQUESTED' };
+      }
+
       if (condition.namesToAdd.length === 0) {
         return {
           changed: false,
@@ -157,8 +161,14 @@ function createAddCommand({
         return createAddResult(ADD_MESSAGES.permissionDenied);
       }
 
-      if (outcome.code === 'MISSING_NAMES') {
-        return createAddResult(ADD_MESSAGES.usage);
+      if (
+        outcome.code === 'GUEST_NAMES_REQUESTED' ||
+        outcome.code === 'MISSING_NAMES'
+      ) {
+        return createTextResult(ADD_MESSAGES.prompt, [], {
+          channel: 'default',
+          input: { command: 'add' },
+        });
       }
 
       if (

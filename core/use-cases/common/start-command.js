@@ -94,7 +94,10 @@ function buildStartHelpSegments(
   categories.forEach((categoryEntries, category) => {
     segments.push(
       { text: '\n' },
-      { text: `${categoryIcon(category)} ${category.toUpperCase()}`, bold: true },
+      {
+        text: `${categoryIcon(category)} ${category.toUpperCase()}`,
+        bold: true,
+      },
       { text: '\n' }
     );
     categoryEntries.forEach(entry =>
@@ -115,11 +118,26 @@ function buildStartHelpSegments(
   return segments;
 }
 
+function buildTelegramMenuHelpSegments(greeting = '👋 CHIATEAM BOT') {
+  const safeGreeting = String(greeting ?? '').trim() || '👋 CHIATEAM BOT';
+
+  return [
+    { text: safeGreeting, bold: true },
+    {
+      text:
+        '\n\nBot giúp đội quản lý bình chọn, bench và team ngay trên Telegram.' +
+        '\n\nChọn một nút trong menu bên dưới để bắt đầu.' +
+        '\n\nDùng /start để hiện lại menu.',
+    },
+  ];
+}
+
 function createStartCommand({
   manifest = COMMAND_MANIFEST,
   includeQuickStart = true,
   getGreeting,
   commandRules = createManagedCommandRules(),
+  menuOnly = false,
 } = {}) {
   return createCommandDefinition({
     name: 'start',
@@ -137,6 +155,14 @@ function createStartCommand({
         return createTextResult('Bạn không có quyền thực hiện lệnh này.', [], {
           channel: 'source',
         });
+      }
+
+      if (menuOnly) {
+        return createRichTextResult(
+          buildTelegramMenuHelpSegments(getGreeting?.(context.actor)),
+          [],
+          { channel: 'source' }
+        );
       }
 
       const selected = visibleEntries(manifest, context, commandRules);
@@ -158,5 +184,6 @@ function createStartCommand({
 
 module.exports = {
   buildStartHelpSegments,
+  buildTelegramMenuHelpSegments,
   createStartCommand,
 };

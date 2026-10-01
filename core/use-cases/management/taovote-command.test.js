@@ -90,8 +90,8 @@ function createTaovoteRouter({
   };
 }
 
-test('shared /taovote parser accepts help and a bounded question', () => {
-  assert.deepEqual(parseTaovoteRequest([]), { kind: 'help' });
+test('shared taovote parser accepts a prompt and a bounded question', () => {
+  assert.deepEqual(parseTaovoteRequest([]), { kind: 'prompt' });
   assert.deepEqual(parseTaovoteRequest(['Sân', 'A', '20h']), {
     kind: 'create',
     question: 'Sân A 20h',
@@ -100,17 +100,21 @@ test('shared /taovote parser accepts help and a bounded question', () => {
   assert.equal(parseTaovoteRequest(['x'.repeat(301)]), null);
 });
 
-test('independent /taovote shows help without publishing or saving', async () => {
-  const { router, published, saves } = createTaovoteRouter({ isAdmin: false });
+test('independent taovote action prompts an admin for the question', async () => {
+  const { router, published, saves } = createTaovoteRouter();
 
   const routed = await router.run(createContext([], '999'));
 
-  assert.equal(routed.result.messages[0].text, TAOVOTE_MESSAGES.help);
+  assert.equal(routed.result.messages[0].text, TAOVOTE_MESSAGES.prompt);
+  assert.deepEqual(routed.result.messages[0].input, {
+    command: 'taovote',
+    args: [],
+  });
   assert.equal(published.length, 0);
   assert.equal(saves.length, 0);
 });
 
-test('independent /taovote denies player creation before loading state', async () => {
+test('independent /taovote denies a player before loading state', async () => {
   const { router, published, saves, getLoadCount } = createTaovoteRouter({
     isAdmin: false,
   });
@@ -155,7 +159,7 @@ test('independent /taovote publishes and saves one platform-neutral vote', async
       activeVote: {
         id: 'poll-123',
         question: 'Sân A 20h',
-        options: ['0', '+1', '+2', '+3', '+4'],
+        options: ['0', '1'],
         chatId: '-100999',
         messageId: 77,
         platform: 'telegram',

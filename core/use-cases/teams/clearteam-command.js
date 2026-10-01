@@ -19,16 +19,8 @@ const CLEARTEAM_STATE_KEYS = Object.freeze([
 ]);
 
 const CLEARTEAM_MESSAGES = Object.freeze({
-  usage:
-    '📋 Cách sử dụng /clearteam:\n' +
-    '• /clearteam 2 - Xóa toàn bộ 2-team stack\n' +
-    '• /clearteam 3 - Xóa toàn bộ 3-team stack\n' +
-    '• /clearteam HOME - Chọn member để xóa khỏi Home\n' +
-    '• /clearteam AWAY - Chọn member để xóa khỏi Away\n' +
-    '• /clearteam 3 EXTRA - Chọn member để xóa khỏi Extra',
-  confirmation:
-    '⚠️ Xóa toàn bộ {mode}-team stack ({teams})?\n' +
-    'Dùng /clearteam {mode} confirm để xác nhận.',
+  targetPrompt: '⚽ Chọn team hoặc nhóm team cần xóa:',
+  confirmation: '⚠️ Xóa toàn bộ {mode}-team stack ({teams})?',
   cancelled: '✅ Đã hủy xóa team.',
   stack2Empty: '⚠️ 2-team stack đã trống rồi.',
   stack2Success: '✅ Đã xóa toàn bộ 2-team stack (HOME, AWAY).',
@@ -36,10 +28,7 @@ const CLEARTEAM_MESSAGES = Object.freeze({
   stack3Success: '✅ Đã xóa toàn bộ 3-team stack (HOME, AWAY, EXTRA).',
   emptyTeam: '⚠️ {team} trống.',
   instruction: '👤 Chọn member cần xóa khỏi {team}:',
-  invalidSelection:
-    '⚠️ Không có lựa chọn hợp lệ. Ví dụ:\n' +
-    '/clearteam 2 HOME 1,3,5 hoặc /clearteam 3 HOME 1-3 hoặc ' +
-    '/clearteam 2 HOME all',
+  invalidSelection: '⚠️ Lựa chọn không hợp lệ. Vui lòng chọn lại từ menu.',
   removeSuccess: '✅ Đã xóa {count} member(s) khỏi {team}:\n{names}',
   permissionDenied: '⛔ Chỉ admin mới có quyền.',
   loadError: '❌ Không thể tải team hiện tại từ API.',
@@ -48,7 +37,7 @@ const CLEARTEAM_MESSAGES = Object.freeze({
 
 function parseClearteamRequest(args) {
   if (!Array.isArray(args) || args.length === 0) {
-    return null;
+    return { kind: 'chooseTarget' };
   }
 
   let mode = 2;
@@ -117,6 +106,46 @@ function parseClearteamRequest(args) {
   }
 
   return { kind: 'remove', mode, teamType, target, selection };
+}
+
+function createTargetActions() {
+  return [
+    {
+      id: 'clearteam_2_home',
+      label: 'Xóa member · 2 HOME',
+      command: '/clearteam 2 HOME',
+    },
+    {
+      id: 'clearteam_2_away',
+      label: 'Xóa member · 2 AWAY',
+      command: '/clearteam 2 AWAY',
+    },
+    {
+      id: 'clearteam_3_home',
+      label: 'Xóa member · 3 HOME',
+      command: '/clearteam 3 HOME',
+    },
+    {
+      id: 'clearteam_3_away',
+      label: 'Xóa member · 3 AWAY',
+      command: '/clearteam 3 AWAY',
+    },
+    {
+      id: 'clearteam_3_extra',
+      label: 'Xóa member · 3 EXTRA',
+      command: '/clearteam 3 EXTRA',
+    },
+    {
+      id: 'clearteam_2_all',
+      label: 'Xóa toàn bộ · 2 team',
+      command: '/clearteam 2',
+    },
+    {
+      id: 'clearteam_3_all',
+      label: 'Xóa toàn bộ · 3 team',
+      command: '/clearteam 3',
+    },
+  ];
 }
 
 function normalizePageIndex(pageIndex, totalEntries) {
@@ -194,10 +223,6 @@ function createClearteamCommand() {
     },
     stateKeys: CLEARTEAM_STATE_KEYS,
     condition: async (context, state) => {
-      if (context.args.length === 0) {
-        return { ok: false, code: 'USAGE' };
-      }
-
       const request = parseClearteamRequest(context.args);
 
       if (!request) {
@@ -205,6 +230,10 @@ function createClearteamCommand() {
       }
 
       if (request.kind === 'cancelStack') {
+        return { ok: true, request };
+      }
+
+      if (request.kind === 'chooseTarget') {
         return { ok: true, request };
       }
 
@@ -252,6 +281,10 @@ function createClearteamCommand() {
     },
     action: async (context, state, condition) => {
       const { request } = condition;
+
+      if (request.kind === 'chooseTarget') {
+        return { changed: false, code: 'TARGET_REQUESTED' };
+      }
 
       if (request.kind === 'cancelStack') {
         return { changed: false, code: 'STACK_CLEAR_CANCELLED' };
@@ -310,8 +343,8 @@ function createClearteamCommand() {
         return createTextResult(CLEARTEAM_MESSAGES.permissionDenied);
       }
 
-      if (outcome.code === 'USAGE' || outcome.code === 'INVALID_REQUEST') {
-        return createTextResult(CLEARTEAM_MESSAGES.usage);
+      if (outcome.code === 'INVALID_REQUEST') {
+        return createTextResult(CLEARTEAM_MESSAGES.invalidSelection);
       }
 
       if (
@@ -341,6 +374,13 @@ function createClearteamCommand() {
 
       if (outcome.code === 'INVALID_SELECTION') {
         return createTextResult(CLEARTEAM_MESSAGES.invalidSelection);
+      }
+
+      if (outcome.code === 'TARGET_REQUESTED') {
+        return createTextResult(
+          CLEARTEAM_MESSAGES.targetPrompt,
+          createTargetActions()
+        );
       }
 
       if (outcome.code === 'STACK_CLEAR_CANCELLED') {
@@ -399,5 +439,6 @@ module.exports = {
   createClearteamCommand,
   createConfirmationActions,
   createSelectionActions,
+  createTargetActions,
   parseClearteamRequest,
 };

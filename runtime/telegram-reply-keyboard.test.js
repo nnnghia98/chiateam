@@ -38,10 +38,7 @@ function createFixture(t) {
   };
   const runtime = startBotRuntime({
     bot,
-    definitions: [
-      createStartCommand(),
-      createVoteCommand(),
-    ],
+    definitions: [createStartCommand({ menuOnly: true }), createVoteCommand()],
     telegramChannelConfig: {
       chatId: '-100999',
       threads: { main: '8', default: '7' },
@@ -68,6 +65,7 @@ function createFixture(t) {
         Object.assign(state, changes);
       },
     },
+    allowedSlashCommands: ['start'],
   });
   t.after(() => runtime.stop());
   return {
@@ -96,7 +94,7 @@ function event(text, from = {}) {
   };
 }
 
-test('Telegram /start and help button show the menu in the source chat', async t => {
+test('Telegram /start show the menu in the source chat', async t => {
   const fixture = createFixture(t);
   const privateEvent = {
     text: '/start',
@@ -104,7 +102,7 @@ test('Telegram /start and help button show the menu in the source chat', async t
     chat: { id: 123, type: 'private' },
   };
   await fixture.runtime.adapter.handleEvent(privateEvent);
-  await fixture.runtime.adapter.handleEvent(event('📖 Hướng dẫn'));
+  await fixture.runtime.adapter.handleEvent(event('/start'));
 
   assert.equal(fixture.sent.length, 2);
   assert.equal(fixture.sent[0].chatId, '123');
@@ -117,35 +115,44 @@ test('Telegram /start and help button show the menu in the source chat', async t
     assert.ok(
       message.options.reply_markup.keyboard
         .flat()
-        .some(button => button.text === '➕ Vote +1')
+        .some(button => button.text === '🗳️ Vote ngay')
     );
   }
   assert.equal(fixture.saves, 0);
 });
 
-test('Telegram Vote +1 button records the poll choice without changing bench', async t => {
+test('Telegram vote menu opens choices and records the selected answer', async t => {
   const fixture = createFixture(t);
   const { adapter } = fixture.runtime;
 
-  await adapter.handleEvent(event('➕ Vote +1'));
+  fixture.state.activeVote.options = ['0', '1'];
+  await adapter.handleEvent(event('🗳️ Vote ngay'));
+  assert.match(fixture.sent[0].text, /Chọn 1 option/);
+  const yesCallback =
+    fixture.sent[0].options.reply_markup.inline_keyboard[0][0].callback_data;
+  await adapter.handleAction({
+    id: 'vote-yes',
+    data: yesCallback,
+    from: { id: 123, first_name: 'Nghia' },
+    message: event(''),
+  });
   assert.deepEqual(fixture.state.bench, []);
   assert.deepEqual(fixture.state.activeVote.votes['123'], {
     id: '123',
     platform: 'telegram',
     name: 'Nghia',
-    choice: '+1',
+    choice: '1',
     optionIndex: 1,
     options: [1],
   });
   assert.equal(fixture.state.activeVote.totalVoters, 1);
   assert.equal(fixture.saves, 1);
-  assert.match(fixture.sent[0].text, /Nghia: tham gia 1 người/);
-  assert.equal(fixture.sent[0].chatId, '-456');
-  assert.equal(fixture.sent[0].options.message_thread_id, '10');
+  assert.match(fixture.sent[1].text, /Nghia: ⚽️ Đá/);
+  assert.equal(fixture.sent[1].chatId, '-456');
+  assert.equal(fixture.sent[1].options.message_thread_id, '10');
 
-  await adapter.handleEvent(event('/vote +1'));
+  assert.equal(await adapter.handleEvent(event('/vote 1')), false);
   assert.equal(fixture.saves, 1);
-  assert.match(fixture.sent[1].text, /vẫn chọn tham gia 1/);
   assert.deepEqual(fixture.permissions, [
     { command: 'vote', permission: 'player' },
     { command: 'vote', permission: 'player' },
@@ -153,7 +160,7 @@ test('Telegram Vote +1 button records the poll choice without changing bench', a
 
   fixture.deny();
   await adapter.handleEvent(
-    event('➕ Vote +1', { id: 789, first_name: 'Minh' })
+    event('🗳️ Vote ngay', { id: 789, first_name: 'Minh' })
   );
   assert.equal(fixture.saves, 1);
   assert.equal(fixture.permissions.length, 3);
@@ -161,7 +168,7 @@ test('Telegram Vote +1 button records the poll choice without changing bench', a
 
   fixture.pause();
   await adapter.handleEvent(
-    event('➕ Vote +1', { id: 789, first_name: 'Minh' })
+    event('🗳️ Vote ngay', { id: 789, first_name: 'Minh' })
   );
   assert.equal(fixture.saves, 1);
   assert.equal(fixture.permissions.length, 3);

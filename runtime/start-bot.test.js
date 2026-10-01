@@ -371,13 +371,13 @@ test('bot runtime completes the /editbench button and follow-up flow', async () 
   assert.equal(
     bot.sentMessages[0].options.reply_markup.inline_keyboard[1][0]
       .callback_data,
-    'core:cmd:/editbench 2'
+    'core:cmd:editbench 2'
   );
 
   assert.equal(
     await actionHandler({
       id: 'callback-editbench',
-      data: 'core:cmd:/editbench 2',
+      data: 'core:cmd:editbench 2',
       from: { id: 123, first_name: 'Nghia' },
       message: { chat: { id: 456 }, message_id: 99 },
     }),
@@ -441,18 +441,18 @@ test('bot runtime removes one /clearbench action and clears all directly', async
   assert.equal(
     bot.sentMessages[0].options.reply_markup.inline_keyboard[1][0]
       .callback_data,
-    'core:cmd:/clearbench 2'
+    'core:cmd:clearbench 2'
   );
   assert.equal(
     bot.sentMessages[0].options.reply_markup.inline_keyboard.at(-1)[0]
       .callback_data,
-    'core:cmd:/clearbench all'
+    'core:cmd:clearbench all'
   );
 
   assert.equal(
     await actionHandler({
       id: 'callback-clearbench-one',
-      data: 'core:cmd:/clearbench 2',
+      data: 'core:cmd:clearbench 2',
       from: { id: 123, first_name: 'Nghia' },
       message: { chat: { id: 456 }, message_id: 99 },
     }),
@@ -464,7 +464,7 @@ test('bot runtime removes one /clearbench action and clears all directly', async
   assert.equal(
     await actionHandler({
       id: 'callback-clearbench-all',
-      data: 'core:cmd:/clearbench all',
+      data: 'core:cmd:clearbench all',
       from: { id: 123, first_name: 'Nghia' },
       message: { chat: { id: 456 }, message_id: 100 },
     }),
@@ -543,7 +543,7 @@ test('bot runtime assigns /chiateam atomically to the announcement channel', asy
   runtime.stop();
 });
 
-test('bot runtime completes the shared /addtoteam button flow atomically', async () => {
+test('Telegram menu asks for a team and then adds the selected bench member', async () => {
   const bot = new MockTelegramBot();
   const state = {
     bench: [
@@ -580,20 +580,35 @@ test('bot runtime completes the shared /addtoteam button flow atomically', async
   });
 
   assert.equal(
-    await runtime.adapter.handleEvent(createEvent('/addtoteam HOME')),
+    await runtime.adapter.handleEvent(createEvent('👥➕ Thêm vào team')),
     true
   );
   assert.equal(typeof actionHandler, 'function');
   assert.equal(
-    bot.sentMessages[0].options.reply_markup.inline_keyboard[1][0]
+    bot.sentMessages[0].options.reply_markup.inline_keyboard[0][0]
       .callback_data,
-    'core:cmd:/addtoteam 2 HOME 2'
+    'core:cmd:addtoteam 2 HOME'
+  );
+
+  assert.equal(
+    await actionHandler({
+      id: 'callback-addtoteam-target',
+      data: 'core:cmd:addtoteam 2 HOME',
+      from: { id: 123, first_name: 'Nghia' },
+      message: { chat: { id: 456 }, message_thread_id: 10, message_id: 98 },
+    }),
+    true
+  );
+  assert.equal(
+    bot.sentMessages[1].options.reply_markup.inline_keyboard[1][0]
+      .callback_data,
+    'core:cmd:addtoteam 2 HOME 2'
   );
 
   assert.equal(
     await actionHandler({
       id: 'callback-addtoteam',
-      data: 'core:cmd:/addtoteam 2 HOME 2',
+      data: 'core:cmd:addtoteam 2 HOME 2',
       from: { id: 123, first_name: 'Nghia' },
       message: {
         chat: { id: 456 },
@@ -608,10 +623,10 @@ test('bot runtime completes the shared /addtoteam button flow atomically', async
       teamA: [['team:tele:2', { name: 'Bob', userId: 2 }]],
     },
   ]);
-  assert.equal(bot.sentMessages[1].chatId, '456');
-  assert.equal(bot.sentMessages[1].options.message_thread_id, '10');
-  assert.equal(bot.sentMessages[1].options.parse_mode, 'MarkdownV2');
-  assert.match(bot.sentMessages[1].text, /Đã thêm 1 member/);
+  assert.equal(bot.sentMessages[2].chatId, '456');
+  assert.equal(bot.sentMessages[2].options.message_thread_id, '10');
+  assert.equal(bot.sentMessages[2].options.parse_mode, 'MarkdownV2');
+  assert.match(bot.sentMessages[2].text, /Đã thêm 1 member/);
 
   assert.equal(
     await runtime.adapter.handleEvent(
@@ -623,7 +638,7 @@ test('bot runtime completes the shared /addtoteam button flow atomically', async
     true
   );
   assert.equal(saves.length, 1);
-  assert.equal(bot.sentMessages[2].text, '⛔ Chỉ admin mới có quyền.');
+  assert.equal(bot.sentMessages[3].text, '⛔ Chỉ admin mới có quyền.');
 
   runtime.stop();
 });
@@ -670,13 +685,13 @@ test('bot runtime confirms stack clear and removes team members by button', asyn
   assert.equal(
     bot.sentMessages[0].options.reply_markup.inline_keyboard[1][0]
       .callback_data,
-    'core:cmd:/clearteam 2 HOME 2'
+    'core:cmd:clearteam 2 HOME 2'
   );
 
   assert.equal(
     await actionHandler({
       id: 'callback-clearteam-member',
-      data: 'core:cmd:/clearteam 2 HOME 2',
+      data: 'core:cmd:clearteam 2 HOME 2',
       from: { id: 123, first_name: 'Nghia' },
       message: {
         chat: { id: 456 },
@@ -698,13 +713,13 @@ test('bot runtime confirms stack clear and removes team members by button', asyn
   assert.equal(
     bot.sentMessages[2].options.reply_markup.inline_keyboard[0][0]
       .callback_data,
-    'core:cmd:/clearteam 2 confirm'
+    'core:cmd:clearteam 2 confirm'
   );
 
   assert.equal(
     await actionHandler({
       id: 'callback-clearteam-stack',
-      data: 'core:cmd:/clearteam 2 confirm',
+      data: 'core:cmd:clearteam 2 confirm',
       from: { id: 123, first_name: 'Nghia' },
       message: { chat: { id: 456 }, message_id: 100 },
     }),
@@ -759,13 +774,13 @@ test('bot runtime completes the shared /manifest multi-step button flow', async 
   assert.equal(
     bot.sentMessages[0].options.reply_markup.inline_keyboard[0][0]
       .callback_data,
-    'core:cmd:/manifest 1'
+    'core:cmd:manifest 1'
   );
 
   assert.equal(
     await actionHandler({
       id: 'callback-manifest-first',
-      data: 'core:cmd:/manifest 1',
+      data: 'core:cmd:manifest 1',
       from: { id: 123, first_name: 'Nghia' },
       message: { chat: { id: 456 }, message_id: 101 },
     }),
@@ -774,13 +789,13 @@ test('bot runtime completes the shared /manifest multi-step button flow', async 
   assert.equal(
     bot.sentMessages[1].options.reply_markup.inline_keyboard[0][0]
       .callback_data,
-    'core:cmd:/manifest 1 SAME'
+    'core:cmd:manifest 1 SAME'
   );
 
   assert.equal(
     await actionHandler({
       id: 'callback-manifest-relation',
-      data: 'core:cmd:/manifest 1 SAME',
+      data: 'core:cmd:manifest 1 SAME',
       from: { id: 123, first_name: 'Nghia' },
       message: { chat: { id: 456 }, message_id: 102 },
     }),
@@ -790,13 +805,13 @@ test('bot runtime completes the shared /manifest multi-step button flow', async 
     bot.sentMessages[2].options.reply_markup.inline_keyboard.map(
       row => row[0].callback_data
     ),
-    ['core:cmd:/manifest 1 SAME 2', 'core:cmd:/manifest 1 SAME 3']
+    ['core:cmd:manifest 1 SAME 2', 'core:cmd:manifest 1 SAME 3']
   );
 
   assert.equal(
     await actionHandler({
       id: 'callback-manifest-second',
-      data: 'core:cmd:/manifest 1 SAME 2',
+      data: 'core:cmd:manifest 1 SAME 2',
       from: { id: 123, first_name: 'Nghia' },
       message: { chat: { id: 456 }, message_id: 103 },
     }),
@@ -931,7 +946,7 @@ test('bot runtime removes a manifest through a Telegram action', async () => {
   );
   assert.equal(
     bot.sentMessages[0].options.reply_markup.inline_keyboard[0][0].callback_data.startsWith(
-      'core:cmd:/removemanifest token '
+      'core:cmd:removemanifest token '
     ),
     true
   );
@@ -1012,11 +1027,11 @@ test('bot runtime clears manifests through a confirmed Telegram action', async (
     bot.sentMessages[0].options.reply_markup.inline_keyboard;
   assert.equal(
     confirmationButtons[0][0].callback_data,
-    'core:cmd:/clearmanifests confirm'
+    'core:cmd:clearmanifests confirm'
   );
   assert.equal(
     confirmationButtons[1][0].callback_data,
-    'core:cmd:/clearmanifests cancel'
+    'core:cmd:clearmanifests cancel'
   );
   const confirmCallback = confirmationButtons[0][0].callback_data;
 
@@ -1400,7 +1415,7 @@ test('bot runtime migrates /winner and redirects transition /loser', async () =>
   runtime.stop();
 });
 
-test('bot runtime creates one shared /taovote as a Telegram native poll', async () => {
+test('Telegram create-vote menu asks for a question and publishes the vote', async () => {
   const bot = new MockTelegramBot();
   const state = { activeVote: null };
   const saves = [];
@@ -1440,26 +1455,25 @@ test('bot runtime creates one shared /taovote as a Telegram native poll', async 
   });
 
   assert.equal(
-    await runtime.adapter.handleEvent(createEvent('/taovote', { id: 999 })),
+    await runtime.adapter.handleEvent(createEvent('🗳️ Tạo vote', { id: 999 })),
     true
   );
-  assert.match(bot.sentMessages[0].text, /Vote có 5 lựa chọn/);
+  assert.match(bot.sentMessages[0].text, /Chỉ admin/);
+  assert.equal(loadCount, 0);
 
   assert.equal(
-    await runtime.adapter.handleEvent(
-      createEvent('/taovote Sân A 20h', { id: 999 })
-    ),
+    await runtime.adapter.handleEvent(createEvent('🗳️ Tạo vote')),
     true
   );
-  assert.match(bot.sentMessages[1].text, /Chỉ admin/);
+  assert.match(bot.sentMessages[1].text, /Nhập câu hỏi/);
   assert.equal(loadCount, 1);
 
   assert.equal(
-    await runtime.adapter.handleEvent(createEvent('/taovote Sân A 20h')),
+    await runtime.adapter.handleEvent(createEvent('Sân A 20h')),
     true
   );
   assert.equal(bot.sentPolls.length, 1);
-  assert.deepEqual(bot.sentPolls[0].pollOptions, ['0', '+1', '+2', '+3', '+4']);
+  assert.deepEqual(bot.sentPolls[0].pollOptions, ['🫷 Thôi', '⚽️ Đá']);
   assert.equal(bot.sentPolls[0].chatId, '-100999');
   assert.equal(bot.sentPolls[0].options.message_thread_id, '88');
   assert.equal(state.activeVote.id, 'poll-1');

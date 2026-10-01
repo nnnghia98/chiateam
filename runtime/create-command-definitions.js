@@ -108,11 +108,14 @@ function createCommandDefinitions({
   const announcementCommand = broadcastService
     ? createZaloBroadcastCommand({ service: broadcastService })
     : createAnnouncementCommand({
-      publisher: assertAnnouncementPublisher(announcementPublisher),
-    });
+        publisher: assertAnnouncementPublisher(announcementPublisher),
+      });
 
   return Object.freeze([
-    createStartCommand({ commandRules: createManagedCommandRules(env) }),
+    createStartCommand({
+      commandRules: createManagedCommandRules(env),
+      menuOnly: true,
+    }),
     announcementCommand,
     createAddmeCommand({ identityPolicy: benchIdentityPolicy }),
     createAddCommand(),

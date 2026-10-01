@@ -89,7 +89,7 @@ test('independent /add atomically adds valid guests and skips duplicates', async
   assert.deepEqual(loadedBench, originalBench);
   assert.equal(
     routed.result.messages[0].text,
-    '✅ Đã thêm 2 member(s) vào /bench:\n' +
+    '✅ Đã thêm 2 member(s) vào bench:\n' +
       'Alice\n' +
       'Bob 1\n\n' +
       '⏭️ Đã bỏ qua 2 tên đã có:\n' +
@@ -114,7 +114,7 @@ test('independent /add rejects the full batch when one name is invalid', async (
   assert.deepEqual(bench, originalBench);
 });
 
-test('independent /add handles missing names and an all-duplicate batch', async () => {
+test('independent add action prompts for names and handles duplicates', async () => {
   const missingNames = createAddRouter();
   const duplicates = createAddRouter({
     bench: [[1, { name: 'Alice' }]],
@@ -125,10 +125,14 @@ test('independent /add handles missing names and an all-duplicate batch', async 
     createContext(['alice,', 'ALICE'])
   );
 
-  assert.equal(missingResult.result.messages[0].text, ADD_MESSAGES.usage);
+  assert.equal(missingResult.result.messages[0].text, ADD_MESSAGES.prompt);
+  assert.deepEqual(missingResult.result.messages[0].input, {
+    command: 'add',
+    args: [],
+  });
   assert.equal(
     duplicateResult.result.messages[0].text,
-    '⚠️ Không có member mới được thêm. Đã có trong /bench:\n' +
+    '⚠️ Không có member mới được thêm. Đã có trong bench:\n' +
       'alice\n' +
       'ALICE'
   );

@@ -91,6 +91,7 @@ test('shared /clearteam parser separates stack and member actions', () => {
     mode: 2,
     stackKeys: ['teamA', 'teamB'],
   });
+  assert.deepEqual(parseClearteamRequest([]), { kind: 'chooseTarget' });
   assert.deepEqual(parseClearteamRequest(['3', 'confirm']), {
     kind: 'clearStack',
     mode: 3,
@@ -105,7 +106,7 @@ test('shared /clearteam parser separates stack and member actions', () => {
   assert.equal(parseClearteamRequest(['2', 'EXTRA']), null);
 });
 
-test('independent /clearteam shows usage without changing teams', async () => {
+test('independent clear-team action asks what should be removed', async () => {
   const teamA = createTeam(1);
   const { router, saves } = createClearteamRouter({
     state: createState({ teamA }),
@@ -113,7 +114,8 @@ test('independent /clearteam shows usage without changing teams', async () => {
 
   const routed = await router.run(createContext());
 
-  assert.equal(routed.result.messages[0].text, CLEARTEAM_MESSAGES.usage);
+  assert.equal(routed.result.messages[0].text, CLEARTEAM_MESSAGES.targetPrompt);
+  assert.equal(routed.result.messages[0].actions.length, 7);
   assert.equal(teamA.length, 1);
   assert.equal(saves.length, 0);
 });
@@ -285,7 +287,10 @@ test('independent /clearteam reports empty and invalid requests', async () => {
     CLEARTEAM_MESSAGES.stack2Empty
   );
   assert.equal(teamResult.result.messages[0].text, '⚠️ Home trống.');
-  assert.equal(targetResult.result.messages[0].text, CLEARTEAM_MESSAGES.usage);
+  assert.equal(
+    targetResult.result.messages[0].text,
+    CLEARTEAM_MESSAGES.invalidSelection
+  );
   assert.equal(
     selectionResult.result.messages[0].text,
     CLEARTEAM_MESSAGES.invalidSelection

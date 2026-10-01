@@ -5,7 +5,7 @@ const { createTextResult } = require('../../core/contracts/command-result');
 const { createTelegramAdapter } = require('./adapter');
 const {
   createReplyKeyboard,
-  getReplyKeyboardCommand,
+  getReplyKeyboardAction,
 } = require('./reply-keyboard');
 
 class MockBot {
@@ -35,42 +35,35 @@ function event(text) {
 }
 
 test('reply keyboard maps exact labels and keeps Telegram options', () => {
-  const expectedCommands = [
-    ['➕ Vote +1', '/vote +1'],
-    ['📋 Bench', '/bench'],
-    ['👤 Thêm cầu ngoài', '/add'],
-    ['✏️ Sửa bench', '/editbench'],
-    ['🗑️ Xoá khỏi bench', '/clearbench'],
-    ['🎲 Chia team', '/chiateam'],
-    ['⚽ Team', '/team'],
-    ['👥➕ Thêm vào team', '/addtoteam'],
-    ['🗑️ Xoá khỏi team', '/clearteam'],
-    ['🗳️ Tạo vote', '/taovote'],
-    ['📊 Kết quả vote', '/demvote'],
-    ['🔄 Đồng bộ bench', '/sync'],
-    ['📖 Hướng dẫn', '/start'],
+  const expectedActions = [
+    ['🗳️ Vote ngay', 'vote'],
+    ['📋 Bench', 'bench'],
+    ['👤 Thêm người', 'add'],
+    ['✏️ Sửa bench', 'editbench'],
+    ['🗑️ Xoá khỏi bench', 'clearbench'],
+    ['🎲 Chia team', 'chiateam'],
+    ['⚽ Team', 'team'],
+    ['👥➕ Thêm vào team', 'addtoteam'],
+    ['🗑️ Xoá khỏi team', 'clearteam'],
+    ['🗳️ Tạo vote', 'taovote'],
+    ['📊 Kết quả vote', 'demvote'],
+    ['🔄 Đồng bộ bench', 'sync'],
   ];
-  for (const [label, command] of expectedCommands) {
-    assert.equal(getReplyKeyboardCommand(label), command);
+  for (const [label, command] of expectedActions) {
+    assert.deepEqual(getReplyKeyboardAction(label), { command, args: [] });
   }
-  assert.equal(getReplyKeyboardCommand('  ➕ Vote +1  '), '/vote +1');
-  assert.equal(getReplyKeyboardCommand('👤 Thông tin của tôi'), null);
-  assert.equal(getReplyKeyboardCommand('📅 Lịch sử trận'), null);
-  assert.equal(getReplyKeyboardCommand('📜 Luật team'), null);
-  assert.equal(getReplyKeyboardCommand('⏹️ Đóng vote'), null);
-  assert.equal(getReplyKeyboardCommand('hello'), null);
-  assert.equal(getReplyKeyboardCommand('constructor'), null);
-  assert.equal(getReplyKeyboardCommand('toString'), null);
-  assert.equal(getReplyKeyboardCommand('/bench 2'), null);
+  assert.equal(getReplyKeyboardAction('hello'), null);
+  assert.equal(getReplyKeyboardAction('constructor'), null);
+  assert.equal(getReplyKeyboardAction('toString'), null);
+  assert.equal(getReplyKeyboardAction('/bench 2'), null);
   assert.deepEqual(createReplyKeyboard(), {
     keyboard: [
-      [{ text: '➕ Vote +1' }, { text: '📋 Bench' }],
-      [{ text: '👤 Thêm cầu ngoài' }, { text: '✏️ Sửa bench' }],
-      [{ text: '🗑️ Xoá khỏi bench' }, { text: '🎲 Chia team' }],
-      [{ text: '⚽ Team' }, { text: '👥➕ Thêm vào team' }],
-      [{ text: '🗑️ Xoá khỏi team' }, { text: '🗳️ Tạo vote' }],
+      [{ text: '🗳️ Vote ngay' }, { text: '🗳️ Tạo vote' }],
+      [{ text: '📋 Bench' }, { text: '✏️ Sửa bench' }],
+      [{ text: '🗑️ Xoá khỏi bench' }, { text: '👤 Thêm người' }],
+      [{ text: '🎲 Chia team' }, { text: '⚽ Team' }],
+      [{ text: '👥➕ Thêm vào team' }, { text: '🗑️ Xoá khỏi team' }],
       [{ text: '📊 Kết quả vote' }, { text: '🔄 Đồng bộ bench' }],
-      [{ text: '📖 Hướng dẫn' }],
     ],
     resize_keyboard: true,
     one_time_keyboard: false,
@@ -78,11 +71,12 @@ test('reply keyboard maps exact labels and keeps Telegram options', () => {
   });
 });
 
-test('keyboard labels route as commands and slash arguments stay intact', async () => {
+test('keyboard labels route internally and only /start stays public', async () => {
   const bot = new MockBot();
   const contexts = [];
   const adapter = createTelegramAdapter({
     bot,
+    allowedSlashCommands: ['start'],
     router: {
       async run(context) {
         contexts.push(context);
@@ -92,12 +86,13 @@ test('keyboard labels route as commands and slash arguments stay intact', async 
   });
 
   assert.equal(adapter.toCommandContext(event('⚽ Team')).command, 'team');
-  assert.deepEqual(adapter.toCommandContext(event('/team 2')).args, ['2']);
+  assert.equal(adapter.toCommandContext(event('/team 2')), null);
+  assert.equal(adapter.toCommandContext(event('/start')).command, 'start');
   await adapter.handleEvent(event('📋 Bench'));
   assert.equal(contexts[0].command, 'bench');
 });
 
-test('start attaches keyboard to source chat and topic, including keyboard route', async () => {
+test('start attaches keyboard to source chat and topic', async () => {
   const bot = new MockBot();
   const adapter = createTelegramAdapter({
     bot,
@@ -110,7 +105,7 @@ test('start attaches keyboard to source chat and topic, including keyboard route
     },
   });
 
-  await adapter.handleEvent(event('📖 Hướng dẫn'));
+  await adapter.handleEvent(event('/start'));
   assert.equal(bot.sent[0].chatId, '-20');
   assert.equal(bot.sent[0].options.message_thread_id, '4');
   assert.deepEqual(bot.sent[0].options.reply_markup, createReplyKeyboard());

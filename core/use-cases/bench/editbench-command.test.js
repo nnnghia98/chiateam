@@ -107,7 +107,7 @@ test('independent /editbench requests a follow-up name after selection', async (
   const routed = await router.run(createContext(['2']));
 
   assert.match(routed.result.messages[0].text, /Nhập tên mới cho Minh/);
-  assert.match(routed.result.messages[0].text, /\/editbench 2 TÊN_MỚI/);
+  assert.doesNotMatch(routed.result.messages[0].text, /\/editbench/);
   assert.deepEqual(routed.result.messages[0].input, {
     command: 'editbench',
     args: ['2'],

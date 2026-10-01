@@ -15,9 +15,7 @@ const EDITBENCH_MESSAGES = Object.freeze({
   empty: '⚠️ Bench trống.',
   instruction: '📋 Chọn member cần đổi tên:',
   namePrompt: '✏️ Nhập tên mới cho {name}.',
-  fallback: 'Hoặc dùng: /editbench {number} TÊN_MỚI',
-  invalidSelection:
-    '⚠️ Số thứ tự không hợp lệ. Dùng /editbench để xem danh sách và chọn lại.',
+  invalidSelection: '⚠️ Số thứ tự không hợp lệ. Vui lòng mở menu và chọn lại.',
   invalidName: '⚠️ Tên mới không hợp lệ.',
   duplicateName: '⚠️ Tên {name} đã tồn tại trong bench.',
   success: '✅ Đã đổi tên: {oldName} → {newName}',
@@ -99,21 +97,13 @@ function renameBenchEntry(entry, newName) {
 
 function createNameInputResult(text, selectedNumber, oldName) {
   const prompt = EDITBENCH_MESSAGES.namePrompt.replace('{name}', oldName);
-  const fallback = EDITBENCH_MESSAGES.fallback.replace(
-    '{number}',
-    selectedNumber
-  );
 
-  return createTextResult(
-    [text, prompt, fallback].filter(Boolean).join('\n\n'),
-    [],
-    {
-      input: {
-        command: 'editbench',
-        args: [String(selectedNumber)],
-      },
-    }
-  );
+  return createTextResult([text, prompt].filter(Boolean).join('\n\n'), [], {
+    input: {
+      command: 'editbench',
+      args: [String(selectedNumber)],
+    },
+  });
 }
 
 function createEditbenchCommand() {

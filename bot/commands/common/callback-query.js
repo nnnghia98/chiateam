@@ -54,10 +54,22 @@ function handleUnsupportedCallback(query) {
 
 function callbackQueryCommand() {
   bot.on('callback_query', async query => {
+    logEvent('telegram.callback', 'received inline button', {
+      data: query.data,
+      user: `${query.from?.first_name || query.from?.username || 'Unknown'} (${query.from?.id || '-'})`,
+      chat: query.message?.chat?.id,
+      callback: query.id,
+      handlers: callbackQueryHandlers.length,
+    });
+
     try {
       for (const handler of callbackQueryHandlers) {
         const handled = await handler(query);
         if (handled) {
+          logEvent('telegram.callback', 'handled inline button', {
+            data: query.data,
+            callback: query.id,
+          });
           return;
         }
       }

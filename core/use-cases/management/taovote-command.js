@@ -10,15 +10,11 @@ const { ATTENDANCE_VOTE_OPTIONS } = require('./attendance-vote');
 const MAX_VOTE_QUESTION_LENGTH = 300;
 
 const TAOVOTE_MESSAGES = Object.freeze({
-  help:
-    '📊 Cách dùng: /taovote [câu hỏi]\n' +
-    'Vote có 2 lựa chọn: ⚽️ Đá (1) hoặc 🫷 Thôi (0).\n' +
-    'Ví dụ: /taovote Sân XX ngày YY giờ ZZ',
-  invalid:
-    '⚠️ Câu hỏi vote phải có từ 1 đến 300 ký tự. Ví dụ: /taovote Sân XX ngày YY giờ ZZ',
+  prompt: '📊 Nhập câu hỏi cho vote mới.',
+  invalid: '⚠️ Câu hỏi vote phải có từ 1 đến 300 ký tự. Vui lòng nhập lại.',
   permissionDenied: '⛔ Chỉ admin mới có quyền tạo vote.',
   voteExists:
-    '⚠️ Hiện tại đã có một vote đang hoạt động. Dùng /clearvote trước khi tạo vote mới.',
+    '⚠️ Hiện tại đã có một vote đang hoạt động. Hãy đóng vote đó trước khi tạo vote mới.',
   success: '✅ Đã tạo vote: {question}',
   loadError: '❌ Không thể tải vote hiện tại từ API.',
   publishError: '❌ Không thể gửi vote. Vui lòng thử lại.',
@@ -32,7 +28,7 @@ function parseTaovoteRequest(args) {
   }
 
   if (args.length === 0) {
-    return { kind: 'help' };
+    return { kind: 'prompt' };
   }
 
   const question = args.join(' ').trim();
@@ -84,18 +80,13 @@ function createTaovoteCommand({ votePublisher, now = () => new Date() } = {}) {
       description: 'Create one attendance vote',
       permission: 'player',
     },
-    resolvePermission: context =>
-      context.args.length > 0 ? 'admin' : 'player',
+    resolvePermission: () => 'admin',
     stateKeys: ['activeVote'],
     condition: async (context, state) => {
       const request = parseTaovoteRequest(context.args);
 
       if (!request) {
         return { ok: false, code: 'INVALID_QUESTION' };
-      }
-
-      if (request.kind === 'help') {
-        return { ok: true, request, activeVote: null };
       }
 
       const normalized = normalizeActiveVote(state.activeVote);
@@ -111,8 +102,8 @@ function createTaovoteCommand({ votePublisher, now = () => new Date() } = {}) {
       return { ok: true, request, activeVote: null };
     },
     action: async (context, state, condition) => {
-      if (condition.request.kind === 'help') {
-        return { changed: false, code: 'TAOVOTE_HELP' };
+      if (condition.request.kind === 'prompt') {
+        return { changed: false, code: 'VOTE_QUESTION_REQUESTED' };
       }
 
       const createdAt = toIsoTimestamp(now());
@@ -165,12 +156,18 @@ function createTaovoteCommand({ votePublisher, now = () => new Date() } = {}) {
         return createDefaultResult(TAOVOTE_MESSAGES.permissionDenied);
       }
 
-      if (outcome.code === 'TAOVOTE_HELP') {
-        return createDefaultResult(TAOVOTE_MESSAGES.help);
+      if (outcome.code === 'VOTE_QUESTION_REQUESTED') {
+        return createTextResult(TAOVOTE_MESSAGES.prompt, [], {
+          channel: 'default',
+          input: { command: 'taovote' },
+        });
       }
 
       if (outcome.code === 'INVALID_QUESTION') {
-        return createDefaultResult(TAOVOTE_MESSAGES.invalid);
+        return createTextResult(TAOVOTE_MESSAGES.invalid, [], {
+          channel: 'default',
+          input: { command: 'taovote' },
+        });
       }
 
       if (outcome.code === 'VOTE_EXISTS') {

@@ -74,24 +74,24 @@ Important entrypoints:
 
 The bot uses a shared platform-independent command runtime. Telegram input,
 output, polls, permissions, and callbacks stay under `platforms/telegram/`.
-The supported command list is defined once in
-`core/commands/command-manifest.js`; `/start` help and command filtering are
-generated from that manifest.
+The shared action list is defined in `core/commands/command-manifest.js`.
+Telegram starts these actions from its menu. Zalo and Messenger can still use
+slash commands from their smaller platform lists.
 
-Known commands registered by the active bot runtime:
+Actions available to the shared bot runtime:
 
-| Area             | Commands                                                               |
-| ---------------- | ---------------------------------------------------------------------- |
-| Help             | `/start`                                                               |
-| Zalo messaging   | `/zalosay`, `/say`                                                     |
-| Bench            | `/addme`, `/add`, `/bench`, `/editbench`, `/clearbench`                |
-| Teams            | `/chiateam`, `/team`, `/addtoteam`, `/clearteam`                       |
-| Team constraints | `/manifest`, `/mf`, `/manifests`, `/removemanifest`, `/clearmanifests` |
+| Area             | Commands                                                                       |
+| ---------------- | ------------------------------------------------------------------------------ |
+| Help             | `/start`                                                                       |
+| Zalo messaging   | `/zalosay`, `/say`                                                             |
+| Bench            | `/addme`, `/add`, `/bench`, `/editbench`, `/clearbench`                        |
+| Teams            | `/chiateam`, `/team`, `/addtoteam`, `/clearteam`                               |
+| Team constraints | `/manifest`, `/mf`, `/manifests`, `/removemanifest`, `/clearmanifests`         |
 | Venue and fees   | `/san`, `/clearsan`, `/tiensan`, `/tiennuoc`, `/winner`, `/loser`, `/chiatien` |
-| Attendance vote  | `/taovote`, `/vote`, `/clearvote`, `/demvote`, `/sync`                 |
-| Players          | `/register`, `/me`                                                     |
-| Matches          | `/match`, `/matches`                                                   |
-| Admin reset      | `/reset`                                                               |
+| Attendance vote  | `/taovote`, `/vote`, `/clearvote`, `/demvote`, `/sync`                         |
+| Players          | `/register`, `/me`                                                             |
+| Matches          | `/match`, `/matches`                                                           |
+| Admin reset      | `/reset`                                                                       |
 
 `/chiatien` previews the costs, player count, and final HOME/AWAY player amounts
 in one group message. It does not show the calculation or result labels.
@@ -103,42 +103,44 @@ for a later release.
 Standalone AI and unsupported World Cup names are not
 part of the supported bot runtime.
 
-Send `/start` in Telegram to show the help and a reply keyboard below the
-message box. The help and keyboard appear in the chat and topic where you
-sent `/start`.
+Send `/start` in Telegram to show the bot description and a reply keyboard
+below the message box. The description and keyboard appear in the chat and
+topic where you sent `/start`.
 
-The help lists each command once. Common commands appear first on Telegram.
-Both platforms hide paused commands and mark admin-only commands with
-`(admin)`. Zalo keeps its smaller list and its personal greeting. Sending
-`/start` does not change match data or subscribe anyone to announcements.
+`/start` is the only public Telegram slash command. Other Telegram actions
+start from the reply keyboard or from inline buttons. Zalo keeps its smaller
+slash-command list and personal greeting. Sending `/start` does not change
+match data or subscribe anyone to announcements.
 
-| Menu button | Command |
-| ----------- | ------- |
-| 🗳️ Bình chọn | `/vote` |
-| 📋 Bench | `/bench` |
-| 👤 Thêm cầu ngoài | `/add` |
-| ✏️ Sửa bench | `/editbench` |
-| 🗑️ Xoá khỏi bench | `/clearbench` |
-| 🎲 Chia team | `/chiateam` |
-| ⚽ Team | `/team` |
-| 👥➕ Thêm vào team | `/addtoteam` |
-| 🗑️ Xoá khỏi team | `/clearteam` |
-| 🗳️ Tạo vote | `/taovote` |
-| 📊 Kết quả vote | `/demvote` |
-| 🔄 Đồng bộ bench | `/sync` |
-| 📖 Hướng dẫn | `/start` |
+The menu has two buttons per row.
+
+| Menu button        | Action                                    |
+| ------------------ | ----------------------------------------- |
+| 🗳️ Vote ngay       | Open vote choices                         |
+| 🗳️ Tạo vote        | Ask for the new vote question             |
+| 📋 Bench           | Show the bench                            |
+| ✏️ Sửa bench       | Choose and rename a bench member          |
+| 🗑️ Xoá khỏi bench  | Choose members to remove                  |
+| 👤 Thêm người      | Ask for guest names                       |
+| 🎲 Chia team       | Create two teams                          |
+| ⚽ Team            | Show the two-team lineup                  |
+| 👥➕ Thêm vào team | Choose a team, then choose bench members  |
+| 🗑️ Xoá khỏi team   | Choose a team, then choose what to remove |
+| 📊 Kết quả vote    | Show the current vote result              |
+| 🔄 Đồng bộ bench   | Copy attending voters to the bench        |
 
 Telegram provides the keyboard icon near the message box to hide or reopen
 this menu. Its appearance depends on the Telegram app. The menu stays
 available after a button press. Each button sends its label as a chat message
-and runs the matching command with the same permission and pause checks.
+and runs the matching internal action with the same permission and pause
+checks.
 Private command replies stay in the user's chat. Group command results use
 their configured channels and topics. Existing
 inline buttons stay unchanged. This menu is available only in Telegram.
 
 ### Supported Platforms
 
-- Telegram is the primary adapter and runs the full command catalog.
+- Telegram is the primary adapter. It exposes `/start` plus the menu actions.
 - Zalo uses the production webhook and exposes only `/start`, `/zalosay`,
   `/subscribe`, `/unsubscribe`, `/poll`, `/vote`, `/demvote`, `/bench`, and `/team`.
 - Zalo roster and team mutation commands are intentionally disabled.
@@ -299,10 +301,10 @@ cp .env.example .env
 
 Both files use two main sections:
 
-| Section | Settings |
-| --- | --- |
-| `BOT` | Telegram credentials and group topics; Zalo credentials and webhook; Messenger webhook credentials. |
-| `API` | API connection and shared authentication; database and JSON mirror; image storage; allowed web origins; maintenance; optional AI; admin panel backend settings. |
+| Section | Settings                                                                                                                                                        |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `BOT`   | Telegram credentials and group topics; Zalo credentials and webhook; Messenger webhook credentials.                                                             |
+| `API`   | API connection and shared authentication; database and JSON mirror; image storage; allowed web origins; maintenance; optional AI; admin panel backend settings. |
 
 Use [.env.example](.env.example) for the current setting names and comments.
 Shared settings appear once. `NODE_ENV`, `INTERNAL_API_AUTH_TOKEN`, and

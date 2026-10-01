@@ -1,5 +1,9 @@
 require('../config/load-env').loadEnv();
-const { shouldDelegate, startManagedSupervisor, sendReady } = require('../runtime/managed-bootstrap');
+const {
+  shouldDelegate,
+  startManagedSupervisor,
+  sendReady,
+} = require('../runtime/managed-bootstrap');
 const { safeError } = require('../runtime/managed-process');
 
 if (shouldDelegate()) {
@@ -13,7 +17,7 @@ const maintenanceMessage = require('./commands/maintainance');
 const bot = require('./telegram-client');
 const { logCommandUsage } = require('./utils/command-logger');
 const {
-  getReplyKeyboardCommand,
+  getReplyKeyboardAction,
 } = require('../platforms/telegram/reply-keyboard');
 const { logEvent } = require('./utils/logger');
 const { initializeStorage } = require('./utils/storage');
@@ -61,6 +65,9 @@ const {
   isMaintenanceModeEnabled,
   getMaintenanceUntil,
 } = require('../config/maintenance');
+const {
+  syncTelegramCommandMenu,
+} = require('../platforms/telegram/command-menu');
 
 function installProcessCrashLogging() {
   process.on('uncaughtException', err => {
@@ -96,7 +103,8 @@ if (isMaintenanceMode) {
   bot.on('message', msg => {
     if (
       msg.text &&
-      (msg.text.startsWith('/') || getReplyKeyboardCommand(msg.text))
+      (/^\/start(?:@\w+)?(?:\s|$)/i.test(msg.text) ||
+        getReplyKeyboardAction(msg.text))
     ) {
       const { sendMessage } = require('./utils/chat');
       sendMessage({
@@ -116,15 +124,24 @@ if (isMaintenanceMode) {
     { until: maintenanceUntil },
     'warn'
   );
-  bot.getMe().then(() => sendReady('telegram')).catch(() => process.exit(1));
+  Promise.all([syncTelegramCommandMenu(bot), bot.getMe()])
+    .then(() => sendReady('telegram'))
+    .catch(() => process.exit(1));
   return;
 }
 
-// Log slash commands and their reply keyboard shortcuts.
+// Log /start and reply-keyboard actions.
 if (bot) {
   bot.on('message', msg => {
-    const keyboardCommand = getReplyKeyboardCommand(msg.text);
-    logCommandUsage(keyboardCommand ? { ...msg, text: keyboardCommand } : msg);
+    const keyboardAction = getReplyKeyboardAction(msg.text);
+    const actionText = keyboardAction
+      ? `/${keyboardAction.command}${
+          keyboardAction.args.length > 0
+            ? ` ${keyboardAction.args.join(' ')}`
+            : ''
+        }`
+      : msg.text;
+    logCommandUsage({ ...msg, text: actionText });
   });
 }
 
@@ -162,6 +179,7 @@ async function bootstrapBot() {
     stateRepository,
     permissionPolicy: createTelegramPermissionPolicy(),
     registerTelegramActionHandler: registerCallbackQueryHandler,
+    allowedSlashCommands: ['start'],
     definitions: createCommandDefinitions({
       broadcastService: zaloBroadcastService,
       benchIdentityPolicy: createTelegramBenchIdentityPolicy(),
@@ -174,7 +192,8 @@ async function bootstrapBot() {
   });
 
   // Keep only Telegram poll-answer ingestion as a temporary platform event.
-  // Every slash command is registered through the shared command runtime.
+  // Shared action logic stays registered, but Telegram exposes only /start
+  // and menu-driven actions.
   taoVoteCommand({
     members,
     getActiveVote,
@@ -190,6 +209,7 @@ async function bootstrapBot() {
     registerSyncCommand: false,
   });
   logEvent('bot', 'running', {}, 'success');
+  await syncTelegramCommandMenu(bot);
   await bot.getMe();
   sendReady('telegram');
 }

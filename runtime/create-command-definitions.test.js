@@ -88,7 +88,7 @@ test('shared runtime definitions match the approved command manifest', () => {
   });
 });
 
-test('Telegram /start reflects command rules from the supplied environment', async () => {
+test('Telegram /start describes the bot without listing old slash commands', async () => {
   const definitions = createCommandDefinitions({
     ...createDependencies(),
     env: {
@@ -106,9 +106,10 @@ test('Telegram /start reflects command rules from the supplied environment', asy
   );
   const help = result.messages[0].text;
 
-  assert.doesNotMatch(help, /\/bench\b|\/zalosay\b|\/say\b/);
-  assert.match(help, /\/team \[2\|3\].*\(admin\)/);
-  assert.match(help, /\/addme/);
+  assert.match(help, /quản lý bình chọn, bench và team/);
+  assert.match(help, /Chọn một nút trong menu/);
+  assert.doesNotMatch(help, /\/bench\b|\/zalosay\b|\/team\b|\/addme\b/);
+  assert.match(help, /\/start/);
   assert.equal(result.messages[0].channel, 'source');
 });
 
