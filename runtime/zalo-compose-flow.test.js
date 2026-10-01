@@ -10,6 +10,9 @@ const {
 } = require('../core/use-cases/common/zalo-broadcast-command');
 const { createTelegramAdapter } = require('../platforms/telegram/adapter');
 const {
+  TELEGRAM_ALLOWED_SLASH_COMMANDS,
+} = require('../platforms/telegram/command-menu');
+const {
   createTelegramPhotoUploadService,
 } = require('../platforms/telegram/photo-upload-service');
 const {
@@ -210,6 +213,7 @@ function createHarness({
   });
   const adapter = createTelegramAdapter({
     bot: telegram,
+    allowedSlashCommands: TELEGRAM_ALLOWED_SLASH_COMMANDS,
     router,
     now,
     onError,
@@ -237,7 +241,7 @@ function createHarness({
 
 test('compose menu, direct text, and multiline text preview require confirmation', async () => {
   const h = createHarness();
-  await h.adapter.handleEvent(telegramText('/zalosay'));
+  assert.equal(await h.adapter.handleEvent(telegramText('/zalosay')), true);
   const menu = h.telegram.sentMessages.at(-1);
   assert.deepEqual(
     menu.options.reply_markup.inline_keyboard.map(row => row[0].text),
@@ -253,12 +257,12 @@ test('compose menu, direct text, and multiline text preview require confirmation
   assert.match(h.telegram.sentMessages.at(-1).text, /Gửi nội dung thông báo/);
   await h.adapter.handleEvent(telegramText('menu text'));
 
-  await h.adapter.handleEvent(telegramText('/zalosay direct text'));
+  await h.adapter.handleEvent(telegramText('/zalosay@ChiaTeamBot direct text'));
   assert.equal(h.prepareCalls, 2);
   assert.match(h.telegram.sentMessages.at(-1).text, /direct text/);
   assert.equal(h.zaloCalls.length, 0);
 
-  await h.adapter.handleEvent(telegramText('/zalosay --text'));
+  await h.adapter.handleEvent(telegramText('/say --text'));
   await h.adapter.handleEvent(telegramText('line one\nline two'));
   assert.equal(h.prepareCalls, 3);
   assert.match(h.telegram.sentMessages.at(-1).text, /line one\nline two/);

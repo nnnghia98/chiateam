@@ -16,6 +16,7 @@ const { callbackQueryCommand, taoVoteCommand } = require('./commands');
 const maintenanceMessage = require('./commands/maintainance');
 const bot = require('./telegram-client');
 const { logCommandUsage } = require('./utils/command-logger');
+const { registerMentionLogger } = require('./utils/mention-logger');
 const {
   getReplyKeyboardAction,
 } = require('../platforms/telegram/reply-keyboard');
@@ -67,6 +68,7 @@ const {
 } = require('../config/maintenance');
 const {
   syncTelegramCommandMenu,
+  TELEGRAM_ALLOWED_SLASH_COMMANDS,
 } = require('../platforms/telegram/command-menu');
 
 function installProcessCrashLogging() {
@@ -92,6 +94,23 @@ function installProcessCrashLogging() {
 installProcessCrashLogging();
 
 logEvent('bot', 'starting ChiaTeam bot');
+
+const botIdentityReady = bot.getMe().then(identity => {
+  registerMentionLogger(bot, identity);
+  return identity;
+});
+// Attach a rejection handler while storage initialization is still running.
+botIdentityReady.catch(error => {
+  logEvent(
+    'telegram.mention',
+    'failed to load bot identity',
+    {
+      error: safeError(error).message,
+    },
+    'error'
+  );
+  process.exit(1);
+});
 
 callbackQueryCommand();
 
@@ -124,7 +143,7 @@ if (isMaintenanceMode) {
     { until: maintenanceUntil },
     'warn'
   );
-  Promise.all([syncTelegramCommandMenu(bot), bot.getMe()])
+  Promise.all([syncTelegramCommandMenu(bot), botIdentityReady])
     .then(() => sendReady('telegram'))
     .catch(() => process.exit(1));
   return;
@@ -179,7 +198,7 @@ async function bootstrapBot() {
     stateRepository,
     permissionPolicy: createTelegramPermissionPolicy(),
     registerTelegramActionHandler: registerCallbackQueryHandler,
-    allowedSlashCommands: ['start'],
+    allowedSlashCommands: TELEGRAM_ALLOWED_SLASH_COMMANDS,
     definitions: createCommandDefinitions({
       broadcastService: zaloBroadcastService,
       benchIdentityPolicy: createTelegramBenchIdentityPolicy(),
@@ -192,8 +211,8 @@ async function bootstrapBot() {
   });
 
   // Keep only Telegram poll-answer ingestion as a temporary platform event.
-  // Shared action logic stays registered, but Telegram exposes only /start
-  // and menu-driven actions.
+  // The public command menu exposes /start; admin broadcasts also accept
+  // /zalosay and /say. Other actions use the reply keyboard.
   taoVoteCommand({
     members,
     getActiveVote,
@@ -210,7 +229,7 @@ async function bootstrapBot() {
   });
   logEvent('bot', 'running', {}, 'success');
   await syncTelegramCommandMenu(bot);
-  await bot.getMe();
+  await botIdentityReady;
   sendReady('telegram');
 }
 
