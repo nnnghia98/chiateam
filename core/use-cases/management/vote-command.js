@@ -10,8 +10,8 @@ const {
 } = require('./attendance-vote');
 
 const VOTE_MESSAGES = Object.freeze({
-  usage: '⚠️ Dùng /vote để chọn ⚽️ Đá hoặc 🫷 Thôi.',
-  prompt: 'Chọn một câu trả lời cho vote này:',
+  usage: '⚠️ Lựa chọn vote không hợp lệ. Vui lòng chọn lại.',
+  prompt: 'Chọn 1 option',
   permissionDenied: '⛔ Bạn không có quyền thực hiện lệnh này.',
   noVote: '📭 Chưa có vote nào đang mở.',
   loadError: '❌ Không thể tải vote hiện tại từ API.',

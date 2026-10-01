@@ -93,6 +93,7 @@ test('shared /addtoteam request parser maps only valid mode targets', () => {
   assert.equal(parseAddtoteamRequest(['3', 'HOME']).target.key, 'team3A');
   assert.equal(parseAddtoteamRequest(['3', 'AWAY']).target.key, 'team3B');
   assert.equal(parseAddtoteamRequest(['3', 'EXTRA']).target.key, 'team3C');
+  assert.deepEqual(parseAddtoteamRequest([]), { kind: 'chooseTarget' });
   assert.equal(parseAddtoteamRequest(['EXTRA']), null);
   assert.equal(parseAddtoteamRequest(['2', 'EXTRA']), null);
   assert.equal(parseAddtoteamRequest(['4', 'HOME']), null);
@@ -209,7 +210,7 @@ test('independent /addtoteam reports all duplicates without saving', async () =>
   assert.equal(saves.length, 0);
 });
 
-test('independent /addtoteam handles usage, invalid input, and empty bench', async () => {
+test('independent add-to-team action asks for a target before members', async () => {
   const validState = createState({ bench: createBench(2) });
   const noArgs = createAddtoteamRouter({ state: validState });
   const invalidTarget = createAddtoteamRouter({ state: validState });
@@ -225,8 +226,24 @@ test('independent /addtoteam handles usage, invalid input, and empty bench', asy
   );
   const emptyResult = await empty.router.run(createContext(['HOME']));
 
-  assert.equal(noArgsResult.result.messages[0].text, ADDTOTEAM_MESSAGES.usage);
-  assert.equal(targetResult.result.messages[0].text, ADDTOTEAM_MESSAGES.usage);
+  assert.equal(
+    noArgsResult.result.messages[0].text,
+    ADDTOTEAM_MESSAGES.targetPrompt
+  );
+  assert.deepEqual(
+    noArgsResult.result.messages[0].actions.map(action => action.command),
+    [
+      '/addtoteam 2 HOME',
+      '/addtoteam 2 AWAY',
+      '/addtoteam 3 HOME',
+      '/addtoteam 3 AWAY',
+      '/addtoteam 3 EXTRA',
+    ]
+  );
+  assert.equal(
+    targetResult.result.messages[0].text,
+    ADDTOTEAM_MESSAGES.invalidSelection
+  );
   assert.equal(
     selectionResult.result.messages[0].text,
     ADDTOTEAM_MESSAGES.invalidSelection

@@ -84,7 +84,7 @@ test('Telegram /start renders source thread help once, with keyboard and managed
   assert.ok(
     sent[0].options.reply_markup.keyboard
       .flat()
-      .some(button => button.text === '📖 Hướng dẫn')
+      .some(button => button.text === '🗳️ Vote ngay')
   );
   assert.match(sent[0].text, /\*👋 CHIATEAM BOT\*/);
   assert.match(sent[0].text, /BẮT ĐẦU NHANH/);

@@ -9,9 +9,7 @@ const CLEARBENCH_PAGE_SIZE = 10;
 const CLEARBENCH_MESSAGES = Object.freeze({
   empty: '⚠️ Bench trống.',
   instruction: '📋 Chọn member cần xóa khỏi bench:',
-  invalidSelection:
-    '⚠️ Không có lựa chọn hợp lệ. Ví dụ:\n' +
-    '/clearbench 1,3,5 hoặc /clearbench 1-3 hoặc /clearbench all',
+  invalidSelection: '⚠️ Lựa chọn không hợp lệ. Vui lòng mở menu và chọn lại.',
   success: '✅ Đã xóa {count} member(s):\n{names}',
   singleSuccess: '✅ Đã xóa {name} khỏi bench.',
   clearAllSuccess: '✅ Đã xóa toàn bộ member khỏi bench.',

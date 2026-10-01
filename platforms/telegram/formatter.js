@@ -6,7 +6,7 @@ const TELEGRAM_COMMAND_ACTION_PREFIX = 'core:cmd:';
 
 function getCallbackData(action) {
   const callbackData = action.command
-    ? `${TELEGRAM_COMMAND_ACTION_PREFIX}${action.command}`
+    ? `${TELEGRAM_COMMAND_ACTION_PREFIX}${action.command.replace(/^\//, '')}`
     : action.id;
 
   if (Buffer.byteLength(callbackData, 'utf8') > 64) {

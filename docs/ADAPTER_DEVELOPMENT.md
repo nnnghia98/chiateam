@@ -26,8 +26,9 @@ platform events do not enter core state.
 
 ## Current commands
 
-Telegram runs the full command catalog, including bench, team, vote, player,
-match, and admin commands. See [`COMMAND_CATALOG.md`](COMMAND_CATALOG.md).
+Telegram keeps `/start` as its only public slash command. Its reply keyboard
+and inline buttons send internal actions into the full shared runtime. See
+[`COMMAND_CATALOG.md`](COMMAND_CATALOG.md) for the core action catalog.
 
 The Zalo adapter currently exposes:
 

@@ -65,15 +65,19 @@ function createVoteRouter({
   return { router, saves, state };
 }
 
-test('text vote parser accepts 0 through 4 with an optional plus', () => {
-  assert.deepEqual(parseVoteChoice(['0']), { choice: '0', choiceIndex: 0 });
-  assert.deepEqual(parseVoteChoice(['1']), { choice: '+1', choiceIndex: 1 });
-  assert.deepEqual(parseVoteChoice(['+4']), {
-    choice: '+4',
-    choiceIndex: 4,
+test('text vote parser accepts the two current vote choices', () => {
+  assert.deepEqual(parseVoteChoice(['0']), {
+    choice: '0',
+    choiceIndex: 0,
+    partySize: 0,
+  });
+  assert.deepEqual(parseVoteChoice(['1']), {
+    choice: '1',
+    choiceIndex: 1,
+    partySize: 1,
   });
   assert.equal(parseVoteChoice([]), null);
-  assert.equal(parseVoteChoice(['5']), null);
+  assert.equal(parseVoteChoice(['2']), null);
   assert.equal(parseVoteChoice(['1', '2']), null);
 });
 
@@ -91,32 +95,32 @@ test('Telegram vote identity keeps compatibility with native poll answers', () =
 test('independent /vote stores a platform-qualified voter', async () => {
   const { router, saves, state } = createVoteRouter();
 
-  const routed = await router.run(createContext(['2']));
+  const routed = await router.run(createContext(['1']));
 
   assert.equal(saves.length, 1);
   assert.deepEqual(state.activeVote.votes['zalo:zalo-user'], {
     id: 'zalo-user',
     platform: 'zalo',
     name: 'Minh',
-    choice: '+2',
-    optionIndex: 2,
-    options: [2],
+    choice: '1',
+    optionIndex: 1,
+    options: [1],
   });
   assert.equal(state.activeVote.totalVoters, 2);
-  assert.match(routed.result.messages[0].text, /Minh: tham gia 2 người/);
+  assert.match(routed.result.messages[0].text, /Minh: ⚽️ Đá/);
   assert.equal(routed.result.messages[0].channel, 'source');
 });
 
 test('independent /vote changes a choice and skips an unchanged save', async () => {
   const { router, saves, state } = createVoteRouter();
 
-  await router.run(createContext(['+2']));
-  const unchanged = await router.run(createContext(['2']));
+  await router.run(createContext(['1']));
+  const unchanged = await router.run(createContext(['1']));
   const declined = await router.run(createContext(['0']));
 
   assert.equal(saves.length, 2);
-  assert.match(unchanged.result.messages[0].text, /vẫn chọn tham gia 2/);
-  assert.match(declined.result.messages[0].text, /không tham gia/);
+  assert.match(unchanged.result.messages[0].text, /vẫn chọn ⚽️ Đá/);
+  assert.match(declined.result.messages[0].text, /🫷 Thôi/);
   assert.equal(state.activeVote.totalVoters, 1);
   assert.equal(state.activeVote.votes['zalo:zalo-user'].choice, '0');
 });

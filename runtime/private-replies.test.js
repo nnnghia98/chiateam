@@ -105,7 +105,7 @@ test('private buttons and text input keep the same chat and admin permissions', 
   const { runtime, sent, state } = setup(t);
   await runtime.adapter.handleAction({
     id: 'button-1',
-    data: 'core:cmd:/editbench 1',
+    data: 'core:cmd:editbench 1',
     from: privateEvent('').from,
     message: { chat: { id: 123, type: 'private' }, message_id: 20 },
   });

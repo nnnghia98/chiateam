@@ -25,17 +25,9 @@ const ADDTOTEAM_STATE_KEYS = Object.freeze([
 
 const ADDTOTEAM_MESSAGES = Object.freeze({
   emptyBench: '⚠️ Bench trống. Thêm member trước.',
-  usage:
-    '📋 Cách sử dụng /addtoteam:\n' +
-    '• /addtoteam HOME - Chọn member thêm vào Home\n' +
-    '• /addtoteam AWAY - Chọn member thêm vào Away\n' +
-    '• /addtoteam 3 EXTRA - Chọn member thêm vào Extra\n' +
-    '• /addtoteam [2|3] HOME|AWAY|EXTRA all - Thêm tất cả',
+  targetPrompt: '⚽ Chọn team cần thêm member:',
   instruction: '📋 Chọn member để thêm vào {team}:',
-  invalidSelection:
-    '⚠️ Không có lựa chọn hợp lệ. Ví dụ:\n' +
-    '/addtoteam HOME 1,3,5 hoặc /addtoteam 3 HOME 1-3 hoặc ' +
-    '/addtoteam HOME all',
+  invalidSelection: '⚠️ Lựa chọn không hợp lệ. Vui lòng chọn lại từ menu.',
   allDuplicates: '⚠️ Tất cả {count} member đã có trong {team} rồi.',
   permissionDenied: '⛔ Chỉ admin mới có quyền.',
   loadError: '❌ Không thể tải bench hoặc team hiện tại từ API.',
@@ -44,7 +36,7 @@ const ADDTOTEAM_MESSAGES = Object.freeze({
 
 function parseAddtoteamRequest(args) {
   if (!Array.isArray(args) || args.length === 0) {
-    return null;
+    return { kind: 'chooseTarget' };
   }
 
   let mode = 2;
@@ -88,6 +80,36 @@ function parseAddtoteamRequest(args) {
   }
 
   return { kind: 'add', mode, teamType, target, selection };
+}
+
+function createTargetActions() {
+  return [
+    {
+      id: 'addtoteam_2_home',
+      label: '2 team · HOME',
+      command: '/addtoteam 2 HOME',
+    },
+    {
+      id: 'addtoteam_2_away',
+      label: '2 team · AWAY',
+      command: '/addtoteam 2 AWAY',
+    },
+    {
+      id: 'addtoteam_3_home',
+      label: '3 team · HOME',
+      command: '/addtoteam 3 HOME',
+    },
+    {
+      id: 'addtoteam_3_away',
+      label: '3 team · AWAY',
+      command: '/addtoteam 3 AWAY',
+    },
+    {
+      id: 'addtoteam_3_extra',
+      label: '3 team · EXTRA',
+      command: '/addtoteam 3 EXTRA',
+    },
+  ];
 }
 
 function normalizePageIndex(pageIndex, totalEntries) {
@@ -170,10 +192,6 @@ function createAddtoteamCommand() {
     },
     stateKeys: ADDTOTEAM_STATE_KEYS,
     condition: async (context, state) => {
-      if (context.args.length === 0) {
-        return { ok: false, code: 'USAGE' };
-      }
-
       const request = parseAddtoteamRequest(context.args);
 
       if (!request) {
@@ -181,14 +199,23 @@ function createAddtoteamCommand() {
       }
 
       const bench = normalizeBenchEntries(state.bench);
-      const targetTeam = normalizeBenchEntries(state[request.target.key]);
 
-      if (bench == null || targetTeam == null) {
+      if (bench == null) {
         return { ok: false, code: 'INVALID_TEAM_STATE' };
       }
 
       if (bench.length === 0) {
         return { ok: false, code: 'EMPTY_BENCH' };
+      }
+
+      if (request.kind === 'chooseTarget') {
+        return { ok: true, request };
+      }
+
+      const targetTeam = normalizeBenchEntries(state[request.target.key]);
+
+      if (targetTeam == null) {
+        return { ok: false, code: 'INVALID_TEAM_STATE' };
       }
 
       if (request.kind === 'list') {
@@ -205,6 +232,10 @@ function createAddtoteamCommand() {
     },
     action: async (context, state, condition) => {
       const { request } = condition;
+
+      if (request.kind === 'chooseTarget') {
+        return { changed: false, code: 'TARGET_REQUESTED' };
+      }
 
       if (request.kind === 'list') {
         return {
@@ -273,8 +304,8 @@ function createAddtoteamCommand() {
         return createTextResult(ADDTOTEAM_MESSAGES.permissionDenied);
       }
 
-      if (outcome.code === 'USAGE' || outcome.code === 'INVALID_REQUEST') {
-        return createTextResult(ADDTOTEAM_MESSAGES.usage);
+      if (outcome.code === 'INVALID_REQUEST') {
+        return createTextResult(ADDTOTEAM_MESSAGES.invalidSelection);
       }
 
       if (
@@ -294,6 +325,13 @@ function createAddtoteamCommand() {
 
       if (outcome.code === 'INVALID_SELECTION') {
         return createTextResult(ADDTOTEAM_MESSAGES.invalidSelection);
+      }
+
+      if (outcome.code === 'TARGET_REQUESTED') {
+        return createTextResult(
+          ADDTOTEAM_MESSAGES.targetPrompt,
+          createTargetActions()
+        );
       }
 
       if (outcome.code === 'SELECTION_READY') {
@@ -335,6 +373,7 @@ module.exports = {
   buildSuccessSegments,
   createAddtoteamCommand,
   createSelectionActions,
+  createTargetActions,
   getTeamTarget,
   parseAddtoteamRequest,
   parseMemberSelection,
