@@ -48,6 +48,7 @@ test('reply keyboard maps exact labels and keeps Telegram options', () => {
     ['🗳️ Tạo vote', 'taovote'],
     ['📊 Kết quả vote', 'demvote'],
     ['🔄 Đồng bộ bench', 'sync'],
+    ['📣 Gửi Zalo', 'zalosay'],
   ];
   for (const [label, command] of expectedActions) {
     assert.deepEqual(getReplyKeyboardAction(label), { command, args: [] });
@@ -64,6 +65,7 @@ test('reply keyboard maps exact labels and keeps Telegram options', () => {
       [{ text: '🎲 Chia team' }, { text: '⚽ Team' }],
       [{ text: '👥➕ Thêm vào team' }, { text: '🗑️ Xoá khỏi team' }],
       [{ text: '📊 Kết quả vote' }, { text: '🔄 Đồng bộ bench' }],
+      [{ text: '📣 Gửi Zalo' }],
     ],
     resize_keyboard: true,
     one_time_keyboard: false,

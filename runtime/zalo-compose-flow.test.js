@@ -241,7 +241,7 @@ function createHarness({
 
 test('compose menu, direct text, and multiline text preview require confirmation', async () => {
   const h = createHarness();
-  assert.equal(await h.adapter.handleEvent(telegramText('/zalosay')), true);
+  assert.equal(await h.adapter.handleEvent(telegramText('📣 Gửi Zalo')), true);
   const menu = h.telegram.sentMessages.at(-1);
   assert.deepEqual(
     menu.options.reply_markup.inline_keyboard.map(row => row[0].text),

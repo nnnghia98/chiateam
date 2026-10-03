@@ -11,6 +11,7 @@ const {
 } = require('./reply-keyboard');
 
 const DEFAULT_INTERACTION_TTL_MS = 10 * 60 * 1000;
+const { createTextResult } = require('../../core/contracts/command-result');
 
 const TELEGRAM_CAPABILITIES = Object.freeze({
   buttons: true,
@@ -106,6 +107,7 @@ function createTelegramAdapter({
   errorMessage = '❌ Có lỗi xảy ra. Vui lòng thử lại.',
   onError = error => console.error('❌ [telegram.adapter]', error),
   commandGate,
+  naturalLanguage,
 } = {}) {
   if (
     !bot ||
@@ -405,7 +407,39 @@ function createTelegramAdapter({
   async function handleEvent(event) {
     const explicitContext = toCommandContext(event);
     const pending = explicitContext ? null : takeInput(event);
-    const context = explicitContext || pending?.context;
+    let context = explicitContext || pending?.context;
+
+    if (!context && naturalLanguage?.accepts(event)) {
+      context = createContext(event, {
+        command: 'start',
+        args: [],
+        rawArgs: '',
+      });
+      if (commandGate) {
+        const control = await commandGate.check(context);
+        if (!control?.available || !control.commandsEnabled) {
+          await reportControl(context, control);
+          return true;
+        }
+      }
+      const inferenceVersion = interactionVersions.get(
+        getInteractionKey(context)
+      );
+      const parsed = await naturalLanguage.classify(event);
+      if (
+        interactionVersions.get(getInteractionKey(context)) !== inferenceVersion
+      )
+        return true;
+      if (parsed.ignored) return true;
+      if (parsed.message) {
+        await sendResult(
+          context,
+          createTextResult(parsed.message, [], { channel: 'source' })
+        );
+        return true;
+      }
+      context = createContext(event, parsed);
+    }
 
     if (!context) {
       return false;
@@ -605,6 +639,7 @@ function createTelegramAdapter({
     }
 
     pendingInputs.clear();
+    naturalLanguage?.stop();
     interactionVersions.clear();
     unregisterActionHandler = null;
     usesDirectActionListener = false;

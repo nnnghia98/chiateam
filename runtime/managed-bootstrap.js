@@ -20,6 +20,16 @@ function shouldDelegate(env = process.env) {
 }
 function childEnvironment(service, snapshot, env) {
   const result = {};
+  // Jev is configured in the root environment and belongs only to Telegram.
+  if (service === 'telegram') {
+    for (const key of [
+      'TYPESAFE_API_KEY',
+      'TYPESAFE_MODEL',
+      'TELEGRAM_JEV_ENABLED',
+    ]) {
+      if (env[key] != null) result[key] = env[key];
+    }
+  }
   for (const key of [
     'PATH',
     'HOME',

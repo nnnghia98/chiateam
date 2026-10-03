@@ -145,12 +145,26 @@ test('service environment scopes credentials, removes tokens and maps changed AP
       TELEGRAM_BOT_TOKEN: 'old',
       MANAGEMENT_ADMIN_TOKEN: 'never',
       MANAGEMENT_TELEGRAM_TOKEN: 'own',
+      TYPESAFE_API_KEY: 'jev-test-key',
+      TYPESAFE_MODEL: 'jev-latest',
+      TELEGRAM_JEV_ENABLED: 'true',
     }
   );
   assert.equal(env.TELEGRAM_BOT_TOKEN, '');
   assert.equal(env.API_INTERNAL_URL, 'https://new.test/api');
   assert.equal(env.MANAGEMENT_ADMIN_TOKEN, undefined);
   assert.equal(env.MANAGEMENT_TELEGRAM_TOKEN, 'own');
+  assert.equal(env.TYPESAFE_API_KEY, 'jev-test-key');
+  assert.equal(env.TYPESAFE_MODEL, 'jev-latest');
+  assert.equal(env.TELEGRAM_JEV_ENABLED, 'true');
+  assert.equal(
+    childEnvironment(
+      'zalo-polling',
+      { env: {} },
+      { TYPESAFE_API_KEY: 'jev-test-key' }
+    ).TYPESAFE_API_KEY,
+    undefined
+  );
   assert.equal(shouldDelegate({ MANAGEMENT_BOOTSTRAP: 'true' }), true);
 });
 
