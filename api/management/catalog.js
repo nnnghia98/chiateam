@@ -299,15 +299,6 @@ const entries = [
     'deployment',
   ],
   [
-    'BOT_STATE_FILE',
-    'Deployment',
-    'Bot state file',
-    'Tệp lưu trạng thái bot',
-    'text',
-    ['telegram', 'zalo-polling'],
-    'deployment',
-  ],
-  [
     'BOT_COMMAND_PREFIX',
     'Commands',
     'Bot command prefix',
@@ -352,13 +343,6 @@ const BOOTSTRAP = [
     'Hosting port alias. API_PORT is the managed value; keep the Railway target port aligned.',
     'Tên cổng của máy chủ. API_PORT là giá trị được quản lý; giữ cổng đích Railway tương ứng.',
   ]),
-  [
-    'RAILWAY_VOLUME_MOUNT_PATH',
-    'Railway volume mount',
-    'Điểm gắn volume Railway',
-    'Railway owns the mounted volume. Keep BOT_STATE_FILE inside it.',
-    'Railway quản lý volume. Đặt BOT_STATE_FILE bên trong volume.',
-  ],
   [
     'MANAGEMENT_DATABASE_URL',
     'Configuration database',
@@ -529,8 +513,6 @@ const CATALOG = entries.map(makeEntry);
 const scope = {
   ADMIN_UI_URL: ['api'],
   WEB_UI_URL: ['api'],
-  BOT_STATE_FILE: ['api'],
-  RAILWAY_VOLUME_MOUNT_PATH: ['api'],
   SUPABASE_URL: ['api'],
   SUPABASE_SERVICE_ROLE_KEY: ['api'],
   SUPABASE_ZALO_STORAGE_BUCKET: ['api'],
@@ -540,15 +522,7 @@ const scope = {
 };
 for (const entry of CATALOG) {
   if (scope[entry.key]) entry.services = scope[entry.key];
-  if (
-    ![
-      'API_PORT',
-      'PORT',
-      'UI_API_PORT',
-      'BOT_STATE_FILE',
-      'RAILWAY_VOLUME_MOUNT_PATH',
-    ].includes(entry.key)
-  )
+  if (!['API_PORT', 'PORT', 'UI_API_PORT'].includes(entry.key))
     entry.apply = entry.key === 'ADMIN_API_URL' ? 'request' : 'restart';
   if (
     [

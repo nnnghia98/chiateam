@@ -41,14 +41,8 @@ yarn docker:prod:down
 
 ## Persistent Bot Runtime State
 
-Dev and prod compose both mount:
-
-- Host: `api/data/bot`
-- Container: `/api/data/bot`
-
-So `/api/data/bot/storage.json` persists between container restarts as the JSON
-mirror. When `DATABASE_URL` is configured, PostgreSQL table `storage` is the
-primary runtime state.
+Dev and prod both require `DATABASE_URL` and store bot state only in PostgreSQL
+table `storage`. No JSON storage file or bot-state volume is used.
 
 ## Troubleshooting
 

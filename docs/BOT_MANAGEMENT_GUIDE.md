@@ -1,6 +1,6 @@
 # Admin panel setup and recovery
 
-The `/bots` page now manages Telegram, Zalo, API connections and shared settings. It keeps the existing admin login and English/Vietnamese interface. The settings store is separate from match data and the JSON mirror. Implementation tests use fake services; nothing has been deployed or sent to real subscribers.
+The `/bots` page now manages Telegram, Zalo, API connections and shared settings. It keeps the existing admin login and English/Vietnamese interface. The settings store is separate from match data. Implementation tests use fake services; nothing has been deployed or sent to real subscribers.
 
 ## Railway services
 
@@ -57,7 +57,7 @@ Railway private service URLs can connect services in the same project/environmen
 - The admin panel backend listens on `MANAGEMENT_PORT`, then `PORT`, then 8790. Its health path is `/health`.
 - Data API uses managed `API_PORT`; first import also supports the existing hosting aliases. Keep Railway's target port aligned. Confirm the hosting change in the page before Apply.
 - The Zalo webhook server uses `ZALO_WEBHOOK_PORT`, then `PORT`, then 8791. Its public receiver is `/webhook/zalo`, and health path is `/health`.
-- Mount the existing data volume on the API service. Keep `BOT_STATE_FILE` inside the actual `RAILWAY_VOLUME_MOUNT_PATH`. Confirm the mount/path change before Apply.
+- Set the required `DATABASE_URL` on the API service. Bot state needs no file volume.
 
 Railway's domain target port must match the service listener. See [Railway domains and ports](https://docs.railway.com/networking/domains/working-with-domains).
 
@@ -71,9 +71,9 @@ Apply promotes a candidate after checks. Supervisors stop the prior child, creat
 
 API token rotation can validate the old credential on an unchanged endpoint before restart. The new API reports ready with its new settings; the admin panel web app tests the new connection before reporting applied. The separate admin panel backend endpoint remains available throughout. A changed API destination must pass the candidate credential check before promotion.
 
-### Database and JSON mirror changes
+### Database changes
 
-Before Apply or Rollback across storage settings, make a real backup of the match database and JSON mirror, then check the backup box. The code records your confirmation; it does not create a backup or copy data between databases. Prepare and verify the destination schema and data separately. Existing matches, players, polls, subscriptions and announcement records must already be present at the destination.
+Before Apply or Rollback across storage settings, make a real backup of the match database, then check the backup box. The code records your confirmation; it does not create a backup or copy data between databases. Prepare and verify the destination schema and data separately. Existing matches, players, polls, subscriptions and announcement records must already be present at the destination.
 
 Storage changes drain admin panel operations, request API and receivers to stop, and wait for the old API's stopped report and live leases to end. The active database is not promoted until then. If this takes longer than one request, the page reports `STORAGE_QUIESCE_PENDING`: inspect service states and retry Apply. Data operations remain paused. After promotion, they resume only when the new API reports applied. Restart and further saves are blocked while this transition is pending. Rollback can recover a failed promoted storage version and uses the same stop-before-switch process.
 

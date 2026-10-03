@@ -1,71 +1,9 @@
-const fs = require('fs');
-const path = require('path');
 const { db } = require('../db/config');
 const {
   getSelectedVoteOption,
   isComingVoteOption,
 } = require('../../shared/vote-options');
 
-const DEFAULT_BOT_STORAGE_FILE = '/api/data/bot/storage.json';
-
-function isPathInside(parentPath, childPath) {
-  const relativePath = path.relative(
-    path.resolve(parentPath),
-    path.resolve(childPath)
-  );
-
-  return (
-    relativePath === '' ||
-    (relativePath &&
-      !relativePath.startsWith('..') &&
-      !path.isAbsolute(relativePath))
-  );
-}
-
-function getRailwayVolumeStorageFile() {
-  const mountPath = process.env.RAILWAY_VOLUME_MOUNT_PATH;
-
-  if (!mountPath) {
-    return null;
-  }
-
-  if (path.basename(path.resolve(mountPath)) === 'bot') {
-    return path.join(mountPath, 'storage.json');
-  }
-
-  return path.join(mountPath, 'bot', 'storage.json');
-}
-
-function getConfiguredBotStorageFile() {
-  const configuredFile = process.env.BOT_STATE_FILE;
-  const railwayVolumeFile = getRailwayVolumeStorageFile();
-
-  if (
-    configuredFile === DEFAULT_BOT_STORAGE_FILE &&
-    railwayVolumeFile &&
-    !isPathInside(process.env.RAILWAY_VOLUME_MOUNT_PATH, configuredFile)
-  ) {
-    console.warn(
-      `[storage] BOT_STATE_FILE points to ${DEFAULT_BOT_STORAGE_FILE}, but Railway mounted a volume at ${process.env.RAILWAY_VOLUME_MOUNT_PATH}; using ${railwayVolumeFile}`
-    );
-    return railwayVolumeFile;
-  }
-
-  if (configuredFile) {
-    return configuredFile;
-  }
-
-  if (railwayVolumeFile) {
-    return railwayVolumeFile;
-  }
-
-  return DEFAULT_BOT_STORAGE_FILE;
-}
-
-const BOT_STORAGE_FILE = path.resolve(
-  process.cwd(),
-  getConfiguredBotStorageFile()
-);
 const CURRENT_MATCH_ROW_ID = 1;
 const STORAGE_ROW_ID = 1;
 const STORAGE_SELECT_COLUMNS = `
@@ -102,19 +40,11 @@ function createDefaultBotStorage() {
   };
 }
 
-function getBotStorageFilePath() {
-  return BOT_STORAGE_FILE;
-}
-
 function getCurrentVietnamTimestamp() {
   const vietnamOffset = 7 * 60;
   const localOffset = new Date().getTimezoneOffset();
   const now = new Date(Date.now() + (vietnamOffset + localOffset) * 60000);
   return now.toISOString().replace('Z', '+07:00');
-}
-
-function ensureStorageDirectory() {
-  fs.mkdirSync(path.dirname(BOT_STORAGE_FILE), { recursive: true });
 }
 
 function buildStoragePayload(payload, { touch = true } = {}) {
@@ -125,26 +55,6 @@ function buildStoragePayload(payload, { touch = true } = {}) {
       ? getCurrentVietnamTimestamp()
       : (payload?.lastUpdated ?? null),
   };
-}
-
-function writeBotStorageFileSnapshot(storage) {
-  ensureStorageDirectory();
-  fs.writeFileSync(BOT_STORAGE_FILE, JSON.stringify(storage, null, 2), 'utf8');
-}
-
-function readBotStorageFile() {
-  if (!fs.existsSync(BOT_STORAGE_FILE)) {
-    return createDefaultBotStorage();
-  }
-
-  const raw = fs.readFileSync(BOT_STORAGE_FILE, 'utf8');
-  return JSON.parse(raw);
-}
-
-function resetBotStorageFile() {
-  const defaultStorage = createDefaultBotStorage();
-  writeBotStorageFileSnapshot(defaultStorage);
-  return defaultStorage;
 }
 
 function serializeJsonColumn(value) {
@@ -220,10 +130,6 @@ async function ensureStorageTable() {
 }
 
 async function readBotStorageFromDb() {
-  if (!process.env.DATABASE_URL) {
-    return null;
-  }
-
   await ensureStorageTable();
   const result = await db.query(
     `
@@ -238,10 +144,6 @@ async function readBotStorageFromDb() {
 }
 
 async function writeBotStorageToDb(storage) {
-  if (!process.env.DATABASE_URL) {
-    return storage;
-  }
-
   await ensureStorageTable();
   const result = await db.query(
     `
@@ -315,20 +217,6 @@ async function writeBotStorageToDb(storage) {
   return storageRowToPayload(result.rows[0]);
 }
 
-async function seedBotStorageTableFromFile() {
-  const fileStorage = readBotStorageFile();
-  const activeVote = await readActiveVoteFromDb();
-  const seedStorage = buildStoragePayload(
-    {
-      ...fileStorage,
-      activeVote: activeVote ?? fileStorage.activeVote ?? null,
-    },
-    { touch: false }
-  );
-
-  return writeBotStorageToDb(seedStorage);
-}
-
 async function ensureCurrentMatchTable() {
   await db.query(`
     CREATE TABLE IF NOT EXISTS current_match (
@@ -339,25 +227,7 @@ async function ensureCurrentMatchTable() {
   `);
 }
 
-async function readActiveVoteFromDb() {
-  if (!process.env.DATABASE_URL) {
-    return null;
-  }
-
-  await ensureCurrentMatchTable();
-  const result = await db.query(
-    'SELECT active_vote FROM current_match WHERE id = $1',
-    [CURRENT_MATCH_ROW_ID]
-  );
-
-  return result.rows[0]?.active_vote ?? null;
-}
-
 async function writeActiveVoteToDb(activeVote) {
-  if (!process.env.DATABASE_URL) {
-    return;
-  }
-
   await ensureCurrentMatchTable();
   await db.query(
     `
@@ -372,87 +242,41 @@ async function writeActiveVoteToDb(activeVote) {
   );
 }
 
-async function readBotStorage() {
-  if (process.env.DATABASE_URL) {
-    try {
-      const storage = await readBotStorageFromDb();
-
-      if (storage) {
-        return storage;
-      }
-
-      return await seedBotStorageTableFromFile();
-    } catch (error) {
-      console.error('❌ Failed to load bot storage from storage table:', error);
-    }
-  }
-
-  const storage = readBotStorageFile();
-
-  if (!process.env.DATABASE_URL) {
-    return storage;
-  }
-
-  try {
-    const activeVote = await readActiveVoteFromDb();
-    return {
-      ...storage,
-      activeVote: activeVote ?? storage.activeVote ?? null,
-    };
-  } catch (error) {
-    console.error('❌ Failed to load activeVote from current_match:', error);
-    return storage;
+function requireStorageDatabase() {
+  if (!process.env.DATABASE_URL?.trim()) {
+    const error = new Error('DATABASE_URL is required for bot storage');
+    error.code = 'DATABASE_NOT_CONFIGURED';
+    console.error('[storage]', error.message);
+    throw error;
   }
 }
 
+async function readBotStorage() {
+  requireStorageDatabase();
+  return (await readBotStorageFromDb()) ?? createDefaultBotStorage();
+}
+
 async function writeBotStorage(payload) {
+  requireStorageDatabase();
   const toSave = buildStoragePayload(payload);
-
-  if (process.env.DATABASE_URL) {
-    await writeBotStorageToDb(toSave);
-
-    try {
-      writeBotStorageFileSnapshot(toSave);
-    } catch (error) {
-      console.error('❌ Failed to mirror bot storage to file:', error);
-    }
-
-    try {
-      await writeActiveVoteToDb(toSave.activeVote ?? null);
-    } catch (error) {
-      console.error('❌ Failed to save activeVote to current_match:', error);
-    }
-
-    return toSave;
+  await writeBotStorageToDb(toSave);
+  try {
+    await writeActiveVoteToDb(toSave.activeVote ?? null);
+  } catch (error) {
+    console.error('❌ Failed to save activeVote to current_match:', error);
   }
-
-  writeBotStorageFileSnapshot(toSave);
   return toSave;
 }
 
 async function resetBotStorage() {
+  requireStorageDatabase();
   const defaultStorage = createDefaultBotStorage();
-
-  if (process.env.DATABASE_URL) {
-    await writeBotStorageToDb(defaultStorage);
-
-    try {
-      writeBotStorageFileSnapshot(defaultStorage);
-    } catch (error) {
-      console.error('❌ Failed to mirror reset bot storage to file:', error);
-    }
-
-    try {
-      await writeActiveVoteToDb(null);
-    } catch (error) {
-      console.error('❌ Failed to clear activeVote in current_match:', error);
-    }
-
-    return defaultStorage;
+  await writeBotStorageToDb(defaultStorage);
+  try {
+    await writeActiveVoteToDb(null);
+  } catch (error) {
+    console.error('❌ Failed to clear activeVote in current_match:', error);
   }
-
-  resetBotStorageFile();
-
   return defaultStorage;
 }
 
@@ -528,7 +352,6 @@ async function syncBotStorageFromVote() {
 
 module.exports = {
   createDefaultBotStorage,
-  getBotStorageFilePath,
   ensureStorageTable,
   ensureCurrentMatchTable,
   readBotStorage,

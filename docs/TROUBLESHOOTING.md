@@ -13,8 +13,8 @@
 - Confirm both processes use the same `BOT_API_BASE_URL` and
   `INTERNAL_API_AUTH_TOKEN`.
 - With `DATABASE_URL`, inspect PostgreSQL `storage`; it is the primary state.
-- Check the JSON mirror at the configured `BOT_STATE_FILE`.
-- Before repairing state, back up both PostgreSQL and the JSON file.
+- Check `DATABASE_URL` and PostgreSQL table `storage`; no storage file is used.
+- Before repairing state, back up PostgreSQL.
 
 ## Zalo messages are not delivered
 

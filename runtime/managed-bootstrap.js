@@ -38,7 +38,6 @@ function childEnvironment(service, snapshot, env) {
     'LANG',
     'NODE_ENV',
     'NODE_EXTRA_CA_CERTS',
-    'RAILWAY_VOLUME_MOUNT_PATH',
   ])
     if (env[key] != null) result[key] = env[key];
   for (const entry of getCatalog())

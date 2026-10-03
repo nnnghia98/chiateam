@@ -153,8 +153,7 @@ Implementation requirements:
 - Disable caching for control/status responses. Use bounded requests and
   clear errors. Use test-only data for development; do not change live settings.
 
-Do not write to `.env` from the UI. Keep next-match data in PostgreSQL `storage`
-and the configured JSON mirror. `/reset` must not erase bot controls. No
+Do not write to `.env` from the UI. Keep next-match data only in PostgreSQL `storage`. `/reset` must not erase bot controls. No
 football-storage migration is required for this page.
 
 ## UI States and Acceptance Checks

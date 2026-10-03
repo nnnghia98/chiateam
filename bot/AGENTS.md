@@ -13,7 +13,7 @@ The active runtime starts at [index.js](./index.js). There is no longer a live n
   Telegram client creation and polling/webhook error wiring.
 
 - [storage.json.example](./storage.json.example)
-  Example persisted-state shape. With `DATABASE_URL`, real runtime state lives in PostgreSQL table `storage` and is mirrored to the configured `BOT_STATE_FILE`; default local/VPS file path is `/api/data/bot/storage.json`, while Railway should use a volume path such as `/data/bot/storage.json`.
+  Legacy example of the state shape only. Runtime state lives only in PostgreSQL table `storage`. `DATABASE_URL` is mandatory; never use this file as runtime storage.
 
 - `chamhet.db` is a removed legacy artifact. Do not recreate or treat it as the
   active runtime database unless a task explicitly requires a data recovery.
@@ -56,7 +56,7 @@ Use these folders as the first place to look:
 ## Shared Utilities
 
 - [utils/storage.js](./utils/storage.js)
-  Shared mutable runtime state for bench, teams, costs, votes, and reset behavior. Treat PostgreSQL table `storage` plus the configured bot storage JSON mirror as persistent state, keep next-match data there, and back both up before risky changes.
+  Shared mutable runtime state for bench, teams, costs, votes, and reset behavior. Treat PostgreSQL table `storage` as the only persistent state, keep next-match data there, and back up the database before risky changes.
 
 - [utils/chat.js](./utils/chat.js)
   Message sending helpers.
@@ -84,4 +84,4 @@ Use these folders as the first place to look:
 - Reuse helpers from `utils/` instead of duplicating formatting, validation, or permission logic.
 - For Telegram inline keyboards that list players or members, show at most 10 player/member buttons per page by default and add pagination controls when there are more.
 - Do not add runtime writes to tracked files inside `bot/`. Persisted state belongs in the API storage service.
-- Do not move next-match data out of PostgreSQL table `storage` plus the configured bot storage JSON mirror unless the user explicitly approves that storage change.
+- Do not move next-match data out of PostgreSQL table `storage` unless the user explicitly approves that storage change.
