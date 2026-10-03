@@ -11,15 +11,10 @@ Both `bot` and `api` share the same app image (`Dockerfile`) with different star
 
 ## Persistent Bot State
 
-Next-match state is persisted primarily in PostgreSQL table `storage` when
-`DATABASE_URL` is configured. The API also writes a JSON mirror at:
-
-- Host path: `api/data/bot/storage.json` (inside `APP_DIR` on VPS)
-- Container path: `/api/data/bot/storage.json` (mounted from host)
-
-Deployment automatically backs up this JSON mirror before rollout to:
-
-- `backups/bot-storage/storage-YYYYMMDD-HHMMSS.json`
+Next-match state is stored only in PostgreSQL table `storage`. `DATABASE_URL`
+is required. No JSON file or bot-state volume is used. The deployment workflow
+does not copy legacy storage files. Back up PostgreSQL through your database
+provider before risky rollouts.
 
 ## Required GitHub Secrets
 
@@ -45,7 +40,6 @@ On push to `main` (or manual `workflow_dispatch`), workflow:
 1. Builds/pushes:
    - `ghcr.io/<owner>/<repo>/app:sha-<commit>`
 2. Uploads `docker-compose.yml` to VPS.
-3. Backs up `api/data/bot/storage.json` on VPS.
 4. Stops/removes old PM2 process `chiateam` if present.
 5. Updates `APP_IMAGE` in the VPS `.env` for the rollout and runs:
    - `docker compose --env-file .env up -d --remove-orphans --no-build`
@@ -61,4 +55,4 @@ On push to `main` (or manual `workflow_dispatch`), workflow:
 5. Verify:
    - Telegram bot responds.
    - PostgreSQL table `storage` has one row with `id = 1`.
-   - `/api/data/bot/storage.json` is preserved as the JSON mirror after container restart.
+   - Bot state can be read from PostgreSQL after container restart.

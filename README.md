@@ -93,7 +93,7 @@ four active Jev requests in total. Requests time out after eight seconds. An API
 failure asks users to use the menu. Existing permissions, disabled command
 settings, and paused bot controls still apply. A vote is not recorded if the
 poll changed during inference. Votes are saved through the existing API and
-storage mirror; Jev does not write state directly or select native Telegram
+storage; Jev does not write state directly or select native Telegram
 poll answers on a user's behalf.
 
 Only the message text or caption is sent to TypeSafe, without the bot token,
@@ -335,20 +335,11 @@ Player avatars are uploaded to Supabase Storage using:
 
 ### Persistent Bot State
 
-Next-match state is stored in PostgreSQL table `storage` when `DATABASE_URL` is
-configured. The API also mirrors the state to the bot state JSON file as a
-fallback and backup.
-
-- Table: `storage`
-- JSON mirror default local/VPS path: `/api/data/bot/storage.json`
-- JSON mirror Railway volume path: `/data/bot/storage.json` when the volume is mounted at `/data`
-- JSON mirror override env var: `BOT_STATE_FILE`
-- Example shape: `bot/storage.json.example`
-
-The stored state includes current bench/team/vote/venue/fee values. Back up the
-`storage` table and the JSON mirror before risky storage changes, deployment
-cutovers, or manual resets. On first DB-backed read, the API seeds an empty
-`storage` table from the JSON mirror for a safe cutover.
+Next-match state is stored only in PostgreSQL table `storage`. `DATABASE_URL`
+is required. Missing configuration logs an error and fails the operation.
+Database failures are returned as errors; no local file is used as a fallback.
+An empty table returns default state without importing legacy JSON files.
+Back up the database before risky storage changes or deployment cutovers.
 
 ## Environment Setup
 
@@ -368,7 +359,7 @@ Both files use two main sections:
 | Section | Settings                                                                                                                                                        |
 | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `BOT`   | Telegram credentials and group topics; Zalo credentials and webhook; Messenger webhook credentials.                                                             |
-| `API`   | API connection and shared authentication; database and JSON mirror; image storage; allowed web origins; maintenance; optional AI; admin panel backend settings. |
+| `API`   | API connection and shared authentication; required database; image storage; allowed web origins; maintenance; optional AI; admin panel backend settings. |
 
 Use [.env.example](.env.example) for the current setting names and comments.
 Shared settings appear once. `NODE_ENV`, `INTERNAL_API_AUTH_TOKEN`, and
@@ -517,26 +508,14 @@ In Docker, the bot should use:
 BOT_API_BASE_URL=http://api:8787
 ```
 
-Both Docker stacks mount `api/data/bot` to `/api/data/bot` so the JSON mirror
-persists across container restarts.
-
-See `docs/LOCAL_DOCKER.md` for the full local runbook.
+Both Docker stacks use PostgreSQL for persistent bot state. No bot-state file
+mount is needed. See `docs/LOCAL_DOCKER.md` for the full local runbook.
 
 ## Railway Storage
 
-The PostgreSQL `storage` table is primary on Railway. The volume-backed JSON
-file is still useful as a mirror and recovery backup.
-
-Railway volumes persist only at their configured mount path. If the `api` volume
-is mounted at `/data`, keep this on the Railway **api** service:
-
-```text
-BOT_STATE_FILE=/data/bot/storage.json
-```
-
-The app also falls back to `${RAILWAY_VOLUME_MOUNT_PATH}/bot/storage.json` on
-Railway when `BOT_STATE_FILE` is not set. See `docs/RAILWAY_SETUP.md` before a
-Railway deployment or storage recovery.
+Set `DATABASE_URL` on the API service. Bot state is stored only in PostgreSQL.
+No Railway volume is needed for bot state. Keep old files or volumes as archives
+until you choose to remove them. See `docs/RAILWAY_SETUP.md`.
 
 ## VPS Deployment
 
@@ -549,13 +528,7 @@ What runs on the VPS:
 
 Both containers share the same app image and use different start commands.
 
-The deployment workflow backs up:
-
-```text
-/api/data/bot/storage.json
-```
-
-before rollout.
+Back up PostgreSQL through your database provider before risky rollouts.
 
 See `docs/DEPLOY_VPS_DOCKER.md` for required secrets, VPS prerequisites, and
 the cutover checklist.

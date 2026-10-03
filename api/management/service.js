@@ -34,13 +34,7 @@ const CONNECTION_KEYS = [
   'API_BASE_URL',
   'API_URL',
 ];
-const DEPLOYMENT_KEYS = [
-  'API_PORT',
-  'PORT',
-  'UI_API_PORT',
-  'BOT_STATE_FILE',
-  'RAILWAY_VOLUME_MOUNT_PATH',
-];
+const DEPLOYMENT_KEYS = ['API_PORT', 'PORT', 'UI_API_PORT'];
 function failure(code, status = 400) {
   return { ok: false, code, status };
 }
@@ -445,13 +439,7 @@ function createManagementService({
       return failure('STORAGE_TRANSITION_PENDING', 409);
     const keys = changedKeys(s, s.versions[s.activeVersion] || {});
     if (
-      keys.some(k =>
-        [
-          'DATABASE_URL',
-          'BOT_STATE_FILE',
-          'RAILWAY_VOLUME_MOUNT_PATH',
-        ].includes(k)
-      ) &&
+      keys.some(k => ['DATABASE_URL'].includes(k)) &&
       body.backupConfirmed !== true
     )
       return failure('BACKUP_REQUIRED');
@@ -464,9 +452,7 @@ function createManagementService({
       old = await resolved(s.activeVersion);
     const invalid = await validateCandidates(keys, next, old);
     if (invalid) return invalid;
-    const result = keys.some(k =>
-      ['DATABASE_URL', 'BOT_STATE_FILE'].includes(k)
-    )
+    const result = keys.some(k => ['DATABASE_URL'].includes(k))
       ? await transitionStorage(body, actor, 'apply', s.version)
       : await store.apply(body.expectedVersion, actor);
     if (!result.ok) return result;
@@ -513,9 +499,7 @@ function createManagementService({
       previous = s.versions[s.previousActiveVersion];
     if (!previous) return failure('NO_PREVIOUS_VERSION');
     const keys = changedKeys(previous, s.versions[s.activeVersion]);
-    const storage = keys.some(k =>
-      ['DATABASE_URL', 'BOT_STATE_FILE'].includes(k)
-    );
+    const storage = keys.some(k => ['DATABASE_URL'].includes(k));
     if (storage && body.backupConfirmed !== true)
       return failure('BACKUP_REQUIRED');
     const result = storage

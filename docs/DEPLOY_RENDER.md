@@ -42,7 +42,6 @@ In Render dashboard → your service → **Environment** tab, add all vars:
 | `GEMINI_API_KEY`            | AI Studio key (optional)                                                                                                    |
 | `ADMIN_UI_URL`              | Admin app URL (for CORS)                                                                                                    |
 | `INTERNAL_API_AUTH_TOKEN`   | Shared token for trusted admin proxy calls                                                                                  |
-| `BOT_STATE_FILE`            | Optional JSON mirror path (default: `/api/data/bot/storage.json`; DB table `storage` is primary when `DATABASE_URL` is set) |
 
 ## Deploy
 

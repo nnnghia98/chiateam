@@ -11,11 +11,8 @@ services:
     environment:
       NODE_ENV: production
       API_PORT: 8787
-      BOT_STATE_FILE: /api/data/bot/storage.json
     ports:
       - "8787:8787"
-    volumes:
-      - ./api/data/bot:/api/data/bot
     healthcheck:
       test:
         [

@@ -25,7 +25,6 @@ VIP_THREAD_ID=your_vip_thread_id
 STATISTICS_THREAD_ID=your_statistics_thread_id
 API_PORT=8787
 INTERNAL_API_AUTH_TOKEN=replace_with_a_random_secret
-BOT_STATE_FILE=/data/bot/storage.json
 ```
 
 ### Database (Supabase PostgreSQL)
@@ -64,9 +63,10 @@ These are configured in `railway.json` and `Procfile`.
 
 ## 3. Persistent Bot Storage
 
-The API stores next-match state in PostgreSQL table `storage` when
-`DATABASE_URL` is configured. It also mirrors the same payload to `storage.json`
-for backup and local/file-only fallback.
+The API stores next-match state only in PostgreSQL table `storage`.
+`DATABASE_URL` is required. No volume is needed for bot state. Missing database
+configuration and database failures produce errors, without a file fallback.
+Existing JSON files and volumes are not deleted; keep them as archives.
 
 Run this once after deploying database-related changes:
 
@@ -74,38 +74,7 @@ Run this once after deploying database-related changes:
 yarn init-db
 ```
 
-Attach the volume to the **api** service for the JSON mirror, because the API
-owns `/api/bot-storage` and writes `storage.json`. The bot service calls the API
-and does not need a volume.
-
-Recommended Railway volume settings:
-
-```text
-Service: api
-Mount Path: /data
-BOT_STATE_FILE=/data/bot/storage.json
-```
-
-Railway exposes the volume at the exact mount path. If the volume is mounted at
-`/data`, the JSON mirror must be written to `/data/...`; files written under
-`/app` or `/api` are still on the deployment filesystem and can disappear after
-redeploy.
-
-If the old file still exists in a live Railway shell, copy it into the volume
-before redeploying:
-
-```bash
-mkdir -p /data/bot
-cp /api/data/bot/storage.json /data/bot/storage.json
-ls -l /data/bot/storage.json
-```
-
-If `/api/data/bot/storage.json` is already gone, restore from a local backup or
-upload a backup into `/data/bot/storage.json` using Railway's volume file tools.
-Volume backups only help if the data had already been written to the volume.
-
-On first DB-backed read, an empty `storage` table is seeded from the JSON mirror.
-After that, the table is primary and the JSON file is a mirror.
+Back up PostgreSQL through your database provider before risky rollouts.
 
 ## 4. Database Setup
 

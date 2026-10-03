@@ -331,7 +331,7 @@ Effort: Small
 - [x] List the commands that are active in `bot/index.js`.
 - [x] Add missing tests for the first command refactor.
 - [x] Record expected Telegram messages and state changes.
-- [x] Keep the current PostgreSQL and JSON mirror behavior unchanged.
+- [x] Keep the current PostgreSQL storage behavior; JSON storage has since been removed.
 - [x] Confirm all current tests pass before refactoring.
 
 Exit criteria:
@@ -865,7 +865,7 @@ real requirement.
 
 - Keep current Telegram tests while each command group is migrated.
 - Test persistent state through the API.
-- Test PostgreSQL as primary storage and JSON as the mirror.
+- Test PostgreSQL as the only persistent storage.
 
 ## Main Risks
 
@@ -952,7 +952,7 @@ Implemented on 2026-09-06. Production use confirmed by the owner on 2026-09-07.
 - [x] Change Telegram `/zalosay` to preview all subscribers and require a
       one-use confirmation from the same admin/chat/topic.
 - [x] Keep subscribers and delivery progress in separate, private PostgreSQL
-      tables, without changing football state or its JSON mirror.
+      tables, without changing football state.
 - [x] Report delivery counts and stop safely on uncertain results without
       automatic retries.
 - [x] Pass 485 tests, including isolated PostgreSQL and HTTP integration checks.
@@ -1025,7 +1025,7 @@ Implementation checklist:
       duplicate messages across platforms.
 - [ ] Add shared payment rules and private API-backed payment records. Keep
       the API as the only writer. Preserve next-match data in the `storage`
-      table and configured JSON mirror; payment records must survive `/reset`.
+      table; payment records must survive `/reset`.
 - [ ] Test duplicate bill requests, repeated confirmations, player permissions,
       partial payments, account links, and Telegram/Zalo delivery failures.
 - [ ] Complete owner live checks for a bank payment and a personal MoMo
@@ -1057,7 +1057,7 @@ as the original request.
   command received, and the runtime delivery mode. It supports English and
   Vietnamese, per-platform Save/Cancel, stale data, and preserved drafts.
 - The private PostgreSQL `bot_controls` table is separate from `storage` and
-  its JSON mirror. API saves update one platform atomically. `/reset` does not
+  database state. API saves update one platform atomically. `/reset` does not
   touch controls. Admin refresh does not record activity.
 - Admin reads/saves require trusted admin access. Runtime checks require the
   service token and reject all admin-role headers. The browser proxy blocks

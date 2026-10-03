@@ -37,7 +37,6 @@ This map is generated from the admin panel settings catalog. Every setting below
 | `TELEGRAM_API_URL` | Controls telegram api url for the listed services. | telegram | Normal value | restart |
 | `ZALO_API_URL` | Controls zalo api url for the listed services. | zalo-polling, zalo-webhook | Normal value | restart |
 | `API_PORT` | Controls api port for the listed services. | api | Normal value | deployment |
-| `BOT_STATE_FILE` | Controls bot state file for the listed services. | api | Normal value | deployment |
 | `BOT_COMMAND_PREFIX` | Reported by the existing API settings endpoint. Telegram and Zalo slash command names stay unchanged. | api | Normal value | restart |
 | `TELEGRAM_COMMAND_RULES` | Controls telegram command rules for the listed services. | telegram | Normal value | restart |
 | `ZALO_COMMAND_RULES` | Controls zalo command rules for the listed services. | zalo-polling, zalo-webhook | Normal value | restart |
@@ -48,7 +47,7 @@ The admin panel backend also reads active Zalo credentials, API URLs and databas
 
 - **restart:** Save makes a draft. Apply promotes it. Managed supervisors check every three seconds, stop the old process, then create a new client and database pool. The old child must exit before a replacement starts. API, Telegram and Zalo polling each require a database lease (a time-limited ownership lock). Webhook requests rebuild their application after a version change and prove ownership before outbound work.
 - **request:** The Next server resolves its active API address and credential on requests, with a three-second cache. It checks API access before reporting applied. Webhook applications resolve settings per request.
-- **deployment:** API_PORT and BOT_STATE_FILE need matching Railway ports or a mounted volume. The page requires hosting confirmation. Code cannot create a Railway volume or change a domain's target port. DB and mirror changes also require a backup acknowledgement and a stopped old API before promotion.
+- **deployment:** API_PORT needs a matching Railway port. The page requires hosting confirmation. Code cannot create a Railway volume or change a domain's target port. Database changes also require a backup acknowledgement and a stopped old API before promotion.
 
 All services currently receive the new global version on Apply, so a service may restart even if only another service's field changed. Command names remain defined in code; the page manages only supported enabled/access rules. Existing admin-only commands cannot be made public, and Zalo unsubscribe cannot be disabled.
 
@@ -64,7 +63,6 @@ These remain outside the managed store. The admin panel database/key and service
 | `API_URL` | Value | Legacy startup alias. Imported into the three managed API addresses on first setup; edit those addresses afterwards. |
 | `PORT` | Value | Hosting port alias. API_PORT is the managed value; keep the Railway target port aligned. |
 | `UI_API_PORT` | Value | Hosting port alias. API_PORT is the managed value; keep the Railway target port aligned. |
-| `RAILWAY_VOLUME_MOUNT_PATH` | Value | Railway owns the mounted volume. Keep BOT_STATE_FILE inside it. |
 | `MANAGEMENT_DATABASE_URL` | Secret | Keeps recovery available when the match database changes. |
 | `MANAGEMENT_ENCRYPTION_KEY` | Secret | Keep this key outside the configuration database. |
 | `MANAGEMENT_ADMIN_TOKEN` | Secret | Only the admin panel web app may use this credential. |
@@ -90,4 +88,4 @@ These remain outside the managed store. The admin panel database/key and service
 | `MESSENGER_GRAPH_API_VERSION` | Value | Messenger remains deployment managed; this page manages Telegram and Zalo. |
 | `MESSENGER_ADMIN_IDS` | Value | Messenger remains deployment managed; this page manages Telegram and Zalo. |
 
-Platform command pause and last-command activity remain in the existing bot-controls data store. Subscriber choices, announcement drafts and delivery records remain in the existing match database tables. Match storage and its configured JSON mirror are unchanged. Messenger remains deployment-managed because this page controls Telegram and Zalo.
+Platform command pause and last-command activity remain in the existing bot-controls data store. Subscriber choices, announcement drafts and delivery records remain in the existing match database tables. Match storage uses PostgreSQL only. Messenger remains deployment-managed because this page controls Telegram and Zalo.

@@ -158,3 +158,9 @@ Known error codes: `INVALID_NAME`, `INVALID_NUMBER`, `ALREADY_REGISTERED`, `NUMB
 - Use the `db` pool from `db/config.js` for all queries. Use a dedicated client (`db.connect()`) only when you need a transaction.
 - Return typed result objects (`{ ok, code, data }`) from service functions. Let `server.js` translate them to HTTP status codes.
 - `ai-service.js` is optional — always guard with a `null` check on its return value.
+
+## Bot storage
+
+`DATABASE_URL` is mandatory. Use PostgreSQL table `storage` only. Log an error
+and fail the operation if the setting is missing. Never use a JSON storage file
+for reads, writes, resets, imports, or database-error fallback.
