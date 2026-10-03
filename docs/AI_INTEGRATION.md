@@ -1,5 +1,10 @@
 # Google AI Integration Guide
 
+For the Telegram adapter's restricted ChiaTeam text actions, see
+[Telegram ChiaTeam text actions with Jev](../README.md#telegram-chiateam-text-actions-with-jev).
+That integration uses TypeSafe Jev and a fixed action list. It does not provide
+general AI chat or use the Gemini key described below.
+
 ## ✅ Completed Integration
 
 Your Google AI (Gemini) has been successfully integrated into the Chiateam Bot!

@@ -45,15 +45,60 @@ This command does not start Zalo or Messenger delivery. Both platforms use
 separate webhook deployments. See `docs/DATABASE_SETUP.md` for database
 details.
 
-## Telegram mention logs
+## Telegram mention replies and logs
 
 Messages that tag the running bot are written to server logs under
 `[telegram.mention]`. Each entry includes the message text or caption, sender ID,
 chat ID, message ID, and message time in UTC. The bot reads its own username
 from Telegram, so this works for both development and production bots.
 Tagged commands such as `/start@chiateam_dev_bot` also produce a mention log.
-Untagged messages do not produce mention logs. Existing command logs still run.
-This listener also runs during maintenance mode and does not send replies.
+Untagged messages do not produce mention logs or greetings. The first mention is
+logged immediately and gets a plain-text reply, `Hi [user name]`, in the same
+chat and topic. The name uses the sender's first and last name, with username,
+chat sender title, or `there` as fallbacks. Messages from bots are ignored.
+Further mentions from the same sender in the same chat are ignored
+by this listener for five seconds. Other senders and chats have their own
+cooldown. This limits mention replies and logs; command handling and existing command
+logs still run.
+Without Jev, this listener also replies during maintenance mode. With Jev
+enabled, it only logs mentions; the Telegram adapter owns greetings and actions.
+
+## Telegram ChiaTeam text actions with Jev
+
+Set `TYPESAFE_API_KEY` in the root `.env` to enable TypeSafe Jev for Telegram.
+`TYPESAFE_MODEL` defaults to `jev-latest`. Set `TELEGRAM_JEV_ENABLED=false` to
+disable it. These settings also reach Telegram when using managed startup.
+Keep the key private. No TypeSafe key is passed to Zalo services.
+
+In groups, tag this bot, for example `@YourBot vote` or
+`@YourBot hôm nay tôi không đá`. In private chats, send plain text. The adapter
+supports Vietnamese and English. It only allows:
+
+- Record the sender's attendance as coming alone or not coming.
+- Show the current vote, vote results, bench, or teams.
+- Show help or reply to a greeting with `Hi [user name]`.
+
+The exact word `vote` records the sender as coming alone through a fixed code
+rule, after removing the bot mention. This does not need an AI call. Longer
+requests use Jev and require a clear match.
+
+Other requests, such as currency rates, get a fixed ChiaTeam-only reply.
+Unclear requests, requests for another person, guest counts, and low-confidence
+answers show the menu. Jev cannot run admin changes or `zalosay` broadcasts.
+Existing menu buttons, slash commands, and pending input flows keep working.
+
+The first request runs immediately. The adapter allows one request per sender
+and chat every five seconds, one active request per sender and chat, and at most
+four active Jev requests in total. Requests time out after eight seconds. An API
+failure asks users to use the menu. Existing permissions, disabled command
+settings, and paused bot controls still apply. A vote is not recorded if the
+poll changed during inference. Votes are saved through the existing API and
+storage mirror; Jev does not write state directly or select native Telegram
+poll answers on a user's behalf.
+
+Only the message text or caption is sent to TypeSafe, without the bot token,
+user ID, chat ID, or roster. TypeSafe's structured Choice API is documented at
+[TypeSafe API reference](https://docs.typesafe.ai/api).
 
 The listener can only log messages Telegram delivers. For plain group text
 such as `Hi @chiateam_dev_bot`, make the bot a group admin or disable Group
@@ -144,6 +189,7 @@ The menu has two buttons per row.
 | 🗑️ Xoá khỏi team   | Choose a team, then choose what to remove |
 | 📊 Kết quả vote    | Show the current vote result              |
 | 🔄 Đồng bộ bench   | Copy attending voters to the bench        |
+| 📣 Gửi Zalo        | Prepare a Zalo announcement (admin only)  |
 
 Telegram provides the keyboard icon near the message box to hide or reopen
 this menu. Its appearance depends on the Telegram app. The menu stays

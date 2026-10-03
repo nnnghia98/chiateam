@@ -25,6 +25,7 @@ function startBotRuntime({
   botControlsClient,
   allowedSlashCommands,
   onError,
+  naturalLanguage,
 } = {}) {
   const activeRegistry = registry || createCommandRegistry();
 
@@ -42,6 +43,7 @@ function startBotRuntime({
     channelConfig: telegramChannelConfig,
     registerActionHandler: registerTelegramActionHandler,
     onError,
+    naturalLanguage,
     commandGate:
       commandGate ||
       createBotControlsGate({

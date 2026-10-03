@@ -3,9 +3,18 @@
 ## Related Changes
 
 - For every requested change, search for related code and references before editing. Check callers, shared helpers, connected services, tests, settings, scripts, deployment files, examples, and documentation that may be affected.
-- Update all affected parts as part of the same task. Do not stop after changing only the named file or command, and do not wait for a separate request to fix related references.
+- Update all affected parts within the requested scope as part of the same task. Follow the adapter independence rules below before changing another adapter.
 - Keep the changes within the requested scope. Preserve unrelated work and existing connections unless the requested change requires updating them.
 - After editing, check for stale references and run suitable checks. Report any affected part that could not be updated or verified.
+
+## Adapter Independence and Host Channel
+
+- Each adapter (the code that connects one messaging platform to the bot) is standalone. A change to one adapter does not mean another adapter must change.
+- Search related adapters to understand the impact, but keep edits within the requested adapter. If another adapter needs a change, tell the user first. Explain which adapter needs to change and why before editing it.
+- Shared core, runtime, and data services may still be reused. Check their impact on all adapters and tell the user first if a shared change requires edits to another adapter.
+- Keep cross-platform functions (functions that call another platform), such as `zalosay`, stable during adapter changes. Check both the calling adapter and the receiving adapter. Preserve the command, permissions, message delivery, and existing settings unless the user requests a change. Tell the user first if the work requires changing the connected adapter or the function's behavior.
+- Telegram is the default main bot channel for the host. Zalo, Messenger, and other bots are secondary channels by default.
+- The user can reconfigure the main and secondary channels. Respect the saved setting; do not force Telegram when the user has chosen another main channel.
 
 ## Product Name
 

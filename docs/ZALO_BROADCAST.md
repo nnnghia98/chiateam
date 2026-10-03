@@ -54,7 +54,7 @@ The bot confirms the subscription and explains `/unsubscribe`. Simply sending
 history and the former owner destination are not imported automatically.
 Group chats cannot subscribe. One subscription is stored per Zalo user.
 
-A Telegram admin sends:
+A Telegram admin taps **📣 Gửi Zalo** in the menu shown by `/start`, or sends:
 
 ```text
 /zalosay

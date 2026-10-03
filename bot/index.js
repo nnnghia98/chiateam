@@ -18,6 +18,9 @@ const bot = require('./telegram-client');
 const { logCommandUsage } = require('./utils/command-logger');
 const { registerMentionLogger } = require('./utils/mention-logger');
 const {
+  createJevIntentRouter,
+} = require('../platforms/telegram/jev-intent-router');
+const {
   getReplyKeyboardAction,
 } = require('../platforms/telegram/reply-keyboard');
 const { logEvent } = require('./utils/logger');
@@ -96,7 +99,11 @@ installProcessCrashLogging();
 logEvent('bot', 'starting ChiaTeam bot');
 
 const botIdentityReady = bot.getMe().then(identity => {
-  registerMentionLogger(bot, identity);
+  registerMentionLogger(bot, identity, {
+    replyToMentions:
+      !process.env.TYPESAFE_API_KEY ||
+      process.env.TELEGRAM_JEV_ENABLED === 'false',
+  });
   return identity;
 });
 // Attach a rejection handler while storage initialization is still running.
@@ -173,6 +180,10 @@ async function bootstrapBot() {
   const stateRepository = createApiStateRepository({
     afterSave: snapshot => storage.syncFromSnapshot(snapshot),
   });
+  const naturalLanguage = createJevIntentRouter({
+    identity: await botIdentityReady,
+    stateRepository,
+  });
   const attendanceVotePublisher = createTelegramAttendanceVotePublisher({
     bot,
   });
@@ -195,6 +206,7 @@ async function bootstrapBot() {
   // registered here continue to use their legacy handlers below.
   startBotRuntime({
     bot,
+    naturalLanguage,
     stateRepository,
     permissionPolicy: createTelegramPermissionPolicy(),
     registerTelegramActionHandler: registerCallbackQueryHandler,

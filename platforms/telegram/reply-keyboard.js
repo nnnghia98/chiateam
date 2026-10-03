@@ -15,6 +15,7 @@ const REPLY_KEYBOARD_ACTIONS = Object.freeze({
   '🗳️ Tạo vote': action('taovote'),
   '📊 Kết quả vote': action('demvote'),
   '🔄 Đồng bộ bench': action('sync'),
+  '📣 Gửi Zalo': action('zalosay'),
 });
 
 function createReplyKeyboard() {
@@ -26,6 +27,7 @@ function createReplyKeyboard() {
       [{ text: '🎲 Chia team' }, { text: '⚽ Team' }],
       [{ text: '👥➕ Thêm vào team' }, { text: '🗑️ Xoá khỏi team' }],
       [{ text: '📊 Kết quả vote' }, { text: '🔄 Đồng bộ bench' }],
+      [{ text: '📣 Gửi Zalo' }],
     ],
     resize_keyboard: true,
     one_time_keyboard: false,
