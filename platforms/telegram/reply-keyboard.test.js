@@ -73,7 +73,7 @@ test('reply keyboard maps exact labels and keeps Telegram options', () => {
   });
 });
 
-test('keyboard labels route internally and only /start stays public', async () => {
+test('keyboard labels route independently of an optional slash-command filter', async () => {
   const bot = new MockBot();
   const contexts = [];
   const adapter = createTelegramAdapter({

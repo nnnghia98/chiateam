@@ -70,7 +70,7 @@ test('Telegram command parser supports mentions and arguments', () => {
   assert.equal(parseTelegramCommandAction('editbench:select:1'), null);
 });
 
-test('Telegram adapter keeps only /start as a public slash command', () => {
+test('Telegram adapter supports an optional slash-command filter', () => {
   const bot = new MockTelegramBot();
   const adapter = createTelegramAdapter({
     bot,

@@ -127,6 +127,7 @@ function buildTelegramMenuHelpSegments(greeting = '👋 CHIATEAM BOT') {
       text:
         '\n\nBot giúp đội quản lý bình chọn, bench và team ngay trên Telegram.' +
         '\n\nChọn một nút trong menu bên dưới để bắt đầu.' +
+        '\nBạn vẫn có thể nhập các lệnh được hỗ trợ trực tiếp.' +
         '\n\nDùng /start để hiện lại menu.',
     },
   ];

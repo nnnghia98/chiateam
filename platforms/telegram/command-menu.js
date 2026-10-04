@@ -1,9 +1,11 @@
-// Broadcast admin commands remain usable even though the public menu is small.
-const TELEGRAM_ALLOWED_SLASH_COMMANDS = Object.freeze([
-  'start',
-  'zalosay',
-  'say',
-]);
+const {
+  listSupportedCommandNames,
+} = require('../../core/commands/command-manifest');
+
+// Keep every supported command and alias usable, even with a small menu.
+const TELEGRAM_ALLOWED_SLASH_COMMANDS = Object.freeze(
+  listSupportedCommandNames().map(command => command.slice(1))
+);
 
 const TELEGRAM_BOT_COMMANDS = Object.freeze([
   Object.freeze({

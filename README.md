@@ -168,8 +168,10 @@ Send `/start` in Telegram to show the bot description and a reply keyboard
 below the message box. The description and keyboard appear in the chat and
 topic where you sent `/start`.
 
-`/start` is the only public Telegram slash command. Other Telegram actions
-start from the reply keyboard or from inline buttons. Zalo keeps its smaller
+Telegram accepts all supported slash commands and alternate names, including
+`/reset`, `/vote`, and `/team`. Menu buttons are recommended for convenience;
+users can still type commands. The slash menu advertises `/start` to open the
+button menu. Admin commands still require admin permission. Zalo keeps its smaller
 slash-command list and personal greeting. Sending `/start` does not change
 match data or subscribe anyone to announcements.
 
@@ -202,7 +204,8 @@ inline buttons stay unchanged. This menu is available only in Telegram.
 
 ### Supported Platforms
 
-- Telegram is the primary adapter. It exposes `/start` plus the menu actions.
+- Telegram is the primary adapter. It accepts all supported slash commands and
+  alternate names, with menu buttons recommended for convenience.
 - Zalo uses the production webhook and exposes only `/start`, `/zalosay`,
   `/subscribe`, `/unsubscribe`, `/poll`, `/vote`, `/demvote`, `/bench`, and `/team`.
 - Zalo roster and team mutation commands are intentionally disabled.

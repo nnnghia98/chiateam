@@ -2,7 +2,7 @@
 
 This report traces the active local code. It does not change the menu or bot behavior. It does not test the deployed bot, send messages, or change stored team data. Commands can be paused or limited to admins through the admin panel, so live access can differ from the defaults below.
 
-Telegram publishes only `/start` as a slash command. Its menu opens **13 internal actions**. Zalo registers **9 main commands and 1 alternative name**.
+Telegram accepts all supported slash commands and alternate names. Its slash menu advertises `/start` to open the recommended button menu. Zalo registers **9 main commands and 1 alternative name**.
 
 Sources: [Telegram registration](../runtime/create-command-definitions.js), [command catalog used by help](../core/commands/command-manifest.js), [Telegram menu](../platforms/telegram/reply-keyboard.js), [Zalo registration](../runtime/create-zalo-command-definitions.js).
 
@@ -29,9 +29,9 @@ Tapping a button submits its text. The Telegram adapter maps it to an internal a
 
 **How to read the full list**
 
-The slash-shaped names below are core action identifiers kept for shared
-runtime compatibility. Telegram users cannot type them. Only `/start` is a
-public Telegram slash command.
+The slash commands below are supported typed commands. Telegram users can
+type them or use the available menu buttons. `/start` opens the recommended
+button menu. Admin commands still require admin permission.
 
 `[VALUE]` means optional input. `NUMBER` is a bench position for bench/team actions, or a shirt number for player actions. `SELECTION` can be positions, comma lists, ranges, or matching names; commands that accept `all` also support all members. `DATE` means `dd/mm/yyyy`.
 
@@ -181,7 +181,7 @@ Sources: [Telegram adapter](../platforms/telegram/adapter.js), [poll publisher](
 
 **What the main menu currently leaves out**
 
-The older shared runtime still contains actions which are not present in the Telegram menu. They are not available as public Telegram slash commands. Add a menu flow before making one of these actions available again on Telegram.
+The shared runtime contains supported commands which are not present in the Telegram button menu. Users can still type these slash commands. Menu buttons are recommended for convenience and do not limit access. The same permission and pause checks apply to commands and buttons.
 
 The current main-menu actions do not require users to type a command. Multi-step actions use inline buttons or one requested text reply.
 

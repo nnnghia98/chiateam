@@ -17,6 +17,7 @@ const maintenanceMessage = require('./commands/maintainance');
 const bot = require('./telegram-client');
 const { logCommandUsage } = require('./utils/command-logger');
 const { registerMentionLogger } = require('./utils/mention-logger');
+const { parseCommandText } = require('../platforms/telegram/adapter');
 const {
   createJevIntentRouter,
 } = require('../platforms/telegram/jev-intent-router');
@@ -129,7 +130,9 @@ if (isMaintenanceMode) {
   bot.on('message', msg => {
     if (
       msg.text &&
-      (/^\/start(?:@\w+)?(?:\s|$)/i.test(msg.text) ||
+      (TELEGRAM_ALLOWED_SLASH_COMMANDS.includes(
+        parseCommandText(msg.text)?.command.toLowerCase()
+      ) ||
         getReplyKeyboardAction(msg.text))
     ) {
       const { sendMessage } = require('./utils/chat');
@@ -223,8 +226,8 @@ async function bootstrapBot() {
   });
 
   // Keep only Telegram poll-answer ingestion as a temporary platform event.
-  // The public command menu exposes /start; admin broadcasts also accept
-  // /zalosay and /say. Other actions use the reply keyboard.
+  // The command menu advertises /start. All supported slash commands and
+  // aliases remain usable alongside reply-keyboard and inline actions.
   taoVoteCommand({
     members,
     getActiveVote,

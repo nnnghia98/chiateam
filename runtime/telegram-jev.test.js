@@ -9,6 +9,9 @@ const {
   createVoteCommand,
 } = require('../core/use-cases/management/vote-command');
 let botId = 42;
+const {
+  TELEGRAM_ALLOWED_SLASH_COMMANDS,
+} = require('../platforms/telegram/command-menu');
 
 function fixture(t) {
   let now = 10000;
@@ -70,7 +73,7 @@ function fixture(t) {
     stateRepository,
     definitions: [createVoteCommand()],
     env: {},
-    allowedSlashCommands: ['start'],
+    allowedSlashCommands: TELEGRAM_ALLOWED_SLASH_COMMANDS,
     permissionPolicy: { isAllowed: async () => permitted },
     commandGate: {
       check: async () => ({ available: true, commandsEnabled: enabled }),
@@ -207,7 +210,7 @@ test('Jev ignores group chat without own mention and preserves slash/button rout
     false
   );
   assert.equal(await adapter.handleEvent(event('@OtherBot vote')), false);
-  assert.equal(await adapter.handleEvent(event('/vote 1')), false);
+  assert.equal(await adapter.handleEvent(event('/vote 1')), true);
   assert.equal(
     await adapter.handleEvent({ ...event(), from: { id: 99, is_bot: true } }),
     false

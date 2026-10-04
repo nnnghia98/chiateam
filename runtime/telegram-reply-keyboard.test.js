@@ -12,6 +12,12 @@ const {
   createTelegramPermissionPolicy,
 } = require('../platforms/telegram/permission-policy');
 const { createReplyKeyboard } = require('../platforms/telegram/reply-keyboard');
+const {
+  TELEGRAM_ALLOWED_SLASH_COMMANDS,
+} = require('../platforms/telegram/command-menu');
+const {
+  createResetCommand,
+} = require('../core/use-cases/management/reset-command');
 
 function createFixture(t) {
   const bot = new EventEmitter();
@@ -31,14 +37,22 @@ function createFixture(t) {
   let saves = 0;
   let commandsEnabled = true;
   let permissionEnabled = true;
-  const permissionPolicy = createTelegramPermissionPolicy({ env: {} });
+  const permissionPolicy = createTelegramPermissionPolicy({
+    env: { BOT_ADMIN_IDS: '123' },
+  });
   bot.sendMessage = async (chatId, text, options) => {
     sent.push({ chatId, text, options });
     return { message_id: sent.length };
   };
   const runtime = startBotRuntime({
     bot,
-    definitions: [createStartCommand({ menuOnly: true }), createVoteCommand()],
+    definitions: [
+      createStartCommand({ menuOnly: true }),
+      createVoteCommand(),
+      createResetCommand({
+        voteController: { close: async () => ({ closed: true }) },
+      }),
+    ],
     telegramChannelConfig: {
       chatId: '-100999',
       threads: { main: '8', default: '7' },
@@ -65,7 +79,7 @@ function createFixture(t) {
         Object.assign(state, changes);
       },
     },
-    allowedSlashCommands: ['start'],
+    allowedSlashCommands: TELEGRAM_ALLOWED_SLASH_COMMANDS,
   });
   t.after(() => runtime.stop());
   return {
@@ -151,9 +165,10 @@ test('Telegram vote menu opens choices and records the selected answer', async t
   assert.equal(fixture.sent[1].chatId, '-456');
   assert.equal(fixture.sent[1].options.message_thread_id, '10');
 
-  assert.equal(await adapter.handleEvent(event('/vote 1')), false);
+  assert.equal(await adapter.handleEvent(event('/vote 1')), true);
   assert.equal(fixture.saves, 1);
   assert.deepEqual(fixture.permissions, [
+    { command: 'vote', permission: 'player' },
     { command: 'vote', permission: 'player' },
     { command: 'vote', permission: 'player' },
   ]);
@@ -163,7 +178,7 @@ test('Telegram vote menu opens choices and records the selected answer', async t
     event('🗳️ Vote ngay', { id: 789, first_name: 'Minh' })
   );
   assert.equal(fixture.saves, 1);
-  assert.equal(fixture.permissions.length, 3);
+  assert.equal(fixture.permissions.length, 4);
   assert.match(fixture.sent.at(-1).text, /không có quyền/);
 
   fixture.pause();
@@ -171,8 +186,22 @@ test('Telegram vote menu opens choices and records the selected answer', async t
     event('🗳️ Vote ngay', { id: 789, first_name: 'Minh' })
   );
   assert.equal(fixture.saves, 1);
-  assert.equal(fixture.permissions.length, 3);
+  assert.equal(fixture.permissions.length, 4);
   assert.match(fixture.sent.at(-1).text, /paused/i);
   assert.equal(fixture.sent.at(-1).chatId, '-456');
   assert.equal(fixture.sent.at(-1).options.message_thread_id, '10');
+});
+
+test('Telegram /reset is usable by an admin and cannot reset data for a player', async t => {
+  const fixture = createFixture(t);
+  fixture.state.bench = [{ name: 'Existing player' }];
+  await fixture.runtime.adapter.handleEvent(event('/reset', { id: 789 }));
+  assert.equal(fixture.saves, 0);
+  assert.equal(fixture.state.bench.length, 1);
+  assert.match(fixture.sent.at(-1).text, /Chỉ admin/);
+  await fixture.runtime.adapter.handleEvent(event('/reset@ChiaTeamBot'));
+  assert.equal(fixture.saves, 1);
+  assert.deepEqual(fixture.state.bench, []);
+  assert.equal(fixture.state.activeVote, null);
+  assert.match(fixture.sent.at(-1).text, /ĐÃ RESET/);
 });

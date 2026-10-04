@@ -9,6 +9,8 @@
 
 ## Adapter Independence and Host Channel
 
+- Telegram users can use all supported slash commands and alternate names. Recommend menu buttons for convenience, but do not force users to use them. Keep the same permission checks for typed commands and buttons.
+
 - Each adapter (the code that connects one messaging platform to the bot) is standalone. A change to one adapter does not mean another adapter must change.
 - Search related adapters to understand the impact, but keep edits within the requested adapter. If another adapter needs a change, tell the user first. Explain which adapter needs to change and why before editing it.
 - Shared core, runtime, and data services may still be reused. Check their impact on all adapters and tell the user first if a shared change requires edits to another adapter.

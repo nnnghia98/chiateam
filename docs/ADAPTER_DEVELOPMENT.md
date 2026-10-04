@@ -42,8 +42,9 @@ platform events do not enter core state.
 
 ## Current commands
 
-Telegram keeps `/start` as its only public slash command. Its reply keyboard
-and inline buttons send internal actions into the full shared runtime. See
+Telegram accepts all supported slash commands and alternate names. Its slash
+menu advertises `/start` to open the recommended button menu. Reply-keyboard
+and inline buttons use the same commands and permission checks. See
 [`COMMAND_CATALOG.md`](COMMAND_CATALOG.md) for the core action catalog.
 
 The Zalo adapter currently exposes:
