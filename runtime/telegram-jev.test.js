@@ -265,21 +265,16 @@ test('stopping the Telegram adapter cancels an unfinished Jev request', async t 
   assert.equal(f.sent.length, 0);
 });
 
-test('literal vote records yes without AI inference and still limits spam', async t => {
+test('literal vote follows Jev choice and cannot bypass a failed response', async t => {
   const f = fixture(t);
+  f.choose('vote_no');
+  await f.runtime.adapter.handleEvent(event('@ChiaBot vote'));
+  assert.equal(f.state.activeVote.votes['7'].choice, '0');
+  assert.equal(f.requests.length, 1);
+  f.advance();
   f.fail();
-  await f.runtime.adapter.handleEvent(event('@ChiaBot vote'));
-  assert.equal(f.state.activeVote.votes['7'].choice, '1');
+  await f.runtime.adapter.handleEvent(event('@ChiaBot vote', 8));
+  assert.equal(f.state.activeVote.votes['8'], undefined);
   assert.equal(f.saves, 1);
-  await f.runtime.adapter.handleEvent(event('@ChiaBot vote'));
-  assert.equal(f.saves, 1);
-  assert.equal(f.sent.length, 1);
-  await f.runtime.adapter.handleEvent({
-    ...event(' VOTE ', 8),
-    entities: [],
-    chat: { id: 8, type: 'private' },
-  });
-  assert.equal(f.state.activeVote.votes['8'].choice, '1');
-  assert.equal(f.saves, 2);
-  assert.equal(f.requests.length, 0);
+  assert.match(f.sent.at(-1).text, /Hiện chưa thể hiểu/);
 });

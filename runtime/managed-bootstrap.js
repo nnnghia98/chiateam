@@ -26,6 +26,7 @@ function childEnvironment(service, snapshot, env) {
       'TYPESAFE_API_KEY',
       'TYPESAFE_MODEL',
       'TELEGRAM_JEV_ENABLED',
+      'TELEGRAM_JEV_SANDBOX',
     ]) {
       if (env[key] != null) result[key] = env[key];
     }

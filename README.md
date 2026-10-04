@@ -569,3 +569,19 @@ database credentials, production storage, or database files.
 Historical sprint notes in `2026/` may describe older layouts. Treat the root
 scripts, `bot/index.js`, `api/index.js`, and current env examples as the active
 source of truth.
+
+### Jev action logs
+
+Set `TELEGRAM_JEV_SANDBOX=true` locally or on the Railway bot service to log
+Jev's chosen action, mapped command, and probability in readable language.
+Tagged group messages and private text messages go through Jev before running
+one of the six actions: `/vote 1`, `/vote 0`, `/vote`, `/demvote`, `/bench`, `/team`.
+Plain `vote` also goes through Jev. `/start` is not a Jev action option.
+Unclear or unmatched requests do not run commands. The normal confidence checks,
+cooldown, permission checks, and current-vote checks apply before execution.
+Typed slash commands and menu buttons still work normally.
+The bot uses one Jev request per accepted message, including when logs are enabled.
+Logs include message text, but never the API key. `TYPESAFE_API_KEY` is required;
+`TYPESAFE_MODEL` defaults to `jev-latest`. Restart the local bot or deploy Railway
+changes to load this behavior. Set `TELEGRAM_JEV_SANDBOX=false` to disable logs
+while keeping Jev action routing enabled.

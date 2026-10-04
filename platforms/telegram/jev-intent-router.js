@@ -7,14 +7,13 @@ const ACTIONS = Object.freeze({
   vote_results: { command: 'demvote', args: [] },
   bench: { command: 'bench', args: [] },
   teams: { command: 'team', args: [] },
-  help: { command: 'start', args: [] },
 });
 
 const CRITERIA = Object.freeze({
   vote_yes:
     'The sender asks to record their own attendance as coming alone. Bare "vote", "vote for me", "I am coming", "đá", "cho tôi vote" mean yes. Not a question about voting, another person, guests, or a quoted request.',
   vote_no:
-    'The sender asks to record their own attendance as not coming. Examples: "I cannot come", "không đá", "vote không". Not another person or a quoted request.',
+    'The sender asks to record their own attendance as not coming. Examples: "I cannot come", "không đá", "vote không", "không vote". Not another person or a quoted request.',
   show_vote:
     'Show the current attendance question and choices, or explain how to vote without casting a choice.',
   vote_results:
@@ -22,8 +21,6 @@ const CRITERIA = Object.freeze({
   bench: 'Show the current ChiaTeam bench or player roster. Read only.',
   teams:
     'Show current ChiaTeam football teams. Read only; do not create or change teams.',
-  help: 'Show the ChiaTeam menu or the supported actions.',
-  greeting: 'Only a greeting or bot mention without any action request.',
   clarify:
     'An unclear ChiaTeam request, multiple actions, attendance for someone else, or attendance with guests. Ask the user to use the menu.',
   no_match:
@@ -96,30 +93,6 @@ function createJevIntentRouter({
     try {
       const text = String(event.text ?? event.caption ?? '').trim();
       if (text.length > 2000) return { message: MESSAGES.clarify };
-      // Exact commands are product rules; they do not need an AI judgment.
-      let literalText = String(event.text ?? event.caption ?? '');
-      const entities =
-        event.text != null ? event.entities : event.caption_entities;
-      const ownMentions = (entities || [])
-        .filter(
-          entity =>
-            (entity.type === 'text_mention' &&
-              entity.user?.id === identity.id) ||
-            (entity.type === 'mention' &&
-              username &&
-              literalText
-                .slice(entity.offset, entity.offset + entity.length)
-                .toLowerCase() === `@${username}`)
-        )
-        .sort((a, b) => b.offset - a.offset);
-      for (const entity of ownMentions) {
-        literalText =
-          literalText.slice(0, entity.offset) +
-          literalText.slice(entity.offset + entity.length);
-      }
-      if (literalText.trim().toLowerCase() === 'vote') {
-        return { command: 'vote', args: ['1'], rawArgs: '1' };
-      }
       const before = await stateRepository.load(['activeVote']);
       const response = await fetchImpl('https://api.typesafe.ai/v1/systemone', {
         method: 'POST',
@@ -143,6 +116,17 @@ function createJevIntentRouter({
       });
       if (!response.ok) return { message: MESSAGES.unavailable };
       const answer = (await response.json())?.answers?.action;
+      if (env.TELEGRAM_JEV_SANDBOX === 'true') {
+        const action = ACTIONS[answer?.choice];
+        const labels = { vote_yes: 'Confirm attendance', vote_no: 'Decline attendance', show_vote: 'Show current vote', vote_results: 'Show attendance results', bench: 'Show player list', teams: 'Show teams', clarify: 'Unclear request', no_match: 'No matching action' };
+        const probability = answer?.probabilities?.[answer.choice];
+        console.log('[jev.sandbox] response', [
+          `Message: ${JSON.stringify(text)}`,
+          `Chosen action: ${labels[answer?.choice] || 'Unknown action'}`,
+          `Command: ${action ? '/' + [action.command, ...action.args].join(' ') : 'None'}`,
+          ...(Number.isFinite(probability) ? [`Chance this action fits: ${Math.round(probability * 100)}%`] : []),
+        ].join('\n'));
+      }
       if (stopped || controller.signal.aborted || now() - startedAt > 8000)
         return { ignored: true };
       if (answer?.type !== 'choice' || !Object.hasOwn(CRITERIA, answer.choice))
@@ -157,15 +141,6 @@ function createJevIntentRouter({
         probability > 1
       )
         return { message: MESSAGES.clarify };
-      if (answer.choice === 'greeting') {
-        const name =
-          [event.from.first_name, event.from.last_name]
-            .filter(Boolean)
-            .join(' ') ||
-          event.from.username ||
-          'there';
-        return { message: `Hi ${name}` };
-      }
       if (!Object.hasOwn(ACTIONS, answer.choice))
         return { message: MESSAGES[answer.choice] };
       const action = ACTIONS[answer.choice];
