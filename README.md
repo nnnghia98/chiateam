@@ -1,112 +1,56 @@
 # ChiaTeam Bot
 
-Telegram bot and companion HTTP API for running ChiaTeam football sessions.
+Bot and HTTP API for organising weekly amateur football sessions: signups,
+bench and team shuffling, venue and fee tracking, attendance votes, player
+registration, and match history.
 
-The bot handles weekly player signups, bench management, team shuffling, venue
-and fee tracking, voting, player registration, and match history. The API backs
-the separate admin UI and also acts as the bot's data
-layer for players, matches, avatars, and persistent bot
-state.
+- Platforms: Telegram (primary), Zalo, and Messenger.
+- Storage: PostgreSQL (for example Supabase). There is no file-based state.
+- One installation manages one football community.
+- Bot replies are in Vietnamese and fees are in VND.
 
-The admin UI lives in a separate repository:
+The admin panel web app is a separate project and is not part of this
+repository. The API in this repository serves it.
 
-```text
-../chiateam-admin
-```
+## Quick start
 
-## Quick Start
-
-Use Node.js 22, Yarn 1, and a PostgreSQL database. Bootstrap the project once:
+You need Node.js 22, Yarn 1, and a PostgreSQL database.
 
 ```bash
-yarn setup
+yarn setup        # creates .env from .env.example and installs dependencies
 ```
 
-This copies `.env.example` to `.env` only when `.env` does not exist, then
-installs the locked dependencies. Add your own values to `.env` before running
-the application.
-
-For a fresh database, run `api/db/postgres-schema.sql` once, then verify the
-connection and runtime tables:
+Add your own values to `.env`, then create the tables and start everything:
 
 ```bash
-yarn init-db
+# fresh database: run api/db/postgres-schema.sql once, then
+yarn init-db      # verify the connection and runtime tables
+yarn dev:all      # API + Telegram bot
 ```
 
-This also creates the `host` and `host_bank_accounts` tables for payment setup.
+`yarn dev:all` does not start Zalo or Messenger delivery. Both use separate
+webhook deployments. See [docs/DATABASE_SETUP.md](docs/DATABASE_SETUP.md) for
+database details and [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for every
+setting.
 
-Start the API and Telegram bot together:
+## Common commands
 
-```bash
-yarn dev:all
-```
+| Command             | What it does                          |
+| ------------------- | ------------------------------------- |
+| `yarn dev:all`      | Start the API and the Telegram bot    |
+| `yarn dev:api`      | Start only the API (default `:8787`)  |
+| `yarn dev:bot`      | Start only the Telegram bot           |
+| `yarn start:api`    | Run the API in production mode        |
+| `yarn start:bot`    | Run the bot in production mode        |
+| `yarn init-db`      | Check the database and runtime tables |
+| `yarn test`         | Run the test suite                    |
+| `yarn lint`         | Run ESLint                            |
+| `yarn format:check` | Check Prettier formatting             |
+| `yarn format`       | Apply Prettier formatting             |
 
-This command does not start Zalo or Messenger delivery. Both platforms use
-separate webhook deployments. See `docs/DATABASE_SETUP.md` for database
-details.
+Check that the API is up with `curl http://localhost:8787/healthz`.
 
-## Telegram mention replies and logs
-
-Messages that tag the running bot are written to server logs under
-`[telegram.mention]`. Each entry includes the message text or caption, sender ID,
-chat ID, message ID, and message time in UTC. The bot reads its own username
-from Telegram, so this works for both development and production bots.
-Tagged commands such as `/start@chiateam_dev_bot` also produce a mention log.
-Untagged messages do not produce mention logs or greetings. The first mention is
-logged immediately and gets a plain-text reply, `Hi [user name]`, in the same
-chat and topic. The name uses the sender's first and last name, with username,
-chat sender title, or `there` as fallbacks. Messages from bots are ignored.
-Further mentions from the same sender in the same chat are ignored
-by this listener for five seconds. Other senders and chats have their own
-cooldown. This limits mention replies and logs; command handling and existing command
-logs still run.
-Without Jev, this listener also replies during maintenance mode. With Jev
-enabled, it only logs mentions; the Telegram adapter owns greetings and actions.
-
-## Telegram ChiaTeam text actions with Jev
-
-Set `TYPESAFE_API_KEY` in the root `.env` to enable TypeSafe Jev for Telegram.
-`TYPESAFE_MODEL` defaults to `jev-latest`. Set `TELEGRAM_JEV_ENABLED=false` to
-disable it. These settings also reach Telegram when using managed startup.
-Keep the key private. No TypeSafe key is passed to Zalo services.
-
-In groups, tag this bot, for example `@YourBot vote` or
-`@YourBot hôm nay tôi không đá`. In private chats, send plain text. The adapter
-supports Vietnamese and English. It only allows:
-
-- Record the sender's attendance as coming alone or not coming.
-- Show the current vote, vote results, bench, or teams.
-- Show help or reply to a greeting with `Hi [user name]`.
-
-The exact word `vote` records the sender as coming alone through a fixed code
-rule, after removing the bot mention. This does not need an AI call. Longer
-requests use Jev and require a clear match.
-
-Other requests, such as currency rates, get a fixed ChiaTeam-only reply.
-Unclear requests, requests for another person, guest counts, and low-confidence
-answers show the menu. Jev cannot run admin changes or `zalosay` broadcasts.
-Existing menu buttons, slash commands, and pending input flows keep working.
-
-The first request runs immediately. The adapter allows one request per sender
-and chat every five seconds, one active request per sender and chat, and at most
-four active Jev requests in total. Requests time out after eight seconds. An API
-failure asks users to use the menu. Existing permissions, disabled command
-settings, and paused bot controls still apply. A vote is not recorded if the
-poll changed during inference. Votes are saved through the existing API and
-storage; Jev does not write state directly or select native Telegram
-poll answers on a user's behalf.
-
-Only the message text or caption is sent to TypeSafe, without the bot token,
-user ID, chat ID, or roster. TypeSafe's structured Choice API is documented at
-[TypeSafe API reference](https://docs.typesafe.ai/api).
-
-The listener can only log messages Telegram delivers. For plain group text
-such as `Hi @chiateam_dev_bot`, make the bot a group admin or disable Group
-Privacy through BotFather if Telegram does not deliver the message. See
-[Telegram's message delivery rules](https://core.telegram.org/bots/faq#what-messages-will-my-bot-get).
-Restart the bot after updating the code.
-
-## Project Layout
+## Project layout
 
 ```text
 bot/                 Telegram bot runtime and command handlers
@@ -116,429 +60,59 @@ runtime/             Shared command wiring and repository adapters
 api/                 HTTP API, data-access routes, and domain services
 api/db/              Database connection and verification scripts
 config/              Shared environment and maintenance-mode config
-docs/                Deployment and integration notes
+docs/                Setup, deployment, and integration notes
 Dockerfile           Image that Railway builds for the bot and API
 ```
 
-Important entrypoints:
-
-- `bot/index.js` starts the Telegram bot.
-- `api/index.js` starts the HTTP API.
-- `api/messenger-webhook.mjs` handles the Messenger webhook entrypoint.
-- `config/load-env.js` loads the root `.env` file.
-- `bot/utils/storage.js` manages the bot's persistent runtime state.
-
-## Runtime Surfaces
-
-### Bot
-
-The bot uses a shared platform-independent command runtime. Telegram input,
-output, polls, permissions, and callbacks stay under `platforms/telegram/`.
-The shared action list is defined in `core/commands/command-manifest.js`.
-Telegram starts these actions from its menu. Zalo and Messenger can still use
-slash commands from their smaller platform lists.
-
-Actions available to the shared bot runtime:
-
-| Area             | Commands                                                                       |
-| ---------------- | ------------------------------------------------------------------------------ |
-| Help             | `/start`                                                                       |
-| Zalo messaging   | `/zalosay`, `/say`                                                             |
-| Bench            | `/addme`, `/add`, `/bench`, `/editbench`, `/clearbench`                        |
-| Teams            | `/chiateam`, `/team`, `/addtoteam`, `/clearteam`                               |
-| Team constraints | `/manifest`, `/mf`, `/manifests`, `/removemanifest`, `/clearmanifests`         |
-| Venue and fees   | `/san`, `/clearsan`, `/tiensan`, `/tiennuoc`, `/winner`, `/loser`, `/chiatien` |
-| Attendance vote  | `/taovote`, `/vote`, `/clearvote`, `/demvote`, `/sync`                         |
-| Players          | `/register`, `/me`                                                             |
-| Matches          | `/match`, `/matches`                                                           |
-| Admin reset      | `/reset`                                                                       |
-
-`/chiatien` previews the costs, player count, and final HOME/AWAY player amounts
-in one group message. It does not show the calculation or result labels.
-Each final player fee is rounded up to the next 500 VND.
-It sends no payment request. The private fee delivery command is temporarily
-disabled. Host bank accounts and fee delivery tables remain in the database
-for a later release.
-
-Standalone AI and unsupported World Cup names are not
-part of the supported bot runtime.
-
-Send `/start` in Telegram to show the bot description and a reply keyboard
-below the message box. The description and keyboard appear in the chat and
-topic where you sent `/start`.
-
-Telegram accepts all supported slash commands and alternate names, including
-`/reset`, `/vote`, and `/team`. Menu buttons are recommended for convenience;
-users can still type commands. The slash menu advertises `/start` to open the
-button menu. Admin commands still require admin permission. Zalo keeps its smaller
-slash-command list and personal greeting. Sending `/start` does not change
-match data or subscribe anyone to announcements.
-
-The menu has two buttons per row.
-
-| Menu button        | Action                                    |
-| ------------------ | ----------------------------------------- |
-| 🗳️ Vote ngay       | Open vote choices                         |
-| 🗳️ Tạo vote        | Ask for the new vote question             |
-| 📋 Bench           | Show the bench                            |
-| ✏️ Sửa bench       | Choose and rename a bench member          |
-| 🗑️ Xoá khỏi bench  | Choose members to remove                  |
-| 👤 Thêm người      | Ask for guest names                       |
-| 🎲 Chia team       | Create two teams                          |
-| ⚽ Team            | Show the two-team lineup                  |
-| 👥➕ Thêm vào team | Choose a team, then choose bench members  |
-| 🗑️ Xoá khỏi team   | Choose a team, then choose what to remove |
-| 📊 Kết quả vote    | Show the current vote result              |
-| 🔄 Đồng bộ bench   | Copy attending voters to the bench        |
-| 📣 Gửi Zalo        | Prepare a Zalo announcement (admin only)  |
-
-Telegram provides the keyboard icon near the message box to hide or reopen
-this menu. Its appearance depends on the Telegram app. The menu stays
-available after a button press. Each button sends its label as a chat message
-and runs the matching internal action with the same permission and pause
-checks.
-Private command replies stay in the user's chat. Group command results use
-their configured channels and topics. Existing
-inline buttons stay unchanged. This menu is available only in Telegram.
-
-### Supported Platforms
-
-- Telegram is the primary adapter. It accepts all supported slash commands and
-  alternate names, with menu buttons recommended for convenience.
-- Zalo uses the production webhook and exposes only `/start`, `/zalosay`,
-  `/subscribe`, `/unsubscribe`, `/poll`, `/vote`, `/demvote`, `/bench`, and `/team`.
-- Zalo roster and team mutation commands are intentionally disabled.
-- Messenger has a local webhook MVP with only `/start`, `/poll`, `/vote`,
-  `/demvote`, `/bench`, and `/team`.
-- Messenger `/vote` is the only write command. Admin, registration, roster,
-  and team mutation commands are not available. Delivery is webhook-only.
-- One installation manages one football community.
-
-### Private chats and reply templates
-
-Users can open the bot and send `/start` in a private chat. Telegram command
-replies stay in that chat even when `CHAT_ID` and group topic IDs are configured.
-Group commands keep their configured topic routing. Without `CHAT_ID`, replies
-use the incoming chat and topic; group topic settings are ignored.
-
-For use only in private chats, leave `CHAT_ID`, `DEFAULT_THREAD_ID`,
-`MAIN_THREAD_ID`, `ANNOUNCEMENT_THREAD_ID`, `VIP_THREAD_ID`, and
-`STATISTICS_THREAD_ID` empty. No new bot token or separate bot process is needed.
-The API and normal bot process must still be running. Zalo already replies to
-the incoming Zalo chat and does not use these Telegram settings.
-
-If managed startup is enabled, change saved settings in the admin panel at
-`/bots` and apply them.
-Editing `.env` does not replace settings already saved in the admin panel.
-
-Private chats use the same team, bench, match and vote data. Admin commands
-still require the configured admin user ID. A confirmed `/zalosay` broadcast
-still sends to subscribed Zalo users. `/taovote` still publishes its team poll
-to the configured group; without `CHAT_ID`, it uses the incoming chat.
-
-Help and greeting templates use standard emoji with bold section headings.
-See [reply templates and private chat setup](docs/CHAT_REPLIES.md) for examples,
-platform limits and checks after deployment.
-
-Important rewritten command forms:
-
-- `/zalosay MESSAGE` previews a Zalo subscriber broadcast from Telegram.
-  `/say` is an alias. Both accept typed commands; the public Telegram command
-  menu still lists only `/start`.
-  It is admin-only, requires confirmation within ten minutes, and uses
-  `ZALO_BOT_TOKEN` on the Telegram bot service. Each recipient opts in with
-  `/subscribe` in a private Zalo chat and can stop with `/unsubscribe`.
-  `ZALO_BOT_OWNER_ID` is no longer the broadcast destination.
-  See [Zalo broadcast setup](docs/ZALO_BROADCAST.md) for deployment and status commands.
-- `/clearvote confirm` requires confirmation.
-- `/reset` runs immediately and is admin-only.
-- `/register NUMBER`, `/register add NAME NUMBER`, or
-  `/register delete NUMBER`.
-- `/match view|save|sync|score|winner|loser|goal|assist|mvp|delete ...` uses one explicit action.
-- `/match sync [dd/mm/yyyy]` links saved match entries to players who
-  registered later. It uses Telegram `user_id` and skips duplicate identities.
-  Older unlinked entries without a stored `user_id` must be saved again first.
-- `/match winner HOME [dd/mm/yyyy]` or `/match loser AWAY [dd/mm/yyyy]`
-  records the result on the saved match and its per-match player rows.
-- `/matches [LIMIT] [PAGE]` supports bounded pages.
-
-Interactive commands that use inline keyboards:
-
-- `/clearbench`
-- `/editbench`
-- `/addtoteam`
-- `/clearteam`
-- `/manifest`
-- `/removemanifest`
-- `/clearmanifests`
-- `/clearvote`
-
-These commands are admin-only when they show or handle inline keyboard actions.
-Inline keyboards show at most 10 players or manifest entries per page. Their
-prompt and follow-up messages are sent back to the chat where the command or
-button was used, including the same Telegram topic when available, instead of
-using the configured `CHAT_ID`.
-
-### API
-
-The API uses Node's built-in `http` module and PostgreSQL via `pg`.
-
-Core endpoints include:
-
-- `GET /healthz`
-- `GET /api/status`
-- `GET /api/settings`
-- `POST /api/settings`
-- `GET /api/players`
-- `GET /api/players/:number`
-- `POST /api/players`
-- `PUT /api/players/:number`
-- `POST /api/players/:number/avatar`
-- `DELETE /api/players/:number`
-- `GET /api/matches`
-- `GET /api/matches/:date`
-- `POST /api/matches`
-- `PUT /api/matches/:date`
-- `DELETE /api/matches/:date`
-- `GET /api/bot-storage`
-- `POST /api/bot-storage`
-- `POST /api/bot-storage/reset`
-- `POST /api/bot-storage/sync`
-
-Admin-only endpoints require:
-
-```text
-x-internal-api-auth: <INTERNAL_API_AUTH_TOKEN>
-x-admin-role: admin
-```
-
-Viewer endpoints accept `x-admin-role: viewer` with the same internal token.
-`GET /api/bot-storage` is public and does not require authentication headers.
-
-## Data Storage
-
-Structured data is stored in PostgreSQL, usually Supabase Postgres, through
-`DATABASE_URL`.
-
-Main tables:
-
-- `players`
-- `matches`
-- `match_players`
-- `match_player_stats`
-- `storage`
-- `current_match`
-
-Player avatars are uploaded to Supabase Storage using:
-
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `SUPABASE_STORAGE_BUCKET`
-
-### Persistent Bot State
-
-Next-match state is stored only in PostgreSQL table `storage`. `DATABASE_URL`
-is required. Missing configuration logs an error and fails the operation.
-Database failures are returned as errors; no local file is used as a fallback.
-An empty table returns default state without importing legacy JSON files.
-Back up the database before risky storage changes or deployment cutovers.
-
-## Environment Setup
-
-Every environment owns one root `.env` file with its own values. Runtime
-commands always load `.env`; they do not select environment-suffixed
-files. `NODE_ENV` may still identify development or production behavior, but it
-does not change which env file is loaded.
-
-`yarn setup` creates the file safely. To create it manually instead, run:
-
-```bash
-cp .env.example .env
-```
-
-Both files use two main sections:
-
-| Section | Settings                                                                                                                                                 |
-| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `BOT`   | Telegram credentials and group topics; Zalo credentials and webhook; Messenger webhook credentials.                                                      |
-| `API`   | API connection and shared authentication; required database; image storage; allowed web origins; maintenance; optional AI; admin panel backend settings. |
-
-Use [.env.example](.env.example) for the current setting names and comments.
-Shared settings appear once. `NODE_ENV`, `INTERNAL_API_AUTH_TOKEN`, and
-maintenance settings under `API` are also used by bot services. Optional
-feature settings stay in the example even when that feature is not enabled.
-
-Payment receiver details are stored in `host` and `host_bank_accounts` in
-PostgreSQL. The admin panel backend provides `POST /api/hosts` and
-`POST /api/hosts/:id/accounts` to add them. See
-[docs/DATABASE_SETUP.md](docs/DATABASE_SETUP.md). Private fee delivery is
-temporarily disabled in the bot.
-
-`BOT_API_BASE_URL` is the main bot-to-API address. `API_INTERNAL_URL` remains
-a supported fallback and can also seed the first admin panel settings import.
-`WEB_UI_URL` and `ADMIN_UI_URL` both add allowed web origins and may have
-different values.
-
-Do not put `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`, or `VIEWER_PASSWORD` in
-this repository's `.env`. The admin panel web app has its own environment and
-login settings. `ENV_FILE` is ignored and is not needed. Set the Messenger
-callback URL directly in Meta settings; the code does not read a
-`MESSENGER_WEBHOOK_URL` variable.
-
-`GEMINI_API_KEY` is optional. When present, match flows can generate Vietnamese
-AI commentary. When absent, AI helpers return `null` and normal match behavior
-continues.
-
-## Install
-
-```bash
-yarn setup
-```
-
-If `.env` already exists and only dependencies are needed, run
-`yarn install --frozen-lockfile`.
-
-## Local Development
-
-Start the API and Telegram bot together:
-
-```bash
-yarn dev:all
-```
-
-Or start each process in its own terminal. Start the API first:
-
-```bash
-yarn dev:api
-```
-
-Then start the bot:
-
-```bash
-yarn dev:bot
-```
-
-`yarn dev` maps to `yarn dev:bot`.
-
-The API defaults to:
-
-```text
-http://localhost:8787
-```
-
-Verify the API:
-
-```bash
-curl http://localhost:8787/healthz
-```
-
-## Production Commands
-
-```bash
-yarn start:bot
-yarn start:api
-```
-
-`yarn start` maps to `yarn start:bot`.
-
-The production scripts load `.env` and keep the runtime mode as:
-
-```text
-NODE_ENV=production
-```
-
-## Database Checks
-
-Verify the configured database connection and ensure runtime helper columns and
-tables exist:
-
-```bash
-yarn init-db
-```
-
-For a fresh database, apply `api/db/postgres-schema.sql` before this command.
-See `docs/DATABASE_SETUP.md` for fresh setup, existing database checks, and
-backup rules.
-
-Drop scripts exist for development cleanup, but they are destructive:
-
-```bash
-yarn drop-db
-```
-
-Do not run destructive database commands against production unless the target
-environment and backup plan are confirmed.
-
-## Tests
-
-Run the full Node test suite:
-
-```bash
-yarn test
-```
-
-Focused examples:
-
-```bash
-node --test core/use-cases/matches/match-command.test.js
-node --test runtime/start-bot.test.js
-```
-
-## Railway Storage
-
-Set `DATABASE_URL` on the API service. Bot state is stored only in PostgreSQL.
-No Railway volume is needed for bot state. Keep old files or volumes as archives
-until you choose to remove them. See `docs/RAILWAY_SETUP.md`.
+Entrypoints: `bot/index.js` (Telegram bot), `api/index.js` (HTTP API),
+`api/messenger-webhook.mjs` and `api/zalo-webhook.mjs` (webhook handlers), and
+`config/load-env.js` (loads the root `.env`).
+
+## Configuration
+
+All settings live in one root `.env` file, described in
+[.env.example](.env.example). In production, `INTERNAL_API_AUTH_TOKEN` must be
+a private random value; the API refuses to start with it missing or set to a
+public example value. Never commit `.env`, tokens, database credentials, or
+database files.
 
 ## Deployment
 
 The maintainer runs the bot and API on Railway, which redeploys automatically
 on every push to `main`. Railway builds both services from the root
 `Dockerfile`; the API service overrides the start command with
-`node api/index.js`. See `docs/RAILWAY_SETUP.md`. Any host that can run
-`node bot/index.js` and `node api/index.js` with the same environment works.
+`node api/index.js`. See [docs/RAILWAY_SETUP.md](docs/RAILWAY_SETUP.md). Any
+host that can run `node bot/index.js` and `node api/index.js` with the same
+environment works. Back up PostgreSQL before risky rollouts.
 
-Back up PostgreSQL through your database provider before risky rollouts.
+## Documentation
 
-## Maintenance Mode
+| Topic                                                 | File                                                                                                                                     |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Bot commands, Telegram menu, and platform differences | [docs/BOT_COMMANDS.md](docs/BOT_COMMANDS.md)                                                                                             |
+| Telegram mentions and Jev text actions                | [docs/TELEGRAM_JEV.md](docs/TELEGRAM_JEV.md)                                                                                             |
+| API endpoints and data storage                        | [docs/API.md](docs/API.md)                                                                                                               |
+| Environment, maintenance mode, and database checks    | [docs/CONFIGURATION.md](docs/CONFIGURATION.md)                                                                                           |
+| Fresh database setup and migration safety             | [docs/DATABASE_SETUP.md](docs/DATABASE_SETUP.md)                                                                                         |
+| Railway deployment                                    | [docs/RAILWAY_SETUP.md](docs/RAILWAY_SETUP.md)                                                                                           |
+| Adding or changing a platform adapter                 | [docs/ADAPTER_DEVELOPMENT.md](docs/ADAPTER_DEVELOPMENT.md)                                                                               |
+| Messenger webhook setup                               | [docs/MESSENGER_ADAPTER.md](docs/MESSENGER_ADAPTER.md)                                                                                   |
+| Zalo setup and broadcasts                             | [docs/ZALO_ADAPTER.md](docs/ZALO_ADAPTER.md), [docs/ZALO_BROADCAST.md](docs/ZALO_BROADCAST.md)                                           |
+| Reply templates and private chat setup                | [docs/CHAT_REPLIES.md](docs/CHAT_REPLIES.md)                                                                                             |
+| Common problems                                       | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)                                                                                       |
+| Sample API calls                                      | [docs/HTTP_TEST_EXAMPLES.md](docs/HTTP_TEST_EXAMPLES.md)                                                                                 |
+| Match commentary with Gemini (optional)               | [docs/AI_INTEGRATION.md](docs/AI_INTEGRATION.md)                                                                                         |
+| World Cup predictions API                             | [docs/WORLD_CUP_PREDICTIONS_API.md](docs/WORLD_CUP_PREDICTIONS_API.md)                                                                   |
+| Admin panel bot settings                              | [docs/BOT_MANAGEMENT_GUIDE.md](docs/BOT_MANAGEMENT_GUIDE.md), [docs/BOT_MANAGEMENT_SETTINGS_MAP.md](docs/BOT_MANAGEMENT_SETTINGS_MAP.md) |
+| Command inventory (historical) and storage notes      | [docs/COMMAND_CATALOG.md](docs/COMMAND_CATALOG.md), [docs/JSON_STORAGE.md](docs/JSON_STORAGE.md)                                         |
+| Release checklist and versioning                      | [docs/RELEASE.md](docs/RELEASE.md)                                                                                                       |
 
-Set these in the active env file to pause bot/API traffic for the environment:
+## Contributing and security
 
-```text
-MAINTENANCE_MODE=true
-MAINTENANCE_UNTIL=2026-10-02 12:00
-```
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Pull
+requests run lint, the format check, and the tests. Report security problems
+privately as described in [SECURITY.md](SECURITY.md).
 
-The bot responds to commands with a maintenance message. The API keeps health,
-status, and settings routes available while maintenance mode is enabled.
+## License
 
-## Additional Docs
-
-- `docs/RAILWAY_SETUP.md` - Railway deployment
-- `docs/DATABASE_SETUP.md` - fresh database setup and migration safety
-- `docs/ADAPTER_DEVELOPMENT.md` - platform adapter boundaries and workflow
-- `docs/MESSENGER_ADAPTER.md` - Messenger webhook MVP and Meta setup
-- `docs/TROUBLESHOOTING.md` - common local, API, state, and Zalo problems
-- `docs/RELEASE.md` - release checklist and versioning policy
-- `docs/JSON_STORAGE.md` - bot state storage notes
-- `docs/AI_INTEGRATION.md` - AI integration notes; verify against current command wiring before enabling standalone AI commands
-- `docs/HTTP_TEST_EXAMPLES.md` - sample API calls
-
-See `SECURITY.md` to report a security issue. Never commit `.env`, tokens,
-database credentials, production storage, or database files.
-
-### Jev action logs
-
-Set `TELEGRAM_JEV_SANDBOX=true` locally or on the Railway bot service to log
-Jev's chosen action, mapped command, and probability in readable language.
-Tagged group messages and private text messages go through Jev before running
-one of the six actions: `/vote 1`, `/vote 0`, `/vote`, `/demvote`, `/bench`, `/team`.
-Plain `vote` also goes through Jev. `/start` is not a Jev action option.
-Unclear or unmatched requests do not run commands. The normal confidence checks,
-cooldown, permission checks, and current-vote checks apply before execution.
-Typed slash commands and menu buttons still work normally.
-The bot uses one Jev request per accepted message, including when logs are enabled.
-Logs include message text, but never the API key. `TYPESAFE_API_KEY` is required;
-`TYPESAFE_MODEL` defaults to `jev-latest`. Restart the local bot or deploy Railway
-changes to load this behavior. Set `TELEGRAM_JEV_SANDBOX=false` to disable logs
-while keeping Jev action routing enabled.
+[MIT](LICENSE)
