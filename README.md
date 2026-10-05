@@ -117,7 +117,7 @@ api/                 HTTP API, data-access routes, and domain services
 api/db/              Database connection and verification scripts
 config/              Shared environment and maintenance-mode config
 docs/                Deployment, Docker, and integration notes
-docker-compose*.yml  Local and VPS Docker stacks
+docker-compose*.yml  Local Docker stacks
 ```
 
 Important entrypoints:
@@ -519,21 +519,13 @@ Set `DATABASE_URL` on the API service. Bot state is stored only in PostgreSQL.
 No Railway volume is needed for bot state. Keep old files or volumes as archives
 until you choose to remove them. See `docs/RAILWAY_SETUP.md`.
 
-## VPS Deployment
+## Deployment
 
-The VPS deployment uses Docker Compose, GitHub Actions, and GHCR.
-
-What runs on the VPS:
-
-- `api` container listening on port `8787`
-- `bot` container with no public port
-
-Both containers share the same app image and use different start commands.
+The maintainer runs the bot and API on Railway, which redeploys automatically
+on every push to `main`. See `docs/RAILWAY_SETUP.md`. Any host that can run
+`node bot/index.js` and `node api/index.js` with the same environment works.
 
 Back up PostgreSQL through your database provider before risky rollouts.
-
-See `docs/DEPLOY_VPS_DOCKER.md` for required secrets, VPS prerequisites, and
-the cutover checklist.
 
 ## Maintenance Mode
 
@@ -550,8 +542,7 @@ status, and settings routes available while maintenance mode is enabled.
 ## Additional Docs
 
 - `docs/LOCAL_DOCKER.md` - local Docker workflow
-- `docs/DEPLOY_VPS_DOCKER.md` - VPS Docker deployment
-- `docs/RAILWAY_SETUP.md` - older platform notes
+- `docs/RAILWAY_SETUP.md` - Railway deployment
 - `docs/DATABASE_SETUP.md` - fresh database setup and migration safety
 - `docs/ADAPTER_DEVELOPMENT.md` - platform adapter boundaries and workflow
 - `docs/MESSENGER_ADAPTER.md` - Messenger webhook MVP and Meta setup
