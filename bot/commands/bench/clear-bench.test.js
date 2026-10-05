@@ -71,7 +71,10 @@ function createMockBot() {
 test('/clearbench shows inline buttons for each bench member', async () => {
   const { bot, handlers, sentMessages } = createMockBot();
   const registeredCallbacks = [];
-  const clearBenchCommand = loadClearBenchWithMockedBot(bot, registeredCallbacks);
+  const clearBenchCommand = loadClearBenchWithMockedBot(
+    bot,
+    registeredCallbacks
+  );
   const members = new Map([
     [1, toEntry('Nghia', 1)],
     [2, toEntry('Minh', 2)],
@@ -79,7 +82,9 @@ test('/clearbench shows inline buttons for each bench member', async () => {
 
   clearBenchCommand({ members });
 
-  const listHandler = handlers.find(({ pattern }) => pattern.test('/clearbench'));
+  const listHandler = handlers.find(({ pattern }) =>
+    pattern.test('/clearbench')
+  );
   assert.ok(listHandler);
 
   await listHandler.handler({
@@ -100,7 +105,10 @@ test('/clearbench shows inline buttons for each bench member', async () => {
 test('/clearbench paginates inline buttons at 10 players per page', async () => {
   const { bot, handlers, sentMessages, editedReplyMarkups } = createMockBot();
   const registeredCallbacks = [];
-  const clearBenchCommand = loadClearBenchWithMockedBot(bot, registeredCallbacks);
+  const clearBenchCommand = loadClearBenchWithMockedBot(
+    bot,
+    registeredCallbacks
+  );
   const members = new Map(
     Array.from({ length: 12 }, (_, index) => [
       index + 1,
@@ -110,7 +118,9 @@ test('/clearbench paginates inline buttons at 10 players per page', async () => 
 
   clearBenchCommand({ members });
 
-  const listHandler = handlers.find(({ pattern }) => pattern.test('/clearbench'));
+  const listHandler = handlers.find(({ pattern }) =>
+    pattern.test('/clearbench')
+  );
   assert.ok(listHandler);
 
   await listHandler.handler({
@@ -119,7 +129,8 @@ test('/clearbench paginates inline buttons at 10 players per page', async () => 
     from: { id: 123 },
   });
 
-  const firstPageKeyboard = sentMessages[0].options.reply_markup.inline_keyboard;
+  const firstPageKeyboard =
+    sentMessages[0].options.reply_markup.inline_keyboard;
   assert.equal(firstPageKeyboard.slice(0, -1).length, 10);
   assert.deepEqual(firstPageKeyboard.at(-1), [
     { text: '1/2', callback_data: 'clearbench:page:0' },
@@ -191,9 +202,10 @@ test('clearbench inline button removes selected bench member', async () => {
     });
 
     assert.equal(handled, true);
-    assert.deepEqual(Array.from(members.values()).map(member => member.name), [
-      'Nghia',
-    ]);
+    assert.deepEqual(
+      Array.from(members.values()).map(member => member.name),
+      ['Nghia']
+    );
     assert.deepEqual(answeredCallbacks, [
       {
         id: 'callback-1',

@@ -116,8 +116,7 @@ runtime/             Shared command wiring and repository adapters
 api/                 HTTP API, data-access routes, and domain services
 api/db/              Database connection and verification scripts
 config/              Shared environment and maintenance-mode config
-docs/                Deployment, Docker, migration, and integration notes
-2026/                Historical sprint notes
+docs/                Deployment, Docker, and integration notes
 docker-compose*.yml  Local and VPS Docker stacks
 ```
 
@@ -359,9 +358,9 @@ cp .env.example .env
 
 Both files use two main sections:
 
-| Section | Settings                                                                                                                                                        |
-| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `BOT`   | Telegram credentials and group topics; Zalo credentials and webhook; Messenger webhook credentials.                                                             |
+| Section | Settings                                                                                                                                                 |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `BOT`   | Telegram credentials and group topics; Zalo credentials and webhook; Messenger webhook credentials.                                                      |
 | `API`   | API connection and shared authentication; required database; image storage; allowed web origins; maintenance; optional AI; admin panel backend settings. |
 
 Use [.env.example](.env.example) for the current setting names and comments.
@@ -552,8 +551,7 @@ status, and settings routes available while maintenance mode is enabled.
 
 - `docs/LOCAL_DOCKER.md` - local Docker workflow
 - `docs/DEPLOY_VPS_DOCKER.md` - VPS Docker deployment
-- `docs/DEPLOY_RENDER.md` and `docs/RAILWAY_SETUP.md` - older platform notes
-- `docs/MIGRATION.md` - migration history
+- `docs/RAILWAY_SETUP.md` - older platform notes
 - `docs/DATABASE_SETUP.md` - fresh database setup and migration safety
 - `docs/ADAPTER_DEVELOPMENT.md` - platform adapter boundaries and workflow
 - `docs/MESSENGER_ADAPTER.md` - Messenger webhook MVP and Meta setup
@@ -565,10 +563,6 @@ status, and settings routes available while maintenance mode is enabled.
 
 See `SECURITY.md` to report a security issue. Never commit `.env`, tokens,
 database credentials, production storage, or database files.
-
-Historical sprint notes in `2026/` may describe older layouts. Treat the root
-scripts, `bot/index.js`, `api/index.js`, and current env examples as the active
-source of truth.
 
 ### Jev action logs
 

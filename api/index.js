@@ -1,10 +1,30 @@
 require('../config/load-env').loadEnv();
-const { shouldDelegate, startManagedSupervisor, sendReady } = require('../runtime/managed-bootstrap');
+const {
+  shouldDelegate,
+  startManagedSupervisor,
+  sendReady,
+} = require('../runtime/managed-bootstrap');
 if (shouldDelegate()) {
   startManagedSupervisor({ service: 'api', entrypoint: __filename });
   return;
 }
 const { createUiApiServer } = require('./routes/server');
+const {
+  isPublicInternalApiToken,
+  resolveInternalApiToken,
+} = require('../config/internal-auth');
+
+if (!resolveInternalApiToken()) {
+  console.error(
+    '❌ INTERNAL_API_AUTH_TOKEN is missing or still a public example value. Set a private random token before running in production.'
+  );
+  process.exit(1);
+}
+if (isPublicInternalApiToken()) {
+  console.warn(
+    '⚠️  Using a public development API token. Do not expose this API to a network; set INTERNAL_API_AUTH_TOKEN to a private value.'
+  );
+}
 
 function installProcessCrashLogging() {
   process.on('uncaughtException', err => {
@@ -42,7 +62,8 @@ const uiApi = createUiApiServer({
 uiApi
   .start()
   .then(async ({ port }) => {
-    if (process.env.MANAGEMENT_CHILD === 'true' && process.env.DATABASE_URL) await require('./db/config').db.query('SELECT 1');
+    if (process.env.MANAGEMENT_CHILD === 'true' && process.env.DATABASE_URL)
+      await require('./db/config').db.query('SELECT 1');
     console.log('✅ API Server successfully started');
     console.log(`🧭 API running at http://localhost:${port}`);
     sendReady('api', { port });

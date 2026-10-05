@@ -1,5 +1,6 @@
 const http = require('http');
 const https = require('https');
+const { resolveInternalApiToken } = require('../../config/internal-auth');
 
 const DEFAULT_API_PORT =
   process.env.API_PORT || process.env.UI_API_PORT || 8787;
@@ -27,15 +28,7 @@ function getApiBaseUrl(env = process.env) {
 }
 
 function getInternalApiAuthToken(env = process.env) {
-  if (env.INTERNAL_API_AUTH_TOKEN) {
-    return env.INTERNAL_API_AUTH_TOKEN;
-  }
-
-  if (env.NODE_ENV !== 'production') {
-    return 'local-internal-api-token-change-me';
-  }
-
-  return null;
+  return resolveInternalApiToken(env);
 }
 
 function getDefaultHeaders(env = process.env) {
@@ -66,7 +59,10 @@ function parseResponseBody(rawBody) {
   }
 }
 
-function requestJson(pathname, { method = 'GET', body, timeoutMs = 10000, env = process.env } = {}) {
+function requestJson(
+  pathname,
+  { method = 'GET', body, timeoutMs = 10000, env = process.env } = {}
+) {
   const baseUrl = getApiBaseUrl(env);
   const url = new URL(pathname, `${baseUrl}/`);
   const client = url.protocol === 'https:' ? https : http;

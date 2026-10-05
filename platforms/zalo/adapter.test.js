@@ -188,15 +188,26 @@ test('Zalo unsubscribe stays available when controls API is down', async () => {
   const adapter = createZaloAdapter({
     client,
     commandGate: {
-      check: async context => context.command === 'unsubscribe'
-        ? { available: true, commandsEnabled: true }
-        : { available: false, commandsEnabled: false },
+      check: async context =>
+        context.command === 'unsubscribe'
+          ? { available: true, commandsEnabled: true }
+          : { available: false, commandsEnabled: false },
     },
-    router: { run: async () => { routed += 1; return { handled: true, result: createTextResult('ok') }; } },
+    router: {
+      run: async () => {
+        routed += 1;
+        return { handled: true, result: createTextResult('ok') };
+      },
+    },
   });
   assert.equal(await adapter.handleUpdate(createUpdate('/unsubscribe')), true);
   assert.equal(routed, 1);
-  assert.equal(await adapter.handleUpdate(createUpdate('/bench', { messageId: 'message-2' })), true);
+  assert.equal(
+    await adapter.handleUpdate(
+      createUpdate('/bench', { messageId: 'message-2' })
+    ),
+    true
+  );
   assert.equal(routed, 1);
   assert.match(client.sentMessages.at(-1).text, /temporarily unavailable/i);
 });

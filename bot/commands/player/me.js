@@ -13,7 +13,9 @@ const meCommand = () => {
     try {
       const player = await getPlayerByUserId(userId);
       const baseMessage = ME.buildMessage({ name, userId, username, player });
-      const message = player ? baseMessage : `${baseMessage}${ME.notRegistered}`;
+      const message = player
+        ? baseMessage
+        : `${baseMessage}${ME.notRegistered}`;
 
       sendMessage({
         msg,

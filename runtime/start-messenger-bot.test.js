@@ -114,11 +114,11 @@ test('Messenger runtime exposes only shared vote and read commands', async () =>
 
   assert.equal(
     await runtime.adapter.handleUpdate(
-      createUpdate('/vote 2', 'player-2', 'Minh', 'message-4')
+      createUpdate('/vote 1', 'player-2', 'Minh', 'message-4')
     ),
     true
   );
-  assert.equal(state.activeVote.votes['messenger:player-2'].choice, '+2');
+  assert.equal(state.activeVote.votes['messenger:player-2'].choice, '1');
   assert.equal(
     state.activeVote.votes['messenger:player-2'].platform,
     'messenger'

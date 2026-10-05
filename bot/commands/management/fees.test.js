@@ -161,7 +161,7 @@ test('/winner and /loser use the renamed team-result commands', async () => {
   assert.equal(teamThua, 'AWAY');
   assert.match(mock.sentMessages.at(-1).message, /HOME \(thắng\)/);
   assert.match(mock.sentMessages.at(-1).message, /AWAY \(thua\)/);
-  assert.match(mock.sentMessages.at(-1).message, /226\.667 VND/);
+  assert.match(mock.sentMessages.at(-1).message, /227\.000 VND/);
 
   await invokeCommand(mock.handlers, '/loser HOME');
 

@@ -28,31 +28,25 @@ Releases use [Semantic Versioning](https://semver.org/): `MAJOR.MINOR.PATCH`.
 Do not push from this guide. A maintainer reviews and publishes the tag and
 release through the approved repository workflow.
 
-## Current first-release blocker
+## History cleanup (2026-10-05)
 
-The 2026-09-02 audit found credentials and private community data in old Git
-history. Removing them only from the latest files is not enough.
+An audit found credentials and private community data in old Git history.
+Removing them only from the latest files is not enough, so history was rewritten.
 
-Before the first public release:
+Done:
 
-1. Rotate or revoke the old Telegram, MongoDB, PostgreSQL, and related
-   credentials.
-2. Make a reviewed repository backup.
-3. Rewrite reachable history to remove old tracked env files,
-   `bot/storage.json`, historical database files, and sensitive older versions
-   of `docs/RAILWAY_SETUP.md`.
-4. Coordinate the required force-push with every repository user.
-5. Clone the rewritten repository into a new directory and scan it again.
+- A backup of all refs was made outside the repository.
+- Old tracked env files, bot state files, a historical database file, and a
+  player roster file were removed from all commits. Remaining secrets and
+  personal data were replaced with placeholders or fake values.
+- The rewritten history was force-pushed to all branches.
+- A fresh clone passed gitleaks and pattern scans.
+- GitHub Support was asked to remove cached views and pull request references
+  to the old commits.
 
-Do not publish or force-push until credential rotation and the history rewrite
-plan are both approved.
+Rules after a history rewrite:
 
-Local status on 2026-09-02:
-
-- A restricted backup was created outside the repository.
-- All local branches and local remote-tracking refs were rewritten to remove
-  the audited secret and private-data paths.
-- A fresh local clone and strong-pattern scans passed. Safe placeholder
-  database URLs remain in example documentation.
-- No remote was changed. Credential rotation and the coordinated remote
-  history replacement are still required.
+- Do not merge or push from a clone made before the rewrite. Re-clone instead.
+- Rotate any credential that was ever committed, even after it is removed from
+  history.
+- Before publishing a release, scan the full history again with gitleaks.

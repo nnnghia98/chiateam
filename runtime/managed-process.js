@@ -48,7 +48,7 @@ function createManagedProcessSupervisor({
     )
       return;
     await new Promise((resolve, reject) => {
-      let killTimer, exitTimer;
+      let exitTimer;
       const cleanup = () => {
         clearTimeout(killTimer);
         clearTimeout(exitTimer);
@@ -60,7 +60,7 @@ function createManagedProcessSupervisor({
         resolve();
       };
       target.once('exit', done);
-      killTimer = setTimeout(() => {
+      const killTimer = setTimeout(() => {
         try {
           target.kill('SIGKILL');
         } catch {
@@ -75,10 +75,14 @@ function createManagedProcessSupervisor({
       }, stopTimeoutMs);
       try {
         target.send?.({ type: 'stop' });
-      } catch {}
+      } catch {
+        /* the process may already be gone */
+      }
       try {
         target.kill('SIGTERM');
-      } catch {}
+      } catch {
+        /* the process may already be gone */
+      }
     });
   }
   async function start(version, resolved) {
@@ -190,7 +194,9 @@ function createManagedProcessSupervisor({
     permitted = false;
     try {
       child?.kill('SIGTERM');
-    } catch {}
+    } catch {
+      /* the process may already be gone */
+    }
     return enqueue(async () => {
       await stopChild(child);
       child = null;

@@ -13,7 +13,9 @@ const {
 const { ensureMatchMediaTables } = require('../services/match-media-service');
 const { ensureTwoNikeTable } = require('../routes/two-nikes');
 const { ensureWebhookEventsTable } = require('../routes/webhook-events');
-const { ensureZaloAnnouncementTables } = require('../routes/zalo-announcements');
+const {
+  ensureZaloAnnouncementTables,
+} = require('../routes/zalo-announcements');
 const { ensureZaloGreetingsTable } = require('../routes/zalo-greetings');
 const {
   ensureMatchPlayerUserIdColumn,

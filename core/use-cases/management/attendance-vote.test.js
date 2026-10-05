@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 
 const {
   ATTENDANCE_VOTE_OPTIONS,
+  LEGACY_ATTENDANCE_VOTE_OPTIONS,
   normalizeAttendanceVote,
   summarizeAttendanceVote,
 } = require('./attendance-vote');
@@ -11,11 +12,12 @@ test('attendance vote normalizes legacy and platform-neutral choices', () => {
   const normalized = normalizeAttendanceVote({
     id: 'poll-1',
     question: 'Sân A 20h',
-    options: ATTENDANCE_VOTE_OPTIONS,
+    options: LEGACY_ATTENDANCE_VOTE_OPTIONS,
     votes: {
       1: { id: 1, name: 'Alice', options: [2] },
       2: { id: 2, name: 'Bob', choice: '+4' },
       3: { id: 3, name: 'Carol', optionIndex: 1 },
+      4: { id: 4, name: 'Dan', choice: '0' },
     },
   });
 
@@ -26,9 +28,10 @@ test('attendance vote normalizes legacy and platform-neutral choices', () => {
       partySize: voter.partySize,
     })),
     [
-      { name: 'Alice', choice: '+2', partySize: 2 },
-      { name: 'Bob', choice: '+4', partySize: 4 },
-      { name: 'Carol', choice: '+1', partySize: 1 },
+      { name: 'Alice', choice: '1', partySize: 2 },
+      { name: 'Bob', choice: '1', partySize: 4 },
+      { name: 'Carol', choice: '1', partySize: 1 },
+      { name: 'Dan', choice: '0', partySize: 0 },
     ]
   );
 });
@@ -44,7 +47,7 @@ test('attendance vote keeps each voter platform for mixed adapters', () => {
         id: 'user-2',
         platform: 'zalo',
         name: 'Minh',
-        choice: '+2',
+        choice: '1',
       },
     },
   });
@@ -71,7 +74,7 @@ test('attendance vote ignores retracted and malformed voter choices', () => {
 test('attendance vote summary counts voters and total people', () => {
   const summary = summarizeAttendanceVote({
     question: 'Sân A 20h',
-    options: ATTENDANCE_VOTE_OPTIONS,
+    options: LEGACY_ATTENDANCE_VOTE_OPTIONS,
     votes: {
       1: { id: 1, name: 'Alice', options: [4] },
       2: { id: 2, name: 'Bob', choice: '+4' },
@@ -80,9 +83,10 @@ test('attendance vote summary counts voters and total people', () => {
   });
 
   assert.equal(summary.totalPeople, 8);
-  assert.deepEqual(summary.choices[4], {
-    label: '+4',
-    choiceIndex: 4,
+  assert.deepEqual(summary.choices[1], {
+    label: '⚽️ Đá',
+    value: '1',
+    choiceIndex: 1,
     count: 2,
     voterNames: ['Alice', 'Bob'],
   });

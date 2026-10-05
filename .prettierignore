@@ -2,6 +2,10 @@
 node_modules/
 yarn.lock
 
+# Data files
+worldcup.json
+*.postman_collection.json
+
 # Build outputs
 dist/
 build/

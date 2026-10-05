@@ -27,10 +27,10 @@ test('2-team fee split adds water only to losing players', () => {
   });
 
   assert.equal(breakdown.totalMembers, 3);
-  assert.equal(breakdown.perMember, 166667);
+  assert.equal(breakdown.perMember, 167000);
   assert.equal(breakdown.waterPerLoser, 30000);
-  assert.equal(breakdown.winnerTotal, 166667);
-  assert.equal(breakdown.loserTotal, 196667);
+  assert.equal(breakdown.winnerTotal, 167000);
+  assert.equal(breakdown.loserTotal, 197000);
 });
 
 test('2-team fee message lists winner and loser rosters', () => {
@@ -47,5 +47,5 @@ test('2-team fee message lists winner and loser rosters', () => {
   assert.match(message, /HOME \(thua\)/);
   assert.match(message, /Alice/);
   assert.match(message, /Carol/);
-  assert.match(message, /196\.667 VND/);
+  assert.match(message, /197\.000 VND/);
 });

@@ -68,13 +68,19 @@ function createCommandRouter({
         return Object.freeze({
           handled: true,
           command: definition.name,
-          result: createCommandResult({ messages: [{ text: 'Lệnh này đang tạm dừng. / This command is paused.' }] }),
+          result: createCommandResult({
+            messages: [
+              { text: 'Lệnh này đang tạm dừng. / This command is paused.' },
+            ],
+          }),
         });
       }
       const intrinsicPermission = await definition.resolvePermission(context);
       // Managed rules can tighten access, never weaken a command's own rule.
-      const requiredPermission = intrinsicPermission === 'admin' || rule.permission === 'admin'
-        ? 'admin' : intrinsicPermission;
+      const requiredPermission =
+        intrinsicPermission === 'admin' || rule.permission === 'admin'
+          ? 'admin'
+          : intrinsicPermission;
       const hasPermission = await activePermissionPolicy.isAllowed(
         context,
         requiredPermission

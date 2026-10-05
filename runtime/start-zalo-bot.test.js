@@ -13,7 +13,9 @@ const {
   ZALO_COMMAND_NAMES,
   createZaloCommandDefinitions,
 } = require('./create-zalo-command-definitions');
-const { startZaloBotRuntime: startZaloBotRuntimeRuntime } = require('./start-zalo-bot');
+const {
+  startZaloBotRuntime: startZaloBotRuntimeRuntime,
+} = require('./start-zalo-bot');
 const { createPermissiveBotControlsGate } = require('./bot-controls');
 
 function startZaloBotRuntime(options) {
@@ -142,15 +144,15 @@ test('Zalo runtime exposes only announcement and player actions', async () => {
     true
   );
   assert.match(client.sentMessages.at(-1).text, /VOTE ĐANG MỞ/);
-  assert.ok(client.sentMessages.at(-1).text.includes('/vote \\+2'));
+  assert.ok(client.sentMessages.at(-1).text.includes('/vote 1'));
 
   assert.equal(
     await runtime.adapter.handleUpdate(
-      createUpdate('/vote 2', 'player-2', 'Minh', 'message-5')
+      createUpdate('/vote 1', 'player-2', 'Minh', 'message-5')
     ),
     true
   );
-  assert.equal(state.activeVote.votes['zalo:player-2'].choice, '+2');
+  assert.equal(state.activeVote.votes['zalo:player-2'].choice, '1');
   assert.equal(state.activeVote.votes['zalo:player-2'].platform, 'zalo');
   assert.equal(state.activeVote.totalVoters, 2);
   assert.equal(saves.length, 1);

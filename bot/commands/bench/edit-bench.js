@@ -69,10 +69,10 @@ const editBenchCommand = ({ members }) => {
       entries: allEntries,
       page,
       pageCallbackPrefix: EDIT_BENCH_PAGE_PREFIX,
-      itemToButton: (([, entry], index) => ({
+      itemToButton: ([, entry], index) => ({
         text: `${index + 1}. ${getDisplayName(entry)}`,
         callback_data: `${EDIT_BENCH_SELECT_PREFIX}${index}`,
-      })),
+      }),
     });
   };
 
@@ -186,13 +186,16 @@ const editBenchCommand = ({ members }) => {
       return true;
     }
 
-    pendingEditBench.set(getPendingKey({
-      chat: query.message.chat,
-      from: query.from,
-    }), {
-      selectedNumber: index + 1,
-      name: getDisplayName(selectedEntry[1]),
-    });
+    pendingEditBench.set(
+      getPendingKey({
+        chat: query.message.chat,
+        from: query.from,
+      }),
+      {
+        selectedNumber: index + 1,
+        name: getDisplayName(selectedEntry[1]),
+      }
+    );
 
     await bot.answerCallbackQuery(query.id, { text: '', show_alert: false });
     sendMessage({

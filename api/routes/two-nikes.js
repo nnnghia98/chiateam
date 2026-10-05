@@ -64,9 +64,7 @@ async function ensureTwoNikeTable() {
       ON video_2nikes (video_id, timestamp_seconds, id)
     `);
 
-    await db.query(
-      'ALTER TABLE video_2nikes ENABLE ROW LEVEL SECURITY'
-    );
+    await db.query('ALTER TABLE video_2nikes ENABLE ROW LEVEL SECURITY');
 
     await db.query(`
       DO $$
@@ -105,12 +103,7 @@ async function listTwoNikesByVideoId(videoId) {
   return rows.map(mapTwoNike);
 }
 
-async function insertTwoNike({
-  videoId,
-  title,
-  timestampSeconds,
-  createdBy,
-}) {
+async function insertTwoNike({ videoId, title, timestampSeconds, createdBy }) {
   await ensureTwoNikeTable();
   const { rows } = await db.query(
     `INSERT INTO video_2nikes

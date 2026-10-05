@@ -10,7 +10,10 @@ const benchCommand = ({ members, refreshFromSource }) => {
       try {
         await refreshFromSource();
       } catch (error) {
-        console.error('❌ [bench] Failed to refresh bot storage from API:', error);
+        console.error(
+          '❌ [bench] Failed to refresh bot storage from API:',
+          error
+        );
         await sendMessage({
           msg,
           type: 'DEFAULT',

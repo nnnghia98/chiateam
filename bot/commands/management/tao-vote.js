@@ -77,9 +77,9 @@ const voteCommand = ({
         },
       };
 
-      nextActiveVote.totalVoters = Object.values(
-        nextActiveVote.votes
-      ).filter(isComingVote).length;
+      nextActiveVote.totalVoters = Object.values(nextActiveVote.votes).filter(
+        isComingVote
+      ).length;
 
       await persistActiveVote(nextActiveVote);
 

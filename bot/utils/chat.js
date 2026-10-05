@@ -27,8 +27,7 @@ logEvent('telegram.config', 'threads loaded', {
 
 const sendMessage = async ({ msg, type, message, options = {} }) => {
   const { useSourceChat = false, ...providedOptions } = options;
-  const sourceChat =
-    useSourceChat || msg?.chat?.type === 'private' || !CHAT_ID;
+  const sourceChat = useSourceChat || msg?.chat?.type === 'private' || !CHAT_ID;
   const baseOptions = { ...providedOptions };
   if (sourceChat) {
     delete baseOptions.message_thread_id;

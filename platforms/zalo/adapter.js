@@ -343,9 +343,10 @@ function createZaloAdapter({
   }
 
   async function reportControl(context, control) {
-    const text = control?.available === false
-      ? '⚠️ Bot commands are temporarily unavailable. Please try again later.'
-      : '⏸️ Bot commands are currently paused.';
+    const text =
+      control?.available === false
+        ? '⚠️ Bot commands are temporarily unavailable. Please try again later.'
+        : '⏸️ Bot commands are currently paused.';
     try {
       await client.sendMessage(context.conversation.externalId, text);
     } catch (error) {

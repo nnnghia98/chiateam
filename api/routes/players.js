@@ -22,7 +22,9 @@ const { db } = require('../db/config');
  * @returns {Promise<number>}
  */
 async function getNextPlaceholderUserId() {
-  const { rows } = await db.query('SELECT MIN(user_id) AS min_id FROM players WHERE user_id < 0');
+  const { rows } = await db.query(
+    'SELECT MIN(user_id) AS min_id FROM players WHERE user_id < 0'
+  );
   const next = rows[0]?.min_id != null ? rows[0].min_id - 1 : -1;
   return next;
 }
@@ -81,7 +83,9 @@ async function updatePlayerByNumber(number, updates) {
  * Delete player by shirt number.
  */
 async function deletePlayerByNumber(number) {
-  const result = await db.query('DELETE FROM players WHERE number = $1', [number]);
+  const result = await db.query('DELETE FROM players WHERE number = $1', [
+    number,
+  ]);
   return result.rowCount > 0;
 }
 
@@ -114,7 +118,9 @@ async function createPlayer({
  * Get player by Telegram user_id.
  */
 async function getPlayerByUserId(userId) {
-  const { rows } = await db.query('SELECT * FROM players WHERE user_id = $1', [userId]);
+  const { rows } = await db.query('SELECT * FROM players WHERE user_id = $1', [
+    userId,
+  ]);
   return rows[0] || null;
 }
 
@@ -122,7 +128,9 @@ async function getPlayerByUserId(userId) {
  * Get player by shirt number.
  */
 async function getPlayerByNumber(number) {
-  const { rows } = await db.query('SELECT * FROM players WHERE number = $1', [number]);
+  const { rows } = await db.query('SELECT * FROM players WHERE number = $1', [
+    number,
+  ]);
   return rows[0] || null;
 }
 
@@ -165,7 +173,9 @@ async function updatePlayer(userId, updates) {
  * Delete player by Telegram ID.
  */
 async function deletePlayer(userId) {
-  const result = await db.query('DELETE FROM players WHERE user_id = $1', [userId]);
+  const result = await db.query('DELETE FROM players WHERE user_id = $1', [
+    userId,
+  ]);
   return result.rowCount > 0;
 }
 
@@ -173,7 +183,10 @@ async function deletePlayer(userId) {
  * Get all players that share the same shirt number.
  */
 async function getPlayersByNumber(number) {
-  const { rows } = await db.query('SELECT * FROM players WHERE number = $1 ORDER BY name', [number]);
+  const { rows } = await db.query(
+    'SELECT * FROM players WHERE number = $1 ORDER BY name',
+    [number]
+  );
   return rows;
 }
 
@@ -182,7 +195,8 @@ async function getPlayersByNumber(number) {
  */
 async function searchPlayers(searchTerm) {
   const pattern = `%${searchTerm}%`;
-  const { rows } = await db.query('SELECT * FROM players WHERE name ILIKE $1 OR username ILIKE $2 ORDER BY name',
+  const { rows } = await db.query(
+    'SELECT * FROM players WHERE name ILIKE $1 OR username ILIKE $2 ORDER BY name',
     [pattern, pattern]
   );
   return rows;

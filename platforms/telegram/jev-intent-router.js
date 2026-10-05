@@ -118,14 +118,28 @@ function createJevIntentRouter({
       const answer = (await response.json())?.answers?.action;
       if (env.TELEGRAM_JEV_SANDBOX === 'true') {
         const action = ACTIONS[answer?.choice];
-        const labels = { vote_yes: 'Confirm attendance', vote_no: 'Decline attendance', show_vote: 'Show current vote', vote_results: 'Show attendance results', bench: 'Show player list', teams: 'Show teams', clarify: 'Unclear request', no_match: 'No matching action' };
+        const labels = {
+          vote_yes: 'Confirm attendance',
+          vote_no: 'Decline attendance',
+          show_vote: 'Show current vote',
+          vote_results: 'Show attendance results',
+          bench: 'Show player list',
+          teams: 'Show teams',
+          clarify: 'Unclear request',
+          no_match: 'No matching action',
+        };
         const probability = answer?.probabilities?.[answer.choice];
-        console.log('[jev.sandbox] response', [
-          `Message: ${JSON.stringify(text)}`,
-          `Chosen action: ${labels[answer?.choice] || 'Unknown action'}`,
-          `Command: ${action ? '/' + [action.command, ...action.args].join(' ') : 'None'}`,
-          ...(Number.isFinite(probability) ? [`Chance this action fits: ${Math.round(probability * 100)}%`] : []),
-        ].join('\n'));
+        console.log(
+          '[jev.sandbox] response',
+          [
+            `Message: ${JSON.stringify(text)}`,
+            `Chosen action: ${labels[answer?.choice] || 'Unknown action'}`,
+            `Command: ${action ? `/${[action.command, ...action.args].join(' ')}` : 'None'}`,
+            ...(Number.isFinite(probability)
+              ? [`Chance this action fits: ${Math.round(probability * 100)}%`]
+              : []),
+          ].join('\n')
+        );
       }
       if (stopped || controller.signal.aborted || now() - startedAt > 8000)
         return { ignored: true };

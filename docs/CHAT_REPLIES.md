@@ -5,14 +5,14 @@ Official Account API.
 
 ## Platform support
 
-| Feature | Telegram | Zalo Bot API |
-| --- | --- | --- |
-| Normal emoji | Send as text, for example `⚽`, `✅`, `📊` | Send as text with the same icons |
-| Formatted text | MarkdownV2 or HTML | `markdown` or `html`; also supports `text_styles` |
-| Current project format | MarkdownV2 for shared rich-text messages | Markdown for shared rich-text messages |
-| Text size limit | 4096 characters after formatting is parsed | 2000 characters |
-| Reply destination | Incoming `message.chat.id` | Incoming `message.chat.id` |
-| Topics | Optional `message_thread_id`; use the incoming topic for a private reply | No topic field in `sendMessage` |
+| Feature                | Telegram                                                                 | Zalo Bot API                                      |
+| ---------------------- | ------------------------------------------------------------------------ | ------------------------------------------------- |
+| Normal emoji           | Send as text, for example `⚽`, `✅`, `📊`                               | Send as text with the same icons                  |
+| Formatted text         | MarkdownV2 or HTML                                                       | `markdown` or `html`; also supports `text_styles` |
+| Current project format | MarkdownV2 for shared rich-text messages                                 | Markdown for shared rich-text messages            |
+| Text size limit        | 4096 characters after formatting is parsed                               | 2000 characters                                   |
+| Reply destination      | Incoming `message.chat.id`                                               | Incoming `message.chat.id`                        |
+| Topics                 | Optional `message_thread_id`; use the incoming topic for a private reply | No topic field in `sendMessage`                   |
 
 Telegram custom emoji require special IDs and eligibility, such as a Premium
 bot owner. Standard emoji are simpler for shared templates. Telegram can also

@@ -110,7 +110,8 @@ test('multiline Telegram broadcasts keep their text through preview, confirmatio
       id: 'confirm-button',
       from: event.from,
       message: event,
-      data: previews[0].options.reply_markup.inline_keyboard[0][0].callback_data,
+      data: previews[0].options.reply_markup.inline_keyboard[0][0]
+        .callback_data,
     });
     assert.deepEqual(sent, [{ chat_id: 'zalo-recipient', text: message }]);
   }

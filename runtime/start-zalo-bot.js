@@ -39,15 +39,24 @@ function startZaloBotRuntime({
     registry: activeRegistry,
     stateRepository,
     permissionPolicy,
-    commandRules: require('../core/commands/managed-command-rules').createManagedCommandRules(env),
+    commandRules:
+      require('../core/commands/managed-command-rules').createManagedCommandRules(
+        env
+      ),
   });
   const adapter = createZaloAdapter({
     client,
     router,
     onPrivateMessage: subscriptionRepository?.refreshSubscriber,
     greetingRepository,
-    greetingEnabled: env.ZALO_GREETING_ENABLED !== 'false' && env.ZALO_GREETING_ENABLED !== false,
-    greetingResult: actor => require('../core/use-cases/common/zalo-greeting').createZaloGreetingResult(actor, env),
+    greetingEnabled:
+      env.ZALO_GREETING_ENABLED !== 'false' &&
+      env.ZALO_GREETING_ENABLED !== false,
+    greetingResult: actor =>
+      require('../core/use-cases/common/zalo-greeting').createZaloGreetingResult(
+        actor,
+        env
+      ),
     onError,
     commandGate:
       commandGate ||

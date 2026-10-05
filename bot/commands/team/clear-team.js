@@ -48,10 +48,10 @@ const clearTeamCommand = ({ teamA, teamB, team3A, team3B, team3C }) => {
       entries: teamEntries,
       page,
       pageCallbackPrefix: `${CLEAR_TEAM_PAGE_PREFIX}${mode}:${teamType}:`,
-      itemToButton: (([, entry], index) => ({
+      itemToButton: ([, entry], index) => ({
         text: `${index + 1}. ${getDisplayName(entry)}`,
         callback_data: `${CLEAR_TEAM_REMOVE_PREFIX}${mode}:${teamType}:${index}`,
-      })),
+      }),
     });
   };
 

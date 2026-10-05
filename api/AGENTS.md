@@ -48,12 +48,10 @@ Default port resolution order: `API_PORT` → `UI_API_PORT` → `PORT` → `8787
 - [routes/matches.js](./routes/matches.js)
   Repository for `matches`, `match_players`, and `match_player_stats`. Handles match creation, lineup management, score updates, goal/assist deltas, and MVP assignment.
 
-
 ### Services (domain logic layer)
 
 - [services/player-service.js](./services/player-service.js)
   Domain logic for player registration: validates input, prevents duplicates, handles admin-created placeholder slots (negative `user_id`), and returns typed result objects (`{ ok, code, data }`).
-
 
 - [services/ai-service.js](./services/ai-service.js)
   Gemini AI integration. Provides two functions:
@@ -65,16 +63,16 @@ Default port resolution order: `API_PORT` → `UI_API_PORT` → `PORT` → `8787
 
 ## Database Schema (quick reference)
 
-| Table                | Key columns                                                                                                                |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `players`            | `id`, `user_id` (Telegram ID, negative = placeholder), `number` (shirt), `name`, `username`, `avatar`                      |
-| `host`               | `id`, optional `player_id`, `display_name`, `is_active`                                                                  |
-| `host_bank_accounts` | `host_id`, `bank_bin`, `account_number`, `account_name`, `is_active`, `is_default`                                          |
-| `fee_batches`        | `bill_date`, `account_id`, `account_snapshot`, `source_hash`, `created_by`                                                 |
-| `fee_requests`       | `batch_id`, `telegram_user_id`, `amount`, `transfer_note`, `delivery_status`                                               |
-| `matches`            | `id`, `match_date` (unique, YYYY-MM-DD), `san`, `tiensan`, `home_score`, `away_score`, `winner_side`, `notes`              |
-| `match_players`      | `match_id`, `player_id` (nullable for guests), `side` (`HOME`/`AWAY`/`EXTRA`), `display_name`                              |
-| `match_player_stats` | `match_id`, `player_id`, `goals`, `assists`, `is_mvp`, `result`                                                            |
+| Table                | Key columns                                                                                                   |
+| -------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `players`            | `id`, `user_id` (Telegram ID, negative = placeholder), `number` (shirt), `name`, `username`, `avatar`         |
+| `host`               | `id`, optional `player_id`, `display_name`, `is_active`                                                       |
+| `host_bank_accounts` | `host_id`, `bank_bin`, `account_number`, `account_name`, `is_active`, `is_default`                            |
+| `fee_batches`        | `bill_date`, `account_id`, `account_snapshot`, `source_hash`, `created_by`                                    |
+| `fee_requests`       | `batch_id`, `telegram_user_id`, `amount`, `transfer_note`, `delivery_status`                                  |
+| `matches`            | `id`, `match_date` (unique, YYYY-MM-DD), `san`, `tiensan`, `home_score`, `away_score`, `winner_side`, `notes` |
+| `match_players`      | `match_id`, `player_id` (nullable for guests), `side` (`HOME`/`AWAY`/`EXTRA`), `display_name`                 |
+| `match_player_stats` | `match_id`, `player_id`, `goals`, `assists`, `is_mvp`, `result`                                               |
 
 ---
 
@@ -82,14 +80,14 @@ Default port resolution order: `API_PORT` → `UI_API_PORT` → `PORT` → `8787
 
 ### No auth required
 
-| Method | Path                    | Description                                                  |
-| ------ | ----------------------- | ------------------------------------------------------------ |
-| `GET`  | `/healthz`              | Health check — returns `200 ok`                              |
-| `GET`  | `/api/status`           | Server status and public settings snapshot                   |
-| `GET`  | `/api/players`          | List all players ordered by name                             |
-| `GET`  | `/api/players/:number`  | Get single player by shirt number                            |
-| `GET`  | `/api/matches`          | List matches (`?limit=20&offset=0`) with full player rosters |
-| `GET`  | `/api/matches/:date`    | Single match with players (date = `YYYY-MM-DD`)              |
+| Method | Path                   | Description                                                  |
+| ------ | ---------------------- | ------------------------------------------------------------ |
+| `GET`  | `/healthz`             | Health check — returns `200 ok`                              |
+| `GET`  | `/api/status`          | Server status and public settings snapshot                   |
+| `GET`  | `/api/players`         | List all players ordered by name                             |
+| `GET`  | `/api/players/:number` | Get single player by shirt number                            |
+| `GET`  | `/api/matches`         | List matches (`?limit=20&offset=0`) with full player rosters |
+| `GET`  | `/api/matches/:date`   | Single match with players (date = `YYYY-MM-DD`)              |
 
 ### Requires authentication (viewer or admin)
 
@@ -103,23 +101,23 @@ Header: `x-internal-api-auth: <INTERNAL_API_AUTH_TOKEN>` and `x-admin-role: view
 
 Header: `x-admin-role: admin` in addition to auth header above.
 
-| Method   | Path                             | Description                                                                    |
-| -------- | -------------------------------- | ------------------------------------------------------------------------------ |
-| `POST`   | `/api/settings`                  | Update `maintenanceMode`, `debugLogging`, `botCommandPrefix`, `allowedChatIds` |
-| `POST`   | `/api/players`                   | Create admin-managed player (no Telegram ID)                                   |
-| `PUT`    | `/api/players/:number`           | Update player `name`, `username`, or `avatar` by shirt number                  |
-| `POST`   | `/api/players/:number/avatar`    | Upload a player avatar image to Supabase Storage and update `players.avatar`   |
-| `DELETE` | `/api/players/:number`           | Delete a player by shirt number                                                 |
-| `POST`   | `/api/hosts`                     | Create a payment host                                                           |
-| `POST`   | `/api/hosts/:id/accounts`        | Add a host bank account                                                         |
-| `GET`    | `/api/fee-accounts`              | List active host accounts                                                       |
-| `POST`   | `/api/fee-batches`               | Create or reuse today's fee batch                                               |
-| `GET`    | `/api/fee-batches/today`         | Review today's codes and delivery state                                         |
-| `POST`   | `/api/fee-requests/:id/claim`    | Claim a fee request for private delivery                                        |
-| `POST`   | `/api/fee-requests/:id/finish`   | Save a private delivery result                                                  |
-| `POST`   | `/api/matches`                   | Create a new match                                                             |
-| `PUT`    | `/api/matches/:date`             | Update match fields (`san`, `tiensan`, scores, `notes`)                        |
-| `DELETE` | `/api/matches/:date`             | Delete match (cascades to players and stats)                                   |
+| Method   | Path                           | Description                                                                    |
+| -------- | ------------------------------ | ------------------------------------------------------------------------------ |
+| `POST`   | `/api/settings`                | Update `maintenanceMode`, `debugLogging`, `botCommandPrefix`, `allowedChatIds` |
+| `POST`   | `/api/players`                 | Create admin-managed player (no Telegram ID)                                   |
+| `PUT`    | `/api/players/:number`         | Update player `name`, `username`, or `avatar` by shirt number                  |
+| `POST`   | `/api/players/:number/avatar`  | Upload a player avatar image to Supabase Storage and update `players.avatar`   |
+| `DELETE` | `/api/players/:number`         | Delete a player by shirt number                                                |
+| `POST`   | `/api/hosts`                   | Create a payment host                                                          |
+| `POST`   | `/api/hosts/:id/accounts`      | Add a host bank account                                                        |
+| `GET`    | `/api/fee-accounts`            | List active host accounts                                                      |
+| `POST`   | `/api/fee-batches`             | Create or reuse today's fee batch                                              |
+| `GET`    | `/api/fee-batches/today`       | Review today's codes and delivery state                                        |
+| `POST`   | `/api/fee-requests/:id/claim`  | Claim a fee request for private delivery                                       |
+| `POST`   | `/api/fee-requests/:id/finish` | Save a private delivery result                                                 |
+| `POST`   | `/api/matches`                 | Create a new match                                                             |
+| `PUT`    | `/api/matches/:date`           | Update match fields (`san`, `tiensan`, scores, `notes`)                        |
+| `DELETE` | `/api/matches/:date`           | Delete match (cascades to players and stats)                                   |
 
 ---
 
@@ -128,7 +126,7 @@ Header: `x-admin-role: admin` in addition to auth header above.
 Auth is internal (server-to-server) only:
 
 1. The caller sends `x-internal-api-auth` with the value of `INTERNAL_API_AUTH_TOKEN`.
-2. In development, the token defaults to `local-internal-api-token-change-me` when the env var is absent.
+2. Outside production, the token defaults to `local-internal-api-token-change-me` when the env var is absent, and the API logs a warning. In production a missing token or a public example value (including `change-this-shared-internal-token`) stops the API from starting. The logic lives in `config/internal-auth.js`.
 3. The role (`admin` / `viewer`) is set via `x-admin-role`.
 4. CORS is checked against an allowlist: `localhost:3000`, `localhost:8389`, plus `WEB_UI_URL` and `ADMIN_UI_URL` from env.
 

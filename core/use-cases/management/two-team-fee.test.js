@@ -13,10 +13,10 @@ test('shared fee rule adds water only to losing players', () => {
   });
 
   assert.equal(result.totalMembers, 3);
-  assert.equal(result.perMember, 166667);
+  assert.equal(result.perMember, 167000);
   assert.equal(result.waterPerLoser, 30000);
-  assert.equal(result.winnerTotal, 166667);
-  assert.equal(result.loserTotal, 196667);
+  assert.equal(result.winnerTotal, 167000);
+  assert.equal(result.loserTotal, 197000);
   assert.deepEqual(result.winnerMembers, ['Carol']);
   assert.deepEqual(result.loserMembers, ['Alice', 'Bob']);
 });

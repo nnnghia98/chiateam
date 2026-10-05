@@ -32,7 +32,9 @@ test('sendMessage retries without thread_id using a mutable copy of options', as
 
       // Mimic node-telegram-bot-api mutating the options object internally.
       if (!Object.isExtensible(options)) {
-        throw new TypeError('Cannot add property chat_id, object is not extensible');
+        throw new TypeError(
+          'Cannot add property chat_id, object is not extensible'
+        );
       }
 
       options.chat_id = chatId;

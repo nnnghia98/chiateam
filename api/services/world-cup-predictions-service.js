@@ -139,9 +139,14 @@ function parseScore(score) {
 }
 
 function parseResultInput(resultInput) {
-  if (!resultInput || typeof resultInput !== 'object' || Array.isArray(resultInput)) {
+  if (
+    !resultInput ||
+    typeof resultInput !== 'object' ||
+    Array.isArray(resultInput)
+  ) {
     const parsedScore = parseScore(resultInput);
-    const outcome = normalizeOutcome(resultInput) ?? parsedScore?.outcome ?? null;
+    const outcome =
+      normalizeOutcome(resultInput) ?? parsedScore?.outcome ?? null;
     return {
       outcome,
       homeScore: parsedScore?.homeScore ?? null,
@@ -154,7 +159,8 @@ function parseResultInput(resultInput) {
   const payloadAwayScore = normalizeScoreValue(resultInput.awayScore);
   if (
     parsedScore &&
-    ((payloadHomeScore !== null && payloadHomeScore !== parsedScore.homeScore) ||
+    ((payloadHomeScore !== null &&
+      payloadHomeScore !== parsedScore.homeScore) ||
       (payloadAwayScore !== null && payloadAwayScore !== parsedScore.awayScore))
   ) {
     return { outcome: null, homeScore: null, awayScore: null };
@@ -164,7 +170,7 @@ function parseResultInput(resultInput) {
   const awayScore = payloadAwayScore ?? parsedScore?.awayScore ?? null;
   const scoreOutcome =
     homeScore === null || awayScore === null
-      ? parsedScore?.outcome ?? null
+      ? (parsedScore?.outcome ?? null)
       : outcomeFromScores(homeScore, awayScore);
   const payloadOutcome = normalizeOutcome(resultInput.result);
   if (
@@ -389,7 +395,9 @@ async function deleteMatch(matchId) {
     'DELETE FROM world_cup_prediction_matches WHERE id = $1',
     [normalizeMatchId(matchId)]
   );
-  return result.rowCount ? { ok: true } : { ok: false, code: 'MATCH_NOT_FOUND' };
+  return result.rowCount
+    ? { ok: true }
+    : { ok: false, code: 'MATCH_NOT_FOUND' };
 }
 
 async function setMatchStatus(matchId, status) {
@@ -429,13 +437,7 @@ async function setMatchResult(matchId, resultInput) {
       WHERE id = $5
       RETURNING *
     `,
-    [
-      outcome,
-      homeScore,
-      awayScore,
-      STATUS_SETTLED,
-      normalizeMatchId(matchId),
-    ]
+    [outcome, homeScore, awayScore, STATUS_SETTLED, normalizeMatchId(matchId)]
   );
   if (!rows[0]) return { ok: false, code: 'MATCH_NOT_FOUND' };
   return { ok: true, match: mapMatch(rows[0]) };
@@ -458,7 +460,8 @@ async function upsertMemberKey(payload) {
   const username = payload.username ? String(payload.username) : null;
   const manualKey = payload.key == null ? null : String(payload.key).trim();
 
-  if (!isValidMemberId(memberId)) return { ok: false, code: 'INVALID_MEMBER_ID' };
+  if (!isValidMemberId(memberId))
+    return { ok: false, code: 'INVALID_MEMBER_ID' };
   if (!name) return { ok: false, code: 'INVALID_NAME' };
   if (manualKey !== null && !/^\d{6}$/.test(manualKey)) {
     return { ok: false, code: 'INVALID_MEMBER_KEY' };
@@ -466,7 +469,8 @@ async function upsertMemberKey(payload) {
 
   const existingKeys = await getExistingKeys(memberId);
   const accessKey = manualKey || generateSixDigitKey(existingKeys);
-  if (existingKeys.has(accessKey)) return { ok: false, code: 'MEMBER_KEY_EXISTS' };
+  if (existingKeys.has(accessKey))
+    return { ok: false, code: 'MEMBER_KEY_EXISTS' };
 
   const { rows } = await db.query(
     `
@@ -490,7 +494,8 @@ async function regenerateMemberKey(memberIdInput) {
   await ensureWorldCupPredictionTables();
   const memberId = normalizeMemberId(memberIdInput);
   const existing = await getMemberById(memberId);
-  if (!existing || existing.revoked_at) return { ok: false, code: 'MEMBER_NOT_FOUND' };
+  if (!existing || existing.revoked_at)
+    return { ok: false, code: 'MEMBER_NOT_FOUND' };
 
   const accessKey = generateSixDigitKey(await getExistingKeys(memberId));
   const { rows } = await db.query(
@@ -586,7 +591,12 @@ async function getOverallBoard() {
 
   members.forEach(member => {
     matches.forEach(match => {
-      if (!Object.prototype.hasOwnProperty.call(predictions[member.memberId], match.id)) {
+      if (
+        !Object.prototype.hasOwnProperty.call(
+          predictions[member.memberId],
+          match.id
+        )
+      ) {
         predictions[member.memberId][match.id] = null;
       }
     });
@@ -698,7 +708,9 @@ async function getMemberPredictionBoard(rawKey) {
     [member.memberId]
   );
 
-  const predictions = Object.fromEntries(matches.map(match => [match.id, null]));
+  const predictions = Object.fromEntries(
+    matches.map(match => [match.id, null])
+  );
   rows.forEach(row => {
     predictions[row.match_id] = mapPrediction(row);
   });

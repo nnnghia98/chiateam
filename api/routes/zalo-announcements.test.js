@@ -37,10 +37,10 @@ test('broadcast repository parameterizes identities and claims drafts atomically
   const repository = createZaloAnnouncementRepository({ database });
   const p = {
     id: '11111111-1111-4111-8111-111111111111',
-    actorId: 'admin\'',
+    actorId: "admin'",
     sourceChatId: 'chat',
     sourceThreadId: 'topic',
-    message: 'hello\'; DROP TABLE storage; --',
+    message: "hello'; DROP TABLE storage; --",
   };
   await repository.prepare(p);
   assert.equal(await repository.claim(p), null);

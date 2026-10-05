@@ -13,7 +13,9 @@ function formatValue(value) {
 }
 
 function formatFields(fields) {
-  const entries = Object.entries(fields).filter(([, value]) => value !== undefined);
+  const entries = Object.entries(fields).filter(
+    ([, value]) => value !== undefined
+  );
 
   if (entries.length === 0) return '';
 

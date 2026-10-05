@@ -5,7 +5,9 @@ const {
   createZaloWebhookApplication,
   createManagedWebhookApplication,
 } = require('../runtime/create-zalo-webhook-application');
-const { createManagedRuntimeClient } = require('../runtime/managed-runtime-client');
+const {
+  createManagedRuntimeClient,
+} = require('../runtime/managed-runtime-client');
 
 require('../config/load-env').loadEnv();
 const runtimeClient = createManagedRuntimeClient({ service: 'zalo-webhook' });
@@ -17,8 +19,12 @@ const managed = createManagedWebhookApplication({
 
 let legacy;
 function getApplication() {
-  if (process.env.MANAGEMENT_BOOTSTRAP === 'true' || process.env.MANAGEMENT_BOOTSTRAP === '1') return managed;
-  return legacy ||= createZaloWebhookApplication();
+  if (
+    process.env.MANAGEMENT_BOOTSTRAP === 'true' ||
+    process.env.MANAGEMENT_BOOTSTRAP === '1'
+  )
+    return managed;
+  return (legacy ||= createZaloWebhookApplication());
 }
 
 function jsonResponse(body, status = 200, headers = {}) {
@@ -37,8 +43,7 @@ export function GET() {
 
 export function createPostHandler({
   resolveApplication = getApplication,
-  logError = error =>
-    console.error('Zalo webhook request failed'),
+  logError = error => console.error('Zalo webhook request failed'),
 } = {}) {
   return async function POST(request) {
     try {

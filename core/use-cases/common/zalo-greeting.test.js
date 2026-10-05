@@ -18,5 +18,11 @@ test('Zalo greeting keeps configured text and adds icon quick links', () => {
   assert.match(text, /🗳️ \/poll — Xem vote đang mở/);
   assert.match(text, /⚽ \/team — Xem đội hình/);
   assert.match(text, /📚 \/start — Xem tất cả lệnh$/);
-  assert.equal(buildZaloGreeting({ displayName: 'Nghia' }, { ZALO_GREETING_TEXT: 'Xin chào {name}!' }), 'Xin chào Nghia!');
+  assert.equal(
+    buildZaloGreeting(
+      { displayName: 'Nghia' },
+      { ZALO_GREETING_TEXT: 'Xin chào {name}!' }
+    ),
+    'Xin chào Nghia!'
+  );
 });

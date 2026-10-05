@@ -1593,8 +1593,10 @@ test('bot runtime sends migrated /chiatien to the announcement channel', async (
   assert.equal(bot.sentMessages.length, 1);
   assert.equal(bot.sentMessages[0].chatId, '-100999');
   assert.equal(bot.sentMessages[0].options.message_thread_id, '88');
-  assert.equal(bot.sentMessages[0].options.parse_mode, 'MarkdownV2');
-  assert.match(bot.sentMessages[0].text, /Mỗi người đội thua/);
+  assert.equal(bot.sentMessages[0].options.parse_mode, undefined);
+  assert.match(bot.sentMessages[0].text, /Xem trước chia tiền/);
+  assert.match(bot.sentMessages[0].text, /Alice: 150\.000 VND/);
+  assert.match(bot.sentMessages[0].text, /Bob: 210\.000 VND/);
 
   runtime.stop();
 });
@@ -1626,7 +1628,6 @@ test('Telegram runtime routes the complete shared command catalog', async () => 
     },
   };
   let player = null;
-  let stats = null;
   const playerRepository = createPlayerRepository({
     async registerActor(actor, number) {
       player = {

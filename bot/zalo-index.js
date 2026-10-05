@@ -1,5 +1,9 @@
 require('../config/load-env').loadEnv();
-const { shouldDelegate, startManagedSupervisor, sendReady } = require('../runtime/managed-bootstrap');
+const {
+  shouldDelegate,
+  startManagedSupervisor,
+  sendReady,
+} = require('../runtime/managed-bootstrap');
 const { safeError } = require('../runtime/managed-process');
 if (shouldDelegate()) {
   startManagedSupervisor({ service: 'zalo-polling', entrypoint: __filename });
@@ -69,7 +73,6 @@ async function bootstrapZaloBot({
     async stop() {
       runtime.stop();
       await client.stopPolling();
-
     },
   });
 }
@@ -95,7 +98,12 @@ async function runZaloBot() {
     try {
       await application.stop();
     } catch (error) {
-      logEvent('zalo', 'shutdown failed', { error: safeError(error).message }, 'error');
+      logEvent(
+        'zalo',
+        'shutdown failed',
+        { error: safeError(error).message },
+        'error'
+      );
       process.exitCode = 1;
     }
   };
@@ -106,7 +114,12 @@ async function runZaloBot() {
 
 if (require.main === module) {
   runZaloBot().catch(error => {
-    logEvent('zalo', 'failed to start', { error: safeError(error).message }, 'error');
+    logEvent(
+      'zalo',
+      'failed to start',
+      { error: safeError(error).message },
+      'error'
+    );
     process.exitCode = 1;
   });
 }

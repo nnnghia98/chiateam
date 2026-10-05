@@ -6,13 +6,13 @@ The `/bots` page now manages Telegram, Zalo, API connections and shared settings
 
 Use a separate admin panel backend (the server that handles admin panel requests). Its database and URL must stay available while the match API restarts. Use different random values for every admin panel token. Reused tokens are rejected. Do not expose runtime or admin panel tokens to browser environment variables.
 
-| Service | Start command in bot repo | Required startup settings |
-|---|---|---|
-| Admin panel backend | `yarn start:admin` | `MANAGEMENT_DATABASE_URL`, `MANAGEMENT_ENCRYPTION_KEY`, `MANAGEMENT_ADMIN_TOKEN`, and all five service tokens |
-| Data API | `yarn start:api` | `MANAGEMENT_BOOTSTRAP=true`, the same stable `MANAGEMENT_DATABASE_URL` and encryption key; the parent reads this store directly |
-| Telegram | `yarn start:bot` | `MANAGEMENT_BOOTSTRAP=true`, `MANAGEMENT_API_URL`, `MANAGEMENT_TELEGRAM_TOKEN` |
-| Zalo polling | `yarn start:zalo` | `MANAGEMENT_BOOTSTRAP=true`, `MANAGEMENT_API_URL`, `MANAGEMENT_ZALO_POLLING_TOKEN` |
-| Zalo webhook | `yarn start:zalo-webhook` | `MANAGEMENT_BOOTSTRAP=true`, `MANAGEMENT_API_URL`, `MANAGEMENT_ZALO_WEBHOOK_TOKEN` |
+| Service             | Start command in bot repo    | Required startup settings                                                                                                                                        |
+| ------------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Admin panel backend | `yarn start:admin`           | `MANAGEMENT_DATABASE_URL`, `MANAGEMENT_ENCRYPTION_KEY`, `MANAGEMENT_ADMIN_TOKEN`, and all five service tokens                                                    |
+| Data API            | `yarn start:api`             | `MANAGEMENT_BOOTSTRAP=true`, the same stable `MANAGEMENT_DATABASE_URL` and encryption key; the parent reads this store directly                                  |
+| Telegram            | `yarn start:bot`             | `MANAGEMENT_BOOTSTRAP=true`, `MANAGEMENT_API_URL`, `MANAGEMENT_TELEGRAM_TOKEN`                                                                                   |
+| Zalo polling        | `yarn start:zalo`            | `MANAGEMENT_BOOTSTRAP=true`, `MANAGEMENT_API_URL`, `MANAGEMENT_ZALO_POLLING_TOKEN`                                                                               |
+| Zalo webhook        | `yarn start:zalo-webhook`    | `MANAGEMENT_BOOTSTRAP=true`, `MANAGEMENT_API_URL`, `MANAGEMENT_ZALO_WEBHOOK_TOKEN`                                                                               |
 | Admin panel web app | Existing admin start command | `MANAGEMENT_API_URL`, `MANAGEMENT_ADMIN_TOKEN`, `MANAGEMENT_ADMIN_SERVICE_TOKEN`, `MANAGEMENT_ALLOWED_ORIGINS`; keep `ADMIN_PASSWORD` and `ADMIN_SESSION_SECRET` |
 
 The admin panel backend's full service-token set is `MANAGEMENT_API_TOKEN`, `MANAGEMENT_TELEGRAM_TOKEN`, `MANAGEMENT_ZALO_POLLING_TOKEN`, `MANAGEMENT_ZALO_WEBHOOK_TOKEN`, and `MANAGEMENT_ADMIN_SERVICE_TOKEN`. The API parent uses the stable store directly; its HTTP token is available for separately authenticated API runtime calls. Each child receives only its actual runtime settings and its own service credential. Bootstrap encryption keys and unrelated service tokens do not enter child environments.

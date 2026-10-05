@@ -5,7 +5,7 @@ const { createCommandRegistry } = require('../../commands/command-registry');
 const { createCommandRouter } = require('../../commands/command-router');
 const { createPermissionPolicy } = require('../../ports/permission-policy');
 const { createStateRepository } = require('../../ports/state-repository');
-const { ATTENDANCE_VOTE_OPTIONS } = require('./attendance-vote');
+const { LEGACY_ATTENDANCE_VOTE_OPTIONS } = require('./attendance-vote');
 const {
   SYNC_MESSAGES,
   createSyncCommand,
@@ -17,7 +17,7 @@ function createVote() {
     id: 'poll-1',
     platform: 'telegram',
     question: 'Sân A 20h',
-    options: ATTENDANCE_VOTE_OPTIONS,
+    options: LEGACY_ATTENDANCE_VOTE_OPTIONS,
     votes: {
       1: { id: 1, name: 'Alice', options: [2] },
       2: { id: 2, name: 'Bob', choice: '+3' },

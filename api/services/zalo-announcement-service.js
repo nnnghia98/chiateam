@@ -81,7 +81,11 @@ function normalizeRequest(operation, payload) {
           return null;
         try {
           const parsed = new URL(p.photoUrl);
-          if (parsed.protocol !== 'https:' || parsed.username || parsed.password)
+          if (
+            parsed.protocol !== 'https:' ||
+            parsed.username ||
+            parsed.password
+          )
             return null;
           photoUrl = parsed.toString();
         } catch {
@@ -104,7 +108,9 @@ function normalizeRequest(operation, payload) {
       actorId: p.actorId,
       sourceChatId: p.sourceChatId,
       sourceThreadId: p.sourceThreadId,
-      ...(operation === 'prepare' ? { message: p.message, photoUrl: null } : {}),
+      ...(operation === 'prepare'
+        ? { message: p.message, photoUrl: null }
+        : {}),
     };
   }
   if (operation === 'record') {

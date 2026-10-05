@@ -4,10 +4,13 @@ const assert = require('node:assert/strict');
 const {
   createTelegramAttendanceVotePublisher,
 } = require('./attendance-vote-publisher');
+const {
+  ATTENDANCE_VOTE_LABELS,
+} = require('../../core/use-cases/management/attendance-vote');
 
 const VOTE = Object.freeze({
   question: 'Sân A 20h',
-  options: Object.freeze(['0', '+1', '+2', '+3', '+4']),
+  options: Object.freeze(['0', '1']),
   createdBy: 'Nghia',
   createdAt: '2026-08-10T10:00:00.000Z',
 });
@@ -38,7 +41,7 @@ test('Telegram vote publisher sends a native poll to the announcement thread', a
     {
       chatId: '-100999',
       question: 'Sân A 20h',
-      options: ['0', '+1', '+2', '+3', '+4'],
+      options: [ATTENDANCE_VOTE_LABELS['0'], ATTENDANCE_VOTE_LABELS['1']],
       sendOptions: {
         is_anonymous: false,
         allows_multiple_answers: false,
@@ -80,7 +83,10 @@ test('Telegram vote publisher ignores a configured announcement thread without a
     bot: {
       async sendPoll(chatId, question, options, sendOptions) {
         calls.push({ chatId, question, options, sendOptions });
-        return { poll: { id: 'poll-source-configured-thread' }, message_id: 80 };
+        return {
+          poll: { id: 'poll-source-configured-thread' },
+          message_id: 80,
+        };
       },
     },
     channelConfig: {

@@ -1,6 +1,10 @@
 const INLINE_KEYBOARD_PAGE_SIZE = 10;
 
-function normalizePage(page, totalEntries, pageSize = INLINE_KEYBOARD_PAGE_SIZE) {
+function normalizePage(
+  page,
+  totalEntries,
+  pageSize = INLINE_KEYBOARD_PAGE_SIZE
+) {
   const maxPage = Math.max(0, Math.ceil(totalEntries / pageSize) - 1);
   return Math.min(Math.max(page, 0), maxPage);
 }

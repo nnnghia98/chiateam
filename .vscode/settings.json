@@ -16,7 +16,5 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "prettier.requireConfig": true,
-  "prettier.useEditorConfig": false,
-  "snyk.advanced.organization": "8ada14ef-c95c-4812-90ab-930104a3f3fa",
-  "snyk.advanced.autoSelectOrganization": true
+  "prettier.useEditorConfig": false
 }

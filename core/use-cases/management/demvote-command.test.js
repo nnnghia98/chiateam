@@ -4,7 +4,10 @@ const assert = require('node:assert/strict');
 const { createCommandRegistry } = require('../../commands/command-registry');
 const { createCommandRouter } = require('../../commands/command-router');
 const { createStateRepository } = require('../../ports/state-repository');
-const { ATTENDANCE_VOTE_OPTIONS } = require('./attendance-vote');
+const {
+  ATTENDANCE_VOTE_OPTIONS,
+  LEGACY_ATTENDANCE_VOTE_OPTIONS,
+} = require('./attendance-vote');
 const { DEMVOTE_MESSAGES, createDemvoteCommand } = require('./demvote-command');
 
 function createContext(args = []) {
@@ -60,7 +63,7 @@ test('independent /demvote summarizes legacy and neutral choices', async () => {
       activeVote: {
         id: 'poll-1',
         question: 'Sân A 20h',
-        options: ATTENDANCE_VOTE_OPTIONS,
+        options: LEGACY_ATTENDANCE_VOTE_OPTIONS,
         votes: {
           1: { id: 1, name: 'Alice', options: [4] },
           2: { id: 2, name: 'Bob', choice: '+4' },
@@ -74,8 +77,8 @@ test('independent /demvote summarizes legacy and neutral choices', async () => {
   const message = routed.result.messages[0];
 
   assert.match(message.text, /^📊 Kết quả vote hiện tại:\nSân A 20h/);
-  assert.match(message.text, /\+4 \(2\)\nAi vote\? Alice, Bob/);
-  assert.match(message.text, /0 \(1\)\nAi vote\? Carol/);
+  assert.match(message.text, /Đá \(2\)\nAi vote\? Alice, Bob/);
+  assert.match(message.text, /Thôi \(1\)\nAi vote\? Carol/);
   assert.match(message.text, /Số người vote: 8$/);
   assert.equal(message.channel, 'main');
   assert.equal(message.segments[0].bold, true);

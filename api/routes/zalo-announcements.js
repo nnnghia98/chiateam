@@ -69,7 +69,8 @@ function createZaloAnnouncementRepository({ database = db } = {}) {
   }
 
   const identity = p => [p.id, p.actorId, p.sourceChatId, p.sourceThreadId];
-  const ownsDraft = 'id = $1 AND actor_id = $2 AND source_chat_id = $3 AND source_thread_id = $4';
+  const ownsDraft =
+    'id = $1 AND actor_id = $2 AND source_chat_id = $3 AND source_thread_id = $4';
 
   return Object.freeze({
     async setSubscription({ chatId, userId, subscribed, displayName = null }) {
@@ -113,7 +114,11 @@ function createZaloAnnouncementRepository({ database = db } = {}) {
       return { ...result.rows[0], page, pageSize };
     },
 
-    async listSubscribers({ page = 1, pageSize = 50, includeUnsubscribed = true } = {}) {
+    async listSubscribers({
+      page = 1,
+      pageSize = 50,
+      includeUnsubscribed = true,
+    } = {}) {
       const result = await query(
         `SELECT chat_id AS "chatId", user_id AS "userId", display_name AS "displayName",
                 subscribed, updated_at AS "updatedAt"
@@ -126,7 +131,12 @@ function createZaloAnnouncementRepository({ database = db } = {}) {
       const count = await query(
         `SELECT COUNT(*)::INTEGER AS total FROM zalo_announcement_subscriptions ${includeUnsubscribed ? '' : 'WHERE subscribed = TRUE'}`
       );
-      return { total: count.rows[0].total, subscribers: result.rows, page, pageSize };
+      return {
+        total: count.rows[0].total,
+        subscribers: result.rows,
+        page,
+        pageSize,
+      };
     },
 
     async prepare(p) {
@@ -232,7 +242,7 @@ function createZaloAnnouncementRepository({ database = db } = {}) {
 
     async finish({ id }) {
       await query(
-        'UPDATE zalo_announcements SET status = \'finished\' WHERE id = $1 AND status = \'sending\'',
+        "UPDATE zalo_announcements SET status = 'finished' WHERE id = $1 AND status = 'sending'",
         [id]
       );
       return true;

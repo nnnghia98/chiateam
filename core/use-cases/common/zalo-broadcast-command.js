@@ -264,9 +264,7 @@ function createZaloBroadcastCommand({ service } = {}) {
         );
         if (outcome.photoUrl) {
           return createCommandResult({
-            messages: [
-              { ...preview.messages[0], photoUrl: outcome.photoUrl },
-            ],
+            messages: [{ ...preview.messages[0], photoUrl: outcome.photoUrl }],
           });
         }
         return preview;

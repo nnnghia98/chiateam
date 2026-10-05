@@ -9,7 +9,10 @@ const {
 const { REGISTERED_COMMANDS } = require('../commands/command-registry');
 
 test('supported commands mirror the commands registered by the bot', () => {
-  assert.deepEqual([...SUPPORTED_COMMANDS].sort(), [...REGISTERED_COMMANDS].sort());
+  assert.deepEqual(
+    [...SUPPORTED_COMMANDS].sort(),
+    [...REGISTERED_COMMANDS].sort()
+  );
 });
 
 test('registered commands are accepted, including Telegram @mentions', () => {

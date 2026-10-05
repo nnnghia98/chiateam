@@ -26,7 +26,7 @@ function logCommandUsage(msg) {
   if (!command_exact || !command) return;
 
   // Telegram `msg.date` is seconds since epoch (UTC). Fallback to now.
-  const usedAt = new Date((msg.date ? msg.date * 1000 : Date.now()));
+  const usedAt = new Date(msg.date ? msg.date * 1000 : Date.now());
 
   const VN_TIME_ZONE = 'Asia/Ho_Chi_Minh';
   const vnTime = new Intl.DateTimeFormat('en-GB', {

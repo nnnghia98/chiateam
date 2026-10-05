@@ -94,9 +94,15 @@ test('independent /chiatien returns an equal split without a result', async () =
 
   assert.equal(
     routed.result.messages[0].text,
-    '💸 Tổng tiền: 300.000 VND\n' +
-      '👥 Số người: 3\n\n' +
-      'Mỗi người phải trả: 100.000 VND'
+    '💸 Xem trước chia tiền\n' +
+      'Tiền sân: 300.000 VND\n' +
+      'Tiền nước: 0 VND (chưa tính vào phí)\n' +
+      'Số người: 3\n\n' +
+      '⚪ HOME (1 người):\n' +
+      '• Alice: 100.000 VND\n\n' +
+      '⚫ AWAY (2 người):\n' +
+      '• Bob: 100.000 VND\n' +
+      '• Carol: 100.000 VND'
   );
   assert.equal(routed.result.messages[0].channel, 'announcement');
 });
@@ -118,15 +124,17 @@ test('independent /chiatien applies water to the selected losing team', async ()
 
   const routed = await router.run(createContext());
 
-  assert.match(
+  assert.equal(
     routed.result.messages[0].text,
-    /^💸 Tiền sân: 300\.000 VND\n🧊 Tiền nước: 60\.000 VND\n👥 Tổng số người: 3/
-  );
-  assert.match(routed.result.messages[0].text, /HOME \(thắng\):\nAlice_name/);
-  assert.match(routed.result.messages[0].text, /AWAY \(thua\):\nBob\nCarol/);
-  assert.match(
-    routed.result.messages[0].text,
-    /Mỗi người đội thua: 100\.000 \+ 30\.000 = 130\.000 VND/
+    '💸 Xem trước chia tiền\n' +
+      'Tiền sân: 300.000 VND\n' +
+      'Tiền nước: 60.000 VND\n' +
+      'Số người: 3\n\n' +
+      '⚪ HOME (1 người):\n' +
+      '• Alice_name: 100.000 VND\n\n' +
+      '⚫ AWAY (2 người):\n' +
+      '• Bob: 130.000 VND\n' +
+      '• Carol: 130.000 VND'
   );
   assert.equal(routed.result.messages[0].channel, 'announcement');
   assert.deepEqual(state, originalState);

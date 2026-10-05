@@ -51,10 +51,10 @@ const addToTeamCommand = ({
       entries: allEntries,
       page,
       pageCallbackPrefix: `${ADD_TO_TEAM_PAGE_PREFIX}${mode}:${teamType}:`,
-      itemToButton: (([, entry], index) => ({
+      itemToButton: ([, entry], index) => ({
         text: `${index + 1}. ${getDisplayName(entry)}`,
         callback_data: `${ADD_TO_TEAM_ADD_PREFIX}${mode}:${teamType}:${index}`,
-      })),
+      }),
     });
   };
 

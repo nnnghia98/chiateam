@@ -69,8 +69,19 @@ test('broadcast validation requires Telegram source ownership and bounded conten
 
 test('photo drafts require credential-free HTTPS URLs and allow an empty caption', () => {
   assert.deepEqual(
-    normalizeRequest('prepare', { ...source, message: '', photoUrl: 'https://cdn.example/photo.jpg' }),
-    { id: undefined, actorId: 'admin', sourceChatId: 'source', sourceThreadId: '', message: '', photoUrl: 'https://cdn.example/photo.jpg' }
+    normalizeRequest('prepare', {
+      ...source,
+      message: '',
+      photoUrl: 'https://cdn.example/photo.jpg',
+    }),
+    {
+      id: undefined,
+      actorId: 'admin',
+      sourceChatId: 'source',
+      sourceThreadId: '',
+      message: '',
+      photoUrl: 'https://cdn.example/photo.jpg',
+    }
   );
   for (const photoUrl of [
     'http://cdn.example/photo.jpg',
@@ -79,10 +90,17 @@ test('photo drafts require credential-free HTTPS URLs and allow an empty caption
     `https://cdn.example/${'x'.repeat(2049)}`,
     123,
   ]) {
-    assert.equal(normalizeRequest('prepare', { ...source, message: 'caption', photoUrl }), null);
+    assert.equal(
+      normalizeRequest('prepare', { ...source, message: 'caption', photoUrl }),
+      null
+    );
   }
   assert.equal(
-    normalizeRequest('prepare', { ...source, message: 'x'.repeat(2001), photoUrl: 'https://cdn.example/photo.jpg' }),
+    normalizeRequest('prepare', {
+      ...source,
+      message: 'x'.repeat(2001),
+      photoUrl: 'https://cdn.example/photo.jpg',
+    }),
     null
   );
 });

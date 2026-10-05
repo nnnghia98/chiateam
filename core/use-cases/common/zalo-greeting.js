@@ -7,8 +7,13 @@ function buildZaloGreeting(actor, env = process.env) {
     .replace(/[\p{Cc}\s]+/gu, ' ')
     .trim()
     .slice(0, 100);
-  const configured = typeof env.ZALO_GREETING_TEXT === 'string' ? env.ZALO_GREETING_TEXT.trim().slice(0, 1000) : '';
-  return configured ? configured.replaceAll('{name}', name || 'bạn') : `👋 Chào ${name || 'bạn'}! Đây là bot ChiaTeam.`;
+  const configured =
+    typeof env.ZALO_GREETING_TEXT === 'string'
+      ? env.ZALO_GREETING_TEXT.trim().slice(0, 1000)
+      : '';
+  return configured
+    ? configured.replaceAll('{name}', name || 'bạn')
+    : `👋 Chào ${name || 'bạn'}! Đây là bot ChiaTeam.`;
 }
 
 function createZaloGreetingResult(actor, env = process.env) {

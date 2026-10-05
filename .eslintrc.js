@@ -10,22 +10,6 @@ module.exports = {
     sourceType: 'script',
   },
   rules: {
-    indent: [
-      'error',
-      2,
-      {
-        SwitchCase: 1,
-        flatTernaryExpressions: true,
-        ignoredNodes: [
-          'ConditionalExpression',
-          'ConditionalExpression > *',
-          'ConditionalExpression > ObjectExpression > *',
-        ],
-      },
-    ],
-    'linebreak-style': ['error', 'unix'],
-    quotes: ['error', 'single'],
-    semi: ['error', 'always'],
     'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
     'no-console': 'off',
     'no-debugger': 'warn',

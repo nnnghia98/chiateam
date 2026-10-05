@@ -21,7 +21,7 @@ COPY runtime ./runtime
 COPY config ./config
 COPY shared ./shared
 
-# Persistent bot storage is mounted to this path in docker-compose/Railway.
+USER node
 
 EXPOSE 8787
 

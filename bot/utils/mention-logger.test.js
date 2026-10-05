@@ -48,10 +48,14 @@ test('message listener logs only mentions of its own bot, including captions', t
   });
   assert.equal(output.length, 4);
   assert.equal(replies.length, 4);
-  assert.deepEqual(replies[0], [-10, 'Hi Nghia Nguyen', {
-    reply_parameters: { message_id: 5, allow_sending_without_reply: true },
-    message_thread_id: 9,
-  }]);
+  assert.deepEqual(replies[0], [
+    -10,
+    'Hi Nghia Nguyen',
+    {
+      reply_parameters: { message_id: 5, allow_sending_without_reply: true },
+      message_thread_id: 9,
+    },
+  ]);
   assert.equal(replies.at(-1)[1], 'Hi Nghia Nguyen');
   assert.match(output[0], /\[telegram\.mention\]/);
   assert.match(output[0], /user_id\s+: 7/);

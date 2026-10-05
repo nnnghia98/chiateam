@@ -1,5 +1,6 @@
 const http = require('http');
 const { URL } = require('url');
+const { resolveInternalApiToken } = require('../../config/internal-auth');
 const {
   getAllPlayers,
   getPlayerByNumber,
@@ -28,7 +29,9 @@ const {
 } = require('./matches');
 const defaultMatchMediaService = require('../services/match-media-service');
 const defaultTwoNikeService = require('../services/two-nike-service');
-const { createFeeDeliveryService } = require('../services/fee-delivery-service');
+const {
+  createFeeDeliveryService,
+} = require('../services/fee-delivery-service');
 const {
   MAX_ZALO_IMAGE_BYTES,
   createZaloImageStorageService,
@@ -90,9 +93,7 @@ function logRequest(req, res) {
   const startedAt = Date.now();
   const requestUrl = req.url || '/';
   const clientIp =
-    req.headers['x-forwarded-for'] ||
-    req.socket?.remoteAddress ||
-    'unknown-ip';
+    req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown-ip';
 
   res.on('finish', () => {
     const durationMs = Date.now() - startedAt;
@@ -170,11 +171,13 @@ function isMaintenanceBypassRoute(path, method) {
   if (path === '/healthz') return true;
   if (path === '/api/status' && method === 'GET') return true;
   if (path === '/api/settings') return true;
-  if (path === '/api/management' || path.startsWith('/api/management/')) return true;
+  if (path === '/api/management' || path.startsWith('/api/management/'))
+    return true;
   if (
     path === '/api/bot-controls' ||
     /^\/api\/bot-controls\/[^/]+(\/check)?$/.test(path)
-  ) return true;
+  )
+    return true;
   return false;
 }
 
@@ -209,15 +212,7 @@ function corsHeaders(req) {
 }
 
 function getInternalApiAuthToken() {
-  if (process.env.INTERNAL_API_AUTH_TOKEN) {
-    return process.env.INTERNAL_API_AUTH_TOKEN;
-  }
-
-  if (process.env.NODE_ENV !== 'production') {
-    return 'local-internal-api-token-change-me';
-  }
-
-  return null;
+  return resolveInternalApiToken(process.env);
 }
 
 function getTrustedRole(req) {
@@ -282,7 +277,13 @@ function requireAdmin(req, res, headers) {
   return true;
 }
 
-function sendPredictionResult(res, headers, result, successStatus, bodyBuilder) {
+function sendPredictionResult(
+  res,
+  headers,
+  result,
+  successStatus,
+  bodyBuilder
+) {
   if (result.ok) {
     return sendJson(res, successStatus, bodyBuilder(result), headers);
   }
@@ -295,7 +296,12 @@ function sendPredictionResult(res, headers, result, successStatus, bodyBuilder) 
     return sendJson(res, 409, { error: result.code }, headers);
   }
 
-  return sendJson(res, 400, { error: result.code || 'INVALID_REQUEST' }, headers);
+  return sendJson(
+    res,
+    400,
+    { error: result.code || 'INVALID_REQUEST' },
+    headers
+  );
 }
 
 function getAdminActorId(req) {
@@ -689,8 +695,16 @@ function createUiApiServer({
   feeDeliveryService = defaultFeeDeliveryService,
   managementService,
 } = {}) {
-  if (!managementService && process.env.MANAGEMENT_CHILD !== 'true' && process.env.MANAGEMENT_ENCRYPTION_KEY) {
-    try { managementService = createManagementService(); } catch (_) { managementService = null; }
+  if (
+    !managementService &&
+    process.env.MANAGEMENT_CHILD !== 'true' &&
+    process.env.MANAGEMENT_ENCRYPTION_KEY
+  ) {
+    try {
+      managementService = createManagementService();
+    } catch (_) {
+      managementService = null;
+    }
   }
   const startedAt = new Date().toISOString();
   const maintenanceMode = isMaintenanceModeEnabled();
@@ -831,7 +845,9 @@ function createUiApiServer({
           {
             ...settings,
             maintenanceControlledByEnv,
-            maintenanceUntil: settings.maintenanceMode ? maintenanceUntil : null,
+            maintenanceUntil: settings.maintenanceMode
+              ? maintenanceUntil
+              : null,
           },
           headers
         );
@@ -903,36 +919,71 @@ function createUiApiServer({
       if (!requireAdmin(req, res, headers)) return;
       try {
         if (path === '/api/fee-accounts' && req.method === 'GET') {
-          return sendJson(res, 200, await feeDeliveryService.listAccounts(), headers);
+          return sendJson(
+            res,
+            200,
+            await feeDeliveryService.listAccounts(),
+            headers
+          );
         }
         if (path === '/api/hosts' && req.method === 'POST') {
-          return sendJson(res, 201, await feeDeliveryService.createHost(await readJson(req)), headers);
+          return sendJson(
+            res,
+            201,
+            await feeDeliveryService.createHost(await readJson(req)),
+            headers
+          );
         }
-        const hostAccountMatch = path.match(/^\/api\/hosts\/([^/]+)\/accounts$/);
+        const hostAccountMatch = path.match(
+          /^\/api\/hosts\/([^/]+)\/accounts$/
+        );
         if (hostAccountMatch && req.method === 'POST') {
           const account = await feeDeliveryService.createAccount(
-            hostAccountMatch[1], await readJson(req)
+            hostAccountMatch[1],
+            await readJson(req)
           );
           return sendJson(res, 201, account, headers);
         }
         if (path === '/api/fee-batches' && req.method === 'POST') {
-          return sendJson(res, 200, await feeDeliveryService.prepareBatch(await readJson(req)), headers);
+          return sendJson(
+            res,
+            200,
+            await feeDeliveryService.prepareBatch(await readJson(req)),
+            headers
+          );
         }
         if (path === '/api/fee-batches/today' && req.method === 'GET') {
-          return sendJson(res, 200, await feeDeliveryService.getTodayBatch(), headers);
+          return sendJson(
+            res,
+            200,
+            await feeDeliveryService.getTodayBatch(),
+            headers
+          );
         }
-        const requestMatch = path.match(/^\/api\/fee-requests\/([^/]+)\/(claim|finish)$/);
+        const requestMatch = path.match(
+          /^\/api\/fee-requests\/([^/]+)\/(claim|finish)$/
+        );
         if (requestMatch && req.method === 'POST') {
-          const result = requestMatch[2] === 'claim'
-            ? await feeDeliveryService.claimRequest(requestMatch[1])
-            : await feeDeliveryService.finishRequest(requestMatch[1], await readJson(req));
+          const result =
+            requestMatch[2] === 'claim'
+              ? await feeDeliveryService.claimRequest(requestMatch[1])
+              : await feeDeliveryService.finishRequest(
+                  requestMatch[1],
+                  await readJson(req)
+                );
           return sendJson(res, 200, result, headers);
         }
         return sendJson(res, 405, { error: 'METHOD_NOT_ALLOWED' }, headers);
       } catch (error) {
-        if (error.status) return sendJson(res, error.status, { error: error.code }, headers);
+        if (error.status)
+          return sendJson(res, error.status, { error: error.code }, headers);
         if (['23503', '23505', '23514'].includes(error.code)) {
-          return sendJson(res, 409, { error: 'BANK_ACCOUNT_CONFLICT' }, headers);
+          return sendJson(
+            res,
+            409,
+            { error: 'BANK_ACCOUNT_CONFLICT' },
+            headers
+          );
         }
         if (error instanceof SyntaxError) {
           return sendJson(res, 400, { error: 'INVALID_JSON' }, headers);
@@ -1051,9 +1102,10 @@ function createUiApiServer({
           return sendJson(res, 404, { error: 'NOT_FOUND' }, headers);
         }
 
-        const payload = (await readJson(req, {
-          maxBytes: Math.ceil(MAX_AVATAR_BYTES * 1.5) + 1024,
-        })) || {};
+        const payload =
+          (await readJson(req, {
+            maxBytes: Math.ceil(MAX_AVATAR_BYTES * 1.5) + 1024,
+          })) || {};
         const upload = await uploadPlayerAvatar({
           playerNumber: number,
           dataBase64: payload.dataBase64,
@@ -1077,7 +1129,10 @@ function createUiApiServer({
           headers
         );
       } catch (e) {
-        if (e.message === 'Payload too large' || e.code === 'AVATAR_TOO_LARGE') {
+        if (
+          e.message === 'Payload too large' ||
+          e.code === 'AVATAR_TOO_LARGE'
+        ) {
           return sendJson(res, 413, { error: 'AVATAR_TOO_LARGE' }, headers);
         }
         if (
@@ -1214,10 +1269,7 @@ function createUiApiServer({
       }
     }
 
-    if (
-      path === '/api/world-cup-predictions/matches' &&
-      req.method === 'GET'
-    ) {
+    if (path === '/api/world-cup-predictions/matches' && req.method === 'GET') {
       if (!requireAuthenticated(req, res, headers)) return;
 
       try {
@@ -1302,8 +1354,7 @@ function createUiApiServer({
       }
     }
 
-    const worldCupMemberKeysPrefix =
-      '/api/world-cup-predictions/member-keys/';
+    const worldCupMemberKeysPrefix = '/api/world-cup-predictions/member-keys/';
     if (path.startsWith(worldCupMemberKeysPrefix)) {
       const suffix = path.slice(worldCupMemberKeysPrefix.length);
       const parts = suffix.split('/').filter(Boolean);
@@ -1313,7 +1364,11 @@ function createUiApiServer({
         return sendJson(res, 400, { error: 'INVALID_MEMBER_ID' }, headers);
       }
 
-      if (parts.length === 2 && parts[1] === 'regenerate' && req.method === 'POST') {
+      if (
+        parts.length === 2 &&
+        parts[1] === 'regenerate' &&
+        req.method === 'POST'
+      ) {
         if (!requireAdmin(req, res, headers)) return;
 
         try {
@@ -1325,7 +1380,10 @@ function createUiApiServer({
 
           return sendJson(res, 200, result.memberKey, headers);
         } catch (e) {
-          console.error('Error regenerating World Cup prediction member key:', e);
+          console.error(
+            'Error regenerating World Cup prediction member key:',
+            e
+          );
           return sendJson(
             res,
             500,
@@ -1478,8 +1536,7 @@ function createUiApiServer({
       }
     }
 
-    const worldCupPredictionMatchPrefix =
-      '/api/world-cup-predictions/matches/';
+    const worldCupPredictionMatchPrefix = '/api/world-cup-predictions/matches/';
     if (path.startsWith(worldCupPredictionMatchPrefix)) {
       const suffix = path.slice(worldCupPredictionMatchPrefix.length);
       const parts = suffix.split('/').filter(Boolean);
@@ -1526,10 +1583,7 @@ function createUiApiServer({
             return sendJson(res, 400, { error: validation.error }, headers);
           }
 
-          const result = await updateWorldCupMatch(
-            matchId,
-            validation.updates
-          );
+          const result = await updateWorldCupMatch(matchId, validation.updates);
 
           if (!result.ok) {
             return sendPredictionResult(res, headers, result, 200, () => ({}));
@@ -1806,7 +1860,11 @@ function createUiApiServer({
           return sendJson(res, 503, { error: error.code }, headers);
         }
         if (
-          ['IMAGE_UPLOAD_FAILED', 'STORAGE_BUCKET_UNAVAILABLE', 'STORAGE_BUCKET_PRIVATE'].includes(error.code)
+          [
+            'IMAGE_UPLOAD_FAILED',
+            'STORAGE_BUCKET_UNAVAILABLE',
+            'STORAGE_BUCKET_PRIVATE',
+          ].includes(error.code)
         ) {
           return sendJson(res, 503, { error: error.code }, headers);
         }
@@ -1833,8 +1891,16 @@ function createUiApiServer({
         console.error('[bot-controls] Failed to read controls');
         return sendJson(
           res,
-          ['DATABASE_NOT_CONFIGURED', 'DATABASE_TIMEOUT'].includes(error?.code) ? 503 : 500,
-          { error: ['DATABASE_NOT_CONFIGURED', 'DATABASE_TIMEOUT'].includes(error?.code) ? error.code : 'BOT_CONTROLS_UNAVAILABLE' },
+          ['DATABASE_NOT_CONFIGURED', 'DATABASE_TIMEOUT'].includes(error?.code)
+            ? 503
+            : 500,
+          {
+            error: ['DATABASE_NOT_CONFIGURED', 'DATABASE_TIMEOUT'].includes(
+              error?.code
+            )
+              ? error.code
+              : 'BOT_CONTROLS_UNAVAILABLE',
+          },
           controlHeaders
         );
       }
@@ -1847,7 +1913,11 @@ function createUiApiServer({
       const controlHeaders = { ...headers, 'Cache-Control': 'no-store' };
       const platform = botControlMatch[1];
       const isCheck = Boolean(botControlMatch[2]);
-      if (isCheck ? !isTrustedBotService(req) : !requireAdmin(req, res, controlHeaders)) {
+      if (
+        isCheck
+          ? !isTrustedBotService(req)
+          : !requireAdmin(req, res, controlHeaders)
+      ) {
         if (!isCheck) return;
         return sendJson(res, 401, { error: 'UNAUTHORIZED' }, controlHeaders);
       }
@@ -1865,15 +1935,19 @@ function createUiApiServer({
         typeof payload === 'object' &&
         !Array.isArray(payload) &&
         Object.keys(payload).length === expectedKeys.length &&
-        expectedKeys.every(key => Object.prototype.hasOwnProperty.call(payload, key));
+        expectedKeys.every(key =>
+          Object.prototype.hasOwnProperty.call(payload, key)
+        );
       if (!validShape) {
         return sendJson(res, 400, { error: 'INVALID_REQUEST' }, controlHeaders);
       }
       if (!BOT_CONTROL_PLATFORMS.includes(platform)) {
         return sendJson(res, 400, { error: 'INVALID_REQUEST' }, controlHeaders);
       }
-      if ((!isCheck && typeof payload.commandsEnabled !== 'boolean') ||
-          (isCheck && !BOT_CONTROL_MODES.includes(payload.mode))) {
+      if (
+        (!isCheck && typeof payload.commandsEnabled !== 'boolean') ||
+        (isCheck && !BOT_CONTROL_MODES.includes(payload.mode))
+      ) {
         return sendJson(res, 400, { error: 'INVALID_REQUEST' }, controlHeaders);
       }
 
@@ -1889,8 +1963,16 @@ function createUiApiServer({
         console.error('[bot-controls] Failed to persist controls');
         return sendJson(
           res,
-          ['DATABASE_NOT_CONFIGURED', 'DATABASE_TIMEOUT'].includes(error?.code) ? 503 : 500,
-          { error: ['DATABASE_NOT_CONFIGURED', 'DATABASE_TIMEOUT'].includes(error?.code) ? error.code : 'BOT_CONTROLS_UNAVAILABLE' },
+          ['DATABASE_NOT_CONFIGURED', 'DATABASE_TIMEOUT'].includes(error?.code)
+            ? 503
+            : 500,
+          {
+            error: ['DATABASE_NOT_CONFIGURED', 'DATABASE_TIMEOUT'].includes(
+              error?.code
+            )
+              ? error.code
+              : 'BOT_CONTROLS_UNAVAILABLE',
+          },
           controlHeaders
         );
       }
@@ -2040,12 +2122,7 @@ function createUiApiServer({
             headers
           );
         }
-        return sendJson(
-          res,
-          result.statusCode || 200,
-          result.body,
-          headers
-        );
+        return sendJson(res, result.statusCode || 200, result.body, headers);
       } catch (e) {
         console.error('Error syncing bot storage:', e);
         return sendJson(

@@ -4,9 +4,9 @@ services:
     working_dir: /app
     command:
       [
-        "sh",
-        "-c",
-        "corepack enable && if [ ! -d node_modules ] || [ ! -f node_modules/.yarn-integrity ]; then yarn install --frozen-lockfile; fi && yarn dev:api",
+        'sh',
+        '-c',
+        'corepack enable && if [ ! -d node_modules ] || [ ! -f node_modules/.yarn-integrity ]; then yarn install --frozen-lockfile; fi && yarn dev:api',
       ]
     restart: unless-stopped
     env_file:
@@ -14,18 +14,18 @@ services:
     environment:
       NODE_ENV: development
       API_PORT: 8787
-      CHOKIDAR_USEPOLLING: "true"
+      CHOKIDAR_USEPOLLING: 'true'
     ports:
-      - "8787:8787"
+      - '8787:8787'
     volumes:
       - ./:/app
       - app_node_modules:/app/node_modules
     healthcheck:
       test:
         [
-          "CMD",
-          "node",
-          "-e",
+          'CMD',
+          'node',
+          '-e',
           "fetch('http://127.0.0.1:8787/healthz').then((res)=>process.exit(res.ok?0:1)).catch(()=>process.exit(1))",
         ]
       interval: 30s
@@ -38,9 +38,9 @@ services:
     working_dir: /app
     command:
       [
-        "sh",
-        "-c",
-        "corepack enable && if [ ! -d node_modules ] || [ ! -f node_modules/.yarn-integrity ]; then yarn install --frozen-lockfile; fi && yarn dev:bot",
+        'sh',
+        '-c',
+        'corepack enable && if [ ! -d node_modules ] || [ ! -f node_modules/.yarn-integrity ]; then yarn install --frozen-lockfile; fi && yarn dev:bot',
       ]
     restart: unless-stopped
     env_file:
@@ -48,7 +48,7 @@ services:
     environment:
       NODE_ENV: development
       BOT_API_BASE_URL: http://api:8787
-      CHOKIDAR_USEPOLLING: "true"
+      CHOKIDAR_USEPOLLING: 'true'
     depends_on:
       api:
         condition: service_healthy

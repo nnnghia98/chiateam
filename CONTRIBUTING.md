@@ -18,8 +18,10 @@ Thank you for helping improve ChiaTeam Bot.
 3. Keep platform-independent behavior in `core/` when possible. Keep adapter
    code in `platforms/`.
 4. Add or update tests for behavior changes.
-5. Run `yarn test` and any focused checks that apply to your change. Test live
-   integrations only with safe test data.
+5. Run `yarn lint`, `yarn format:check` (fix with `yarn format`), and
+   `yarn test`, plus any focused checks that apply to your change. The same
+   checks run on every pull request. Test live integrations only with safe
+   test data.
 6. Update documentation when setup, commands, or behavior changes.
 
 Use clear commit messages in this form:

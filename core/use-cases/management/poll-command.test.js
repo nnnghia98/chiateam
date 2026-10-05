@@ -63,7 +63,7 @@ test('independent /poll shows the active vote as text actions', async () => {
   assert.equal(message.channel, 'announcement');
   assert.deepEqual(
     message.actions.map(action => action.command),
-    ['/vote 0', '/vote +1', '/vote +2', '/vote +3', '/vote +4']
+    ['/vote 1', '/vote 0']
   );
   assert.equal(getSaveCount(), 0);
 });

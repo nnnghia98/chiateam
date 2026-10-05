@@ -30,13 +30,19 @@ test('Vercel leaves shared source available for automatic file tracing', () => {
   }
 
   for (const path of ['.env*', 'node_modules/', 'api/data/bot/*', 'docs/']) {
-    assert.ok(rules.includes(path), `Missing private or unused ignore rule: ${path}`);
+    assert.ok(
+      rules.includes(path),
+      `Missing private or unused ignore rule: ${path}`
+    );
   }
 
   const apiIgnoreIndex = rules.indexOf('/api/*');
   for (const entry of ['zalo-webhook.mjs', 'messenger-webhook.mjs']) {
     const allowIndex = rules.indexOf(`!/api/${entry}`);
-    assert.ok(allowIndex > apiIgnoreIndex, `Webhook entry must follow /api/*: ${entry}`);
+    assert.ok(
+      allowIndex > apiIgnoreIndex,
+      `Webhook entry must follow /api/*: ${entry}`
+    );
   }
 
   const managementIgnoreIndex = rules.indexOf('/api/management/*');

@@ -40,10 +40,10 @@ On push to `main` (or manual `workflow_dispatch`), workflow:
 1. Builds/pushes:
    - `ghcr.io/<owner>/<repo>/app:sha-<commit>`
 2. Uploads `docker-compose.yml` to VPS.
-4. Stops/removes old PM2 process `chiateam` if present.
-5. Updates `APP_IMAGE` in the VPS `.env` for the rollout and runs:
+3. Stops/removes old PM2 process `chiateam` if present.
+4. Updates `APP_IMAGE` in the VPS `.env` for the rollout and runs:
    - `docker compose --env-file .env up -d --remove-orphans --no-build`
-6. Verifies health:
+5. Verifies health:
    - `http://127.0.0.1:8787/healthz`
 
 ## One-time Cutover Checklist

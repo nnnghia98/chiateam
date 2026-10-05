@@ -37,6 +37,7 @@ logs/
 .parcel-cache
 .eslintcache
 .npm
+.cursor/
 
 # Local OS/editor noise
 .DS_Store

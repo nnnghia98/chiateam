@@ -595,9 +595,10 @@ function createMatchCommand({
         await matches.addPlayerStat(match.id, player.id, stat, request.count);
         return {
           changed: false,
-          code: request.kind === 'goal'
-            ? 'MATCH_GOAL_UPDATED'
-            : 'MATCH_ASSIST_UPDATED',
+          code:
+            request.kind === 'goal'
+              ? 'MATCH_GOAL_UPDATED'
+              : 'MATCH_ASSIST_UPDATED',
         };
       } catch (error) {
         return { changed: false, code: 'MATCH_ACTION_FAILED', error };

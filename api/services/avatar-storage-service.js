@@ -73,10 +73,7 @@ function decodeAvatarPayload(payload) {
   }
 
   const cleanData = data.replace(/\s/g, '');
-  if (
-    cleanData.length % 4 === 1 ||
-    !/^[A-Za-z0-9+/]*={0,2}$/.test(cleanData)
-  ) {
+  if (cleanData.length % 4 === 1 || !/^[A-Za-z0-9+/]*={0,2}$/.test(cleanData)) {
     const error = new Error('Invalid avatar base64 data');
     error.code = 'INVALID_AVATAR_DATA';
     throw error;

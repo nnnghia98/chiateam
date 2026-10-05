@@ -145,10 +145,7 @@ async function handleClearBenchCallback(query, members) {
   await sendMessage({
     msg: query.message,
     type: 'DEFAULT',
-    message: CLEAR_BENCH.singleSuccess.replace(
-      '{name}',
-      escapeMarkdown(name)
-    ),
+    message: CLEAR_BENCH.singleSuccess.replace('{name}', escapeMarkdown(name)),
     options: { parse_mode: 'Markdown' },
   });
 

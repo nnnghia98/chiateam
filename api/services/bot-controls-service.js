@@ -23,7 +23,10 @@ function createBotControlsService({ db, clock = () => new Date() } = {}) {
   if (!db && process.env.DATABASE_URL) {
     db = new Pool({
       connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+      ssl:
+        process.env.NODE_ENV === 'production'
+          ? { rejectUnauthorized: false }
+          : false,
       statement_timeout: 2000,
       query_timeout: 3000,
       connectionTimeoutMillis: 1000,
@@ -48,15 +51,15 @@ function createBotControlsService({ db, clock = () => new Date() } = {}) {
     ensureConfigured();
     if (!tablePromise) {
       tablePromise = (async () => {
-          if (typeof db.connect !== 'function') {
-            const error = new Error('DATABASE_NOT_CONFIGURED');
-            error.code = 'DATABASE_NOT_CONFIGURED';
-            throw error;
-          }
-            const client = await db.connect();
-            try {
-              await client.query('BEGIN');
-              await client.query(`
+        if (typeof db.connect !== 'function') {
+          const error = new Error('DATABASE_NOT_CONFIGURED');
+          error.code = 'DATABASE_NOT_CONFIGURED';
+          throw error;
+        }
+        const client = await db.connect();
+        try {
+          await client.query('BEGIN');
+          await client.query(`
         CREATE TABLE IF NOT EXISTS bot_controls (
           platform TEXT PRIMARY KEY CHECK (platform IN ('telegram', 'zalo')),
           commands_enabled BOOLEAN NOT NULL DEFAULT TRUE,
@@ -65,8 +68,10 @@ function createBotControlsService({ db, clock = () => new Date() } = {}) {
           updated_at TIMESTAMPTZ NULL
         )
       `);
-              await client.query('ALTER TABLE bot_controls ENABLE ROW LEVEL SECURITY');
-              await client.query(`
+          await client.query(
+            'ALTER TABLE bot_controls ENABLE ROW LEVEL SECURITY'
+          );
+          await client.query(`
                 DO $$ BEGIN
                   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
                     EXECUTE 'REVOKE ALL ON TABLE bot_controls FROM anon';
@@ -77,14 +82,14 @@ function createBotControlsService({ db, clock = () => new Date() } = {}) {
                   EXECUTE 'REVOKE ALL ON TABLE bot_controls FROM PUBLIC';
                 END $$;
               `);
-              await client.query('COMMIT');
-            } catch (error) {
-              await client.query('ROLLBACK').catch(() => {});
-              throw error;
-            } finally {
-              client.release();
-            }
-          })().catch(error => {
+          await client.query('COMMIT');
+        } catch (error) {
+          await client.query('ROLLBACK').catch(() => {});
+          throw error;
+        } finally {
+          client.release();
+        }
+      })().catch(error => {
         tablePromise = null;
         throw error;
       });
