@@ -1,0 +1,29 @@
+name: Feature request
+description: Suggest a change or a new command
+labels: ['enhancement']
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: How it should work, including any new command or setting.
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Telegram
+        - Zalo
+        - Messenger
+        - API
+        - All
+    validations:
+      required: true

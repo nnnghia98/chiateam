@@ -54,12 +54,16 @@ For Telegram-to-Zalo subscriber announcements, deploy the API and the Zalo
 webhook as well as the Telegram bot. See [broadcast setup](ZALO_BROADCAST.md).
 The existing `ZALO_BOT_TOKEN` on the Telegram bot service authorizes sends.
 
-Railway will automatically detect your Node.js project and use:
+Railway builds from the root `Dockerfile` (the builder shows "Dockerfile,
+automatically detected"). Use one service per process:
 
-- **Build Command:** `yarn install --frozen-lockfile`
-- **Start Command:** `yarn start:bot`
+- **Bot service:** keep the Dockerfile default, `node bot/index.js`.
+- **API service:** set the custom start command to `node api/index.js`.
 
-These are configured in `railway.json` and `Procfile`.
+The image installs production dependencies with
+`yarn install --frozen-lockfile --production=true` and sets
+`NODE_ENV=production`. In production, the API refuses to start unless
+`INTERNAL_API_AUTH_TOKEN` is set to a private value.
 
 ## 3. Persistent Bot Storage
 
@@ -116,10 +120,9 @@ Manual redeploy:
 
 - Click **Deploy** in your Railway dashboard
 
-## 📝 Files Created for Railway
+## 📝 Files Used by Railway
 
-- `Procfile` - Tells Railway how to start your app
-- `railway.json` - Railway configuration with build and deploy settings
+- `Dockerfile` - Builds the image for both the bot and the API
 - `RAILWAY_SETUP.md` - This guide
 
 ## 🐛 Troubleshooting

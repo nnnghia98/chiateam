@@ -116,8 +116,8 @@ runtime/             Shared command wiring and repository adapters
 api/                 HTTP API, data-access routes, and domain services
 api/db/              Database connection and verification scripts
 config/              Shared environment and maintenance-mode config
-docs/                Deployment, Docker, and integration notes
-docker-compose*.yml  Local Docker stacks
+docs/                Deployment and integration notes
+Dockerfile           Image that Railway builds for the bot and API
 ```
 
 Important entrypoints:
@@ -345,8 +345,8 @@ Back up the database before risky storage changes or deployment cutovers.
 
 ## Environment Setup
 
-Every environment owns one root `.env` file with its own values. Runtime and
-Docker commands always load `.env`; they do not select environment-suffixed
+Every environment owns one root `.env` file with its own values. Runtime
+commands always load `.env`; they do not select environment-suffixed
 files. `NODE_ENV` may still identify development or production behavior, but it
 does not change which env file is loaded.
 
@@ -484,35 +484,6 @@ node --test core/use-cases/matches/match-command.test.js
 node --test runtime/start-bot.test.js
 ```
 
-## Local Docker
-
-Use native `yarn dev:*` commands for the fastest coding loop. Use Docker when
-you need container parity for the bot and API together.
-
-Development stack:
-
-```bash
-yarn docker:dev:up
-yarn docker:dev:logs
-yarn docker:dev:down
-```
-
-Production-parity stack:
-
-```bash
-yarn docker:prod:up
-yarn docker:prod:down
-```
-
-In Docker, the bot should use:
-
-```text
-BOT_API_BASE_URL=http://api:8787
-```
-
-Both Docker stacks use PostgreSQL for persistent bot state. No bot-state file
-mount is needed. See `docs/LOCAL_DOCKER.md` for the full local runbook.
-
 ## Railway Storage
 
 Set `DATABASE_URL` on the API service. Bot state is stored only in PostgreSQL.
@@ -522,7 +493,9 @@ until you choose to remove them. See `docs/RAILWAY_SETUP.md`.
 ## Deployment
 
 The maintainer runs the bot and API on Railway, which redeploys automatically
-on every push to `main`. See `docs/RAILWAY_SETUP.md`. Any host that can run
+on every push to `main`. Railway builds both services from the root
+`Dockerfile`; the API service overrides the start command with
+`node api/index.js`. See `docs/RAILWAY_SETUP.md`. Any host that can run
 `node bot/index.js` and `node api/index.js` with the same environment works.
 
 Back up PostgreSQL through your database provider before risky rollouts.
@@ -541,7 +514,6 @@ status, and settings routes available while maintenance mode is enabled.
 
 ## Additional Docs
 
-- `docs/LOCAL_DOCKER.md` - local Docker workflow
 - `docs/RAILWAY_SETUP.md` - Railway deployment
 - `docs/DATABASE_SETUP.md` - fresh database setup and migration safety
 - `docs/ADAPTER_DEVELOPMENT.md` - platform adapter boundaries and workflow

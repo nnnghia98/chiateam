@@ -1,0 +1,46 @@
+name: Bug report
+description: Something does not work as documented
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include tokens, passwords, database URLs, or real user data.
+        For a security problem, use the private report link on the issue chooser instead.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Include what you expected and what you saw instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The command or request you used, in order.
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Telegram
+        - Zalo
+        - Messenger
+        - API
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: The `version` in package.json or the commit hash.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Relevant log lines with secrets and IDs removed.
+      render: text
