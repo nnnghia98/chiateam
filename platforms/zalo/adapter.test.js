@@ -112,8 +112,8 @@ test('Zalo adapter renders rich text and replies to the source chat', async () =
   assert.deepEqual(client.sentMessages, [
     {
       chatId: 'chat-1',
-      text: '**Choose**\n\n1. View team — /team',
-      options: { parse_mode: 'markdown' },
+      text: 'Choose\n\n1. View team — /team',
+      options: {},
     },
   ]);
 });
@@ -209,7 +209,7 @@ test('Zalo unsubscribe stays available when controls API is down', async () => {
     true
   );
   assert.equal(routed, 1);
-  assert.match(client.sentMessages.at(-1).text, /temporarily unavailable/i);
+  assert.match(client.sentMessages.at(-1).text, /tạm thời không nhận lệnh/);
 });
 
 test('Zalo gate blocks paused commands and pending replies before routing', async () => {
@@ -247,7 +247,7 @@ test('Zalo gate blocks paused commands and pending replies before routing', asyn
   );
   assert.deepEqual(checked, ['bench', 'bench']);
   assert.equal(routed, 1);
-  assert.match(client.sentMessages.at(-1).text, /paused/i);
+  assert.match(client.sentMessages.at(-1).text, /tạm dừng nhận lệnh/);
 });
 
 test('private text refreshes names once, including plain text and unknown commands', async () => {

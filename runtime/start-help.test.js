@@ -168,11 +168,8 @@ for (const mode of ['polling', 'webhook']) {
 
     assert.equal(client.sentMessages.length, 1);
     assert.equal(client.sentMessages[0].chatId, 'chat-1');
-    assert.equal(client.sentMessages[0].options.parse_mode, 'markdown');
-    assert.match(
-      client.sentMessages[0].text,
-      /Xin chào A\\\*\\_ B! \\\*welcome\\\*/
-    );
+    assert.deepEqual(client.sentMessages[0].options, {});
+    assert.match(client.sentMessages[0].text, /Xin chào A\*_ B! \*welcome\*/);
     assert.match(client.sentMessages[0].text, /\/subscribe/);
     assert.match(client.sentMessages[0].text, /\/unsubscribe/);
     assert.match(client.sentMessages[0].text, /\/poll/);

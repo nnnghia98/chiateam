@@ -77,7 +77,7 @@ test('Zalo webhook application routes without polling listeners', async () => {
     { statusCode: 200, body: { ok: true } }
   );
   assert.equal(client.messages.length, 1);
-  assert.match(client.messages[0].text, /Chào Nghia! Đây là bot ChiaTeam/);
+  assert.match(client.messages[0].text, /Hướng dẫn ChiaTeam/);
   assert.deepEqual(profiles, [
     {
       userId: 'user-1',

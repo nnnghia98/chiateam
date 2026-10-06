@@ -1,9 +1,5 @@
 const ZALO_MESSAGE_MAX_LENGTH = 2000;
 
-function escapeZaloMarkdown(text) {
-  return String(text).replace(/([\\`*_~#>+\-{}])/g, '\\$1');
-}
-
 function formatActionFallbacks(actions) {
   if (actions.length === 0) {
     return '';
@@ -18,28 +14,11 @@ function formatActionFallbacks(actions) {
 }
 
 function formatZaloMessage(message) {
-  const useMarkdown = message.segments.length > 0 || message.actions.length > 0;
-  let text = message.text;
-
-  if (message.segments.length > 0) {
-    text = message.segments
-      .map(segment => {
-        const escaped = escapeZaloMarkdown(segment.text);
-        return segment.bold ? `**${escaped}**` : escaped;
-      })
-      .join('');
-  } else if (useMarkdown) {
-    text = escapeZaloMarkdown(text);
-  }
-
-  text += useMarkdown
-    ? escapeZaloMarkdown(formatActionFallbacks(message.actions))
-    : formatActionFallbacks(message.actions);
-
-  return {
-    text,
-    options: useMarkdown ? { parse_mode: 'markdown' } : {},
-  };
+  const text =
+    message.segments.length > 0
+      ? message.segments.map(segment => segment.text).join('')
+      : message.text;
+  return { text: text + formatActionFallbacks(message.actions), options: {} };
 }
 
 function splitZaloText(text, maxLength = ZALO_MESSAGE_MAX_LENGTH) {
@@ -101,7 +80,6 @@ function splitZaloText(text, maxLength = ZALO_MESSAGE_MAX_LENGTH) {
 
 module.exports = {
   ZALO_MESSAGE_MAX_LENGTH,
-  escapeZaloMarkdown,
   formatActionFallbacks,
   formatZaloMessage,
   splitZaloText,

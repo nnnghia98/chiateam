@@ -53,7 +53,7 @@ function startZaloBotRuntime({
       env.ZALO_GREETING_ENABLED !== 'false' &&
       env.ZALO_GREETING_ENABLED !== false,
     greetingResult: actor =>
-      require('../core/use-cases/common/zalo-greeting').createZaloGreetingResult(
+      require('../platforms/zalo/responses').createZaloGreetingResult(
         actor,
         env
       ),

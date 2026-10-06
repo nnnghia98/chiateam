@@ -143,7 +143,7 @@ test('Zalo runtime exposes only announcement and player actions', async () => {
     ),
     true
   );
-  assert.match(client.sentMessages.at(-1).text, /VOTE ĐANG MỞ/);
+  assert.match(client.sentMessages.at(-1).text, /Bình chọn tham gia/);
   assert.ok(client.sentMessages.at(-1).text.includes('/vote 1'));
 
   assert.equal(
@@ -164,7 +164,7 @@ test('Zalo runtime exposes only announcement and player actions', async () => {
     true
   );
   assert.match(client.sentMessages.at(-1).text, /Minh/);
-  assert.match(client.sentMessages.at(-1).text, /Số người vote/);
+  assert.match(client.sentMessages.at(-1).text, /Tham gia: 2 người/);
 
   assert.equal(
     await runtime.adapter.handleUpdate(
@@ -180,8 +180,8 @@ test('Zalo runtime exposes only announcement and player actions', async () => {
     ),
     true
   );
-  assert.match(client.sentMessages.at(-1).text, /HOME \(1\)/);
-  assert.match(client.sentMessages.at(-1).text, /AWAY \(1\)/);
+  assert.match(client.sentMessages.at(-1).text, /HOME — 1 người/);
+  assert.match(client.sentMessages.at(-1).text, /AWAY — 1 người/);
 
   runtime.stop();
   assert.equal(client.listenerCount('message'), 0);
@@ -217,7 +217,7 @@ test('Zalo runtime sends admin announcements as direct bot messages', async () =
   );
   assert.deepEqual(client.sentMessages.at(-1), {
     chatId: 'zalo-chat',
-    text: '⛔ Chỉ admin mới có quyền gửi thông báo.',
+    text: 'Chỉ admin mới có quyền gửi thông báo.',
     options: {},
   });
 
@@ -241,7 +241,7 @@ test('Zalo runtime sends admin announcements as direct bot messages', async () =
   );
   assert.deepEqual(client.sentMessages.at(-1), {
     chatId: 'zalo-chat',
-    text: '⚠️ Cách dùng: /zalosay [nội dung].',
+    text: 'Gửi /zalosay kèm nội dung tin nhắn.',
     options: {},
   });
   assert.equal(loadCount, 0);

@@ -1,3 +1,4 @@
+const { withZaloResponses } = require('../platforms/zalo/responses');
 const { COMMAND_MANIFEST } = require('../core/commands/command-manifest');
 const {
   createManagedCommandRules,
@@ -103,28 +104,37 @@ function createZaloCommandDefinitions({
   env = process.env,
   subscriptionRepository = createApiZaloAnnouncementRepository(),
 } = {}) {
-  return Object.freeze([
-    createStartCommand({
-      manifest: ZALO_COMMAND_MANIFEST.filter(entry => entry.name !== 'zalosay'),
-      includeQuickStart: false,
-      getGreeting: actor => buildZaloGreeting(actor, env),
-      commandRules: createManagedCommandRules(env),
-    }),
-    createAnnouncementCommand(),
-    createZaloSubscriptionCommand({
-      repository: subscriptionRepository,
-      subscribed: true,
-    }),
-    createZaloSubscriptionCommand({
-      repository: subscriptionRepository,
-      subscribed: false,
-    }),
-    createPollCommand(),
-    createVoteCommand(),
-    createDemvoteCommand(),
-    createBenchCommand(),
-    createTeamCommand(),
-  ]);
+  return Object.freeze(
+    [
+      createStartCommand({
+        manifest: ZALO_COMMAND_MANIFEST.filter(
+          entry => entry.name !== 'zalosay'
+        ),
+        includeQuickStart: false,
+        getGreeting: actor => buildZaloGreeting(actor, env),
+        commandRules: createManagedCommandRules(env),
+      }),
+      createAnnouncementCommand(),
+      createZaloSubscriptionCommand({
+        repository: subscriptionRepository,
+        subscribed: true,
+      }),
+      createZaloSubscriptionCommand({
+        repository: subscriptionRepository,
+        subscribed: false,
+      }),
+      createPollCommand(),
+      createVoteCommand(),
+      createDemvoteCommand(),
+      createBenchCommand(),
+      createTeamCommand(),
+    ].map(definition =>
+      withZaloResponses(definition, {
+        env,
+        commandRules: createManagedCommandRules(env),
+      })
+    )
+  );
 }
 
 module.exports = {

@@ -3,9 +3,7 @@ const {
 } = require('../../core/contracts/command-context');
 const { extractZaloMessage } = require('./client');
 const { formatZaloMessage, splitZaloText } = require('./formatter');
-const {
-  createZaloGreetingResult,
-} = require('../../core/use-cases/common/zalo-greeting');
+const { createZaloGreetingResult } = require('./responses');
 
 const DEFAULT_INTERACTION_TTL_MS = 10 * 60 * 1000;
 const DEFAULT_EVENT_TTL_MS = 60 * 60 * 1000;
@@ -47,7 +45,7 @@ function createZaloAdapter({
   greetingRepository,
   greetingResult = createZaloGreetingResult,
   greetingEnabled = process.env.ZALO_GREETING_ENABLED !== 'false',
-  errorMessage = '❌ Có lỗi xảy ra. Vui lòng thử lại.',
+  errorMessage = 'Chưa xử lý được yêu cầu.\nVui lòng gửi lại lệnh sau ít phút.',
   onError = error => console.error('❌ [zalo.adapter]', error),
   commandGate,
 } = {}) {
@@ -345,8 +343,8 @@ function createZaloAdapter({
   async function reportControl(context, control) {
     const text =
       control?.available === false
-        ? '⚠️ Bot commands are temporarily unavailable. Please try again later.'
-        : '⏸️ Bot commands are currently paused.';
+        ? 'Bot đang tạm thời không nhận lệnh.\nVui lòng thử lại sau.'
+        : 'Bot đang tạm dừng nhận lệnh.\nVui lòng thử lại sau.';
     try {
       await client.sendMessage(context.conversation.externalId, text);
     } catch (error) {

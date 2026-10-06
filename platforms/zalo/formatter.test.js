@@ -29,8 +29,8 @@ test('Zalo formatter renders rich text and action command fallbacks', () => {
   );
 
   assert.deepEqual(formatZaloMessage(result.messages[0]), {
-    text: '**Team**\nA\\_B\n\n1. Home\\-Away — /team',
-    options: { parse_mode: 'markdown' },
+    text: 'Team\nA_B\n\n1. Home-Away — /team',
+    options: {},
   });
 });
 
