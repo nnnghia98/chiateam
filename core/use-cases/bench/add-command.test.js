@@ -140,14 +140,15 @@ test('independent add action prompts for names and handles duplicates', async ()
   assert.equal(duplicates.saves.length, 0);
 });
 
-test('independent /add rejects non-admin actors before loading state', async () => {
+test('independent /add lets non-admin actors add guests', async () => {
   const { router, saves, getLoadCount } = createAddRouter({ isAdmin: false });
 
   const routed = await router.run(createContext(['Alice']));
 
-  assert.equal(routed.result.messages[0].text, ADD_MESSAGES.permissionDenied);
-  assert.equal(getLoadCount(), 0);
-  assert.equal(saves.length, 0);
+  assert.match(routed.result.messages[0].text, /Đã thêm 1/);
+  assert.equal(getLoadCount(), 1);
+  assert.equal(saves.length, 1);
+  assert.equal(saves[0].bench[0][1].name, 'Alice');
 });
 
 test('independent /add reports invalid state and repository failures', async () => {

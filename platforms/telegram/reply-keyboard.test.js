@@ -45,8 +45,10 @@ test('reply keyboard maps exact labels and keeps Telegram options', () => {
     ['⚽ Team', 'team'],
     ['👥➕ Thêm vào team', 'addtoteam'],
     ['🗑️ Xoá khỏi team', 'clearteam'],
-    ['🗳️ Tạo vote', 'taovote'],
-    ['📊 Kết quả vote', 'demvote'],
+    ['🗳️ Tạo vote', 'taopoll'],
+    ['🗳️ Tạo poll', 'taopoll'],
+    ['📊 Kết quả vote', 'dempoll'],
+    ['📊 Kết quả poll', 'dempoll'],
     ['🔄 Đồng bộ bench', 'sync'],
     ['📣 Gửi Zalo', 'zalosay'],
   ];
@@ -59,12 +61,12 @@ test('reply keyboard maps exact labels and keeps Telegram options', () => {
   assert.equal(getReplyKeyboardAction('/bench 2'), null);
   assert.deepEqual(createReplyKeyboard(), {
     keyboard: [
-      [{ text: '🗳️ Vote ngay' }, { text: '🗳️ Tạo vote' }],
+      [{ text: '🗳️ Vote ngay' }, { text: '🗳️ Tạo poll' }],
       [{ text: '📋 Bench' }, { text: '✏️ Sửa bench' }],
       [{ text: '🗑️ Xoá khỏi bench' }, { text: '👤 Thêm người' }],
       [{ text: '🎲 Chia team' }, { text: '⚽ Team' }],
       [{ text: '👥➕ Thêm vào team' }, { text: '🗑️ Xoá khỏi team' }],
-      [{ text: '📊 Kết quả vote' }, { text: '🔄 Đồng bộ bench' }],
+      [{ text: '📊 Kết quả poll' }, { text: '🔄 Đồng bộ bench' }],
       [{ text: '📣 Gửi Zalo' }],
     ],
     resize_keyboard: true,

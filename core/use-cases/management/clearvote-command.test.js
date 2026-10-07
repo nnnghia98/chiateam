@@ -16,7 +16,7 @@ const {
 
 function createContext(args = [], actorId = '123') {
   return {
-    command: 'clearvote',
+    command: 'clearpoll',
     args,
     actor: {
       platform: 'telegram',
@@ -79,14 +79,14 @@ function createClearvoteRouter({
   return { router, closes, saves, state, getLoadCount: () => loadCount };
 }
 
-test('shared /clearvote parser supports confirmation and cancel', () => {
+test('shared /clearpoll parser supports confirmation and cancel', () => {
   assert.deepEqual(parseClearvoteRequest([]), { kind: 'confirm' });
   assert.deepEqual(parseClearvoteRequest(['CONFIRM']), { kind: 'clear' });
   assert.deepEqual(parseClearvoteRequest(['cancel']), { kind: 'cancel' });
   assert.equal(parseClearvoteRequest(['now']), null);
 });
 
-test('independent /clearvote asks before closing or saving', async () => {
+test('independent /clearpoll asks before closing or saving', async () => {
   const { router, closes, saves } = createClearvoteRouter();
 
   const routed = await router.run(createContext());
@@ -97,7 +97,7 @@ test('independent /clearvote asks before closing or saving', async () => {
   assert.equal(saves.length, 0);
 });
 
-test('independent /clearvote closes and clears the active vote', async () => {
+test('independent /clearpoll closes and clears the active vote', async () => {
   const { router, closes, saves, state } = createClearvoteRouter();
 
   const routed = await router.run(createContext(['confirm']));
@@ -108,7 +108,7 @@ test('independent /clearvote closes and clears the active vote', async () => {
   assert.equal(routed.result.messages[0].text, CLEARVOTE_MESSAGES.success);
 });
 
-test('independent /clearvote clears state when platform close fails', async () => {
+test('independent /clearpoll clears state when platform close fails', async () => {
   const { router, saves } = createClearvoteRouter({
     closeError: new Error('Telegram unavailable'),
   });
@@ -119,7 +119,7 @@ test('independent /clearvote clears state when platform close fails', async () =
   assert.equal(routed.result.messages[0].text, CLEARVOTE_MESSAGES.closeFailed);
 });
 
-test('independent /clearvote handles cancel, empty state, and invalid input', async () => {
+test('independent /clearpoll handles cancel, empty state, and invalid input', async () => {
   const current = createClearvoteRouter();
   const empty = createClearvoteRouter({ state: { activeVote: null } });
 
@@ -137,7 +137,7 @@ test('independent /clearvote handles cancel, empty state, and invalid input', as
   assert.equal(empty.saves.length, 0);
 });
 
-test('independent /clearvote enforces permission and reports storage errors', async () => {
+test('independent /clearpoll enforces permission and reports storage errors', async () => {
   const denied = createClearvoteRouter({ isAdmin: false });
   const loadFailure = createClearvoteRouter({
     loadError: new Error('API unavailable'),

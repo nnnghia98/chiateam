@@ -107,7 +107,7 @@ One installation still manages one team. Private users see the same bench,
 teams, matches and active vote. Allowed edits affect that shared data. Admin
 permissions still depend on the sender's configured user ID.
 
-`/taovote` deliberately publishes the team poll to `CHAT_ID` and
+`/taopoll` deliberately publishes the team poll to `CHAT_ID` and
 `ANNOUNCEMENT_THREAD_ID` when a group is configured. Its confirmation or error
 returns to the requesting private chat. Without `CHAT_ID`, the poll uses the
 incoming chat and topic. Closing an existing vote still closes its stored poll.

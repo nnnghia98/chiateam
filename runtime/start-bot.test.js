@@ -270,7 +270,7 @@ test('bot runtime saves /addme with Telegram-compatible identity', async () => {
   runtime.stop();
 });
 
-test('bot runtime enforces Telegram admin permission for atomic /add', async () => {
+test('bot runtime allows everyone to add guests atomically', async () => {
   const bot = new MockTelegramBot();
   const state = { bench: [] };
   const saves = [];
@@ -322,8 +322,9 @@ test('bot runtime enforces Telegram admin permission for atomic /add', async () 
     ),
     true
   );
-  assert.equal(saves.length, 1);
-  assert.equal(bot.sentMessages[1].text, '⛔ Chỉ admin mới có quyền.');
+  assert.equal(saves.length, 2);
+  assert.equal(saves[1].bench.at(-1)[1].name, 'Carol');
+  assert.match(bot.sentMessages[1].text, /Đã thêm 1 member/);
 
   runtime.stop();
 });
@@ -1483,7 +1484,7 @@ test('Telegram create-vote menu asks for a question and publishes the vote', asy
   assert.match(bot.sentMessages[2].text, /Đã tạo vote/);
 
   assert.equal(
-    await runtime.adapter.handleEvent(createEvent('/taovote Vote khác')),
+    await runtime.adapter.handleEvent(createEvent('/taopoll Vote khác')),
     true
   );
   assert.equal(bot.sentPolls.length, 1);
@@ -1495,7 +1496,7 @@ test('Telegram create-vote menu asks for a question and publishes the vote', asy
   runtime.stop();
 });
 
-test('bot runtime renders migrated /demvote from normalized vote choices', async () => {
+test('bot runtime renders migrated /dempoll from normalized vote choices', async () => {
   const bot = new MockTelegramBot();
   const state = { activeVote: null };
   let loadCount = 0;
@@ -1521,7 +1522,7 @@ test('bot runtime renders migrated /demvote from normalized vote choices', async
   });
 
   assert.equal(
-    await runtime.adapter.handleEvent(createEvent('/demvote', { id: 999 })),
+    await runtime.adapter.handleEvent(createEvent('/dempoll', { id: 999 })),
     true
   );
   assert.match(bot.sentMessages[0].text, /Không có vote/);
@@ -1537,7 +1538,7 @@ test('bot runtime renders migrated /demvote from normalized vote choices', async
   };
 
   assert.equal(
-    await runtime.adapter.handleEvent(createEvent('/demvote', { id: 999 })),
+    await runtime.adapter.handleEvent(createEvent('/dempoll', { id: 999 })),
     true
   );
   assert.match(bot.sentMessages[1].text, /Sân A 20h/);
@@ -1546,7 +1547,7 @@ test('bot runtime renders migrated /demvote from normalized vote choices', async
   assert.equal(bot.sentMessages[1].options.message_thread_id, '55');
 
   assert.equal(
-    await runtime.adapter.handleEvent(createEvent('/demvote extra')),
+    await runtime.adapter.handleEvent(createEvent('/dempoll extra')),
     true
   );
   assert.match(bot.sentMessages[2].text, /không kèm tham số/);
@@ -1750,7 +1751,7 @@ test('Telegram runtime routes the complete shared command catalog', async () => 
     '/match view 06/08/2026',
     '/matches',
     '/sync',
-    '/clearvote confirm',
+    '/clearpoll confirm',
     '/reset',
   ];
 

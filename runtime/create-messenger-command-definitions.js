@@ -18,7 +18,7 @@ const MESSENGER_COMMAND_NAMES = Object.freeze([
   'start',
   'poll',
   'vote',
-  'demvote',
+  'dempoll',
   'bench',
   'team',
 ]);
@@ -52,7 +52,7 @@ const MESSENGER_COMMAND_MANIFEST = Object.freeze(
       description: 'Chọn hoặc đổi lựa chọn bình chọn',
       permission: 'player',
     },
-    requireSharedManifestEntry('demvote'),
+    requireSharedManifestEntry('dempoll'),
     requireSharedManifestEntry('bench'),
     requireSharedManifestEntry('team'),
   ].map(entry =>

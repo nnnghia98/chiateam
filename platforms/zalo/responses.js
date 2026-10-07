@@ -32,7 +32,7 @@ const helpGroups = [
     [
       ['poll', '/poll — Xem bình chọn đang mở'],
       ['vote', '/vote — Xem cách đăng ký tham gia'],
-      ['demvote', '/demvote — Xem kết quả bình chọn'],
+      ['dempoll', '/dempoll — Xem kết quả bình chọn'],
     ],
   ],
   [
@@ -73,14 +73,14 @@ const errors = {
     STATE_SAVE_FAILED:
       'Chưa lưu được lựa chọn của bạn.\nVui lòng gửi lại lệnh vừa dùng.',
   },
-  demvote: {
-    INVALID_ARGUMENTS: 'Gửi /demvote, không thêm nội dung phía sau.',
+  dempoll: {
+    INVALID_ARGUMENTS: 'Gửi /dempoll, không thêm nội dung phía sau.',
     NO_ACTIVE_VOTE:
       'Chưa có bình chọn đang mở.\nGửi /poll để kiểm tra lại sau.',
     STATE_LOAD_FAILED:
-      'Chưa tải được kết quả bình chọn.\nVui lòng gửi lại /demvote sau ít phút.',
+      'Chưa tải được kết quả bình chọn.\nVui lòng gửi lại /dempoll sau ít phút.',
     INVALID_VOTE_STATE:
-      'Chưa tải được kết quả bình chọn.\nVui lòng gửi lại /demvote sau ít phút.',
+      'Chưa tải được kết quả bình chọn.\nVui lòng gửi lại /dempoll sau ít phút.',
   },
   bench: {
     EMPTY_BENCH: 'Danh sách cầu thủ đang trống.',
@@ -162,7 +162,7 @@ function withZaloResponses(definition, { env, commandRules }) {
             : `Đã ghi nhận: ${outcome.name} ${selection(outcome.choice)}.`
         );
       }
-      if (name === 'demvote') {
+      if (name === 'dempoll') {
         const groups = [...outcome.summary.choices]
           .reverse()
           .map(

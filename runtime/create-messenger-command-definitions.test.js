@@ -21,7 +21,7 @@ test('Messenger command definitions expose only the approved MVP commands', () =
     true
   );
   assert.equal(
-    MESSENGER_COMMAND_MANIFEST.some(entry => entry.aliases.length),
-    false
+    MESSENGER_COMMAND_MANIFEST.some(entry => entry.aliases.includes('demvote')),
+    true
   );
 });

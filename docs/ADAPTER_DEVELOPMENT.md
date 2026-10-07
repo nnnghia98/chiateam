@@ -54,7 +54,7 @@ The Zalo adapter currently exposes:
 /zalosay MESSAGE   (alias: /say; admin only)
 /poll
 /vote
-/demvote
+/dempoll
 /bench
 /team
 ```
@@ -72,7 +72,7 @@ without Zalo's announcement command:
 /start
 /poll
 /vote
-/demvote
+/dempoll
 /bench
 /team
 ```

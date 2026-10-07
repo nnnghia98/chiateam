@@ -35,7 +35,7 @@ const ZALO_COMMAND_NAMES = Object.freeze([
   'unsubscribe',
   'poll',
   'vote',
-  'demvote',
+  'dempoll',
   'bench',
   'team',
 ]);
@@ -89,7 +89,7 @@ const ZALO_COMMAND_MANIFEST = Object.freeze(
       description: 'Chọn hoặc đổi lựa chọn bình chọn',
       permission: 'player',
     },
-    requireSharedManifestEntry('demvote'),
+    requireSharedManifestEntry('dempoll'),
     requireSharedManifestEntry('bench'),
     requireSharedManifestEntry('team'),
   ].map(entry =>

@@ -12,8 +12,10 @@ const REPLY_KEYBOARD_ACTIONS = Object.freeze({
   '⚽ Team': action('team'),
   '👥➕ Thêm vào team': action('addtoteam'),
   '🗑️ Xoá khỏi team': action('clearteam'),
-  '🗳️ Tạo vote': action('taovote'),
-  '📊 Kết quả vote': action('demvote'),
+  '🗳️ Tạo vote': action('taopoll'),
+  '🗳️ Tạo poll': action('taopoll'),
+  '📊 Kết quả vote': action('dempoll'),
+  '📊 Kết quả poll': action('dempoll'),
   '🔄 Đồng bộ bench': action('sync'),
   '📣 Gửi Zalo': action('zalosay'),
 });
@@ -21,12 +23,12 @@ const REPLY_KEYBOARD_ACTIONS = Object.freeze({
 function createReplyKeyboard() {
   return {
     keyboard: [
-      [{ text: '🗳️ Vote ngay' }, { text: '🗳️ Tạo vote' }],
+      [{ text: '🗳️ Vote ngay' }, { text: '🗳️ Tạo poll' }],
       [{ text: '📋 Bench' }, { text: '✏️ Sửa bench' }],
       [{ text: '🗑️ Xoá khỏi bench' }, { text: '👤 Thêm người' }],
       [{ text: '🎲 Chia team' }, { text: '⚽ Team' }],
       [{ text: '👥➕ Thêm vào team' }, { text: '🗑️ Xoá khỏi team' }],
-      [{ text: '📊 Kết quả vote' }, { text: '🔄 Đồng bộ bench' }],
+      [{ text: '📊 Kết quả poll' }, { text: '🔄 Đồng bộ bench' }],
       [{ text: '📣 Gửi Zalo' }],
     ],
     resize_keyboard: true,

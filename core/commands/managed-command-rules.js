@@ -1,3 +1,5 @@
+const { getCommandManifestEntry } = require('./command-manifest');
+
 function parseRules(value) {
   if (!value) return {};
   try {
@@ -32,7 +34,17 @@ function createManagedCommandRules(env = process.env) {
       return {};
     const selected = rules[context.actor.platform];
     if (selected === null) return { enabled: false };
-    return selected?.[definition.name] || {};
+    return (
+      selected?.[definition.name] ||
+      (
+        definition.aliases ||
+        getCommandManifestEntry(definition.name)?.aliases ||
+        []
+      )
+        .map(alias => selected?.[alias])
+        .find(Boolean) ||
+      {}
+    );
   };
 }
 module.exports = { createManagedCommandRules, parseRules };

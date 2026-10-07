@@ -8,7 +8,7 @@ const {
 const { summarizeAttendanceVote } = require('./attendance-vote');
 
 const DEMVOTE_MESSAGES = Object.freeze({
-  usage: '⚠️ Dùng /demvote không kèm tham số.',
+  usage: '⚠️ Dùng /dempoll không kèm tham số.',
   noVote: '📭 Không có vote nào đang hoạt động để đếm.',
   loadError: '❌ Không thể tải kết quả vote hiện tại từ API.',
 });
@@ -48,10 +48,10 @@ const createDefaultResult = text =>
 
 function createDemvoteCommand() {
   return createCommandDefinition({
-    name: 'demvote',
-    aliases: [],
+    name: 'dempoll',
+    aliases: ['demvote'],
     instruction: {
-      usage: '/demvote',
+      usage: '/dempoll',
       description: 'Show the current attendance vote result',
       permission: 'player',
     },

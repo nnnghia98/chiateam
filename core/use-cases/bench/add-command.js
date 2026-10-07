@@ -95,7 +95,7 @@ function createAddCommand({
     instruction: {
       usage: '/add NAME[, NAME...]',
       description: 'Add named guests to the bench',
-      permission: 'admin',
+      permission: 'player',
     },
     stateKeys: ['bench'],
     condition: async (context, state) => {

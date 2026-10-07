@@ -4,7 +4,7 @@ const ACTIONS = Object.freeze({
   vote_yes: { command: 'vote', args: ['1'] },
   vote_no: { command: 'vote', args: ['0'] },
   show_vote: { command: 'vote', args: [] },
-  vote_results: { command: 'demvote', args: [] },
+  vote_results: { command: 'dempoll', args: [] },
   bench: { command: 'bench', args: [] },
   teams: { command: 'team', args: [] },
 });

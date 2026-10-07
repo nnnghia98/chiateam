@@ -9,7 +9,7 @@ The Messenger adapter reuses the shared football core for:
 /start
 /poll
 /vote
-/demvote
+/dempoll
 /bench
 /team
 ```
@@ -105,11 +105,11 @@ Do not start a local polling process. Messenger delivery is webhook-only.
 
 1. Send `/start`; it must list only the six Messenger commands.
 2. Send `/addme` and `/chiateam`; the bot must not reply or change state.
-3. Create a vote from Telegram with `/taovote QUESTION`.
+3. Create a vote from Telegram with `/taopoll QUESTION`.
 4. Send `/poll`; it must show the shared vote, two text choices, and tell users to send `/vote`.
 5. Send `/vote`; it must list “⚽️ Đá” (`/vote 1`) and “🫷 Thôi” (`/vote 0`).
 6. Send `/vote 1`, then `/vote 0`; the second choice must replace the first.
-7. Send `/demvote`; the Messenger voter must appear once.
+7. Send `/dempoll`; the Messenger voter must appear once.
 8. Send `/bench` and `/team`; both must remain read-only.
 9. Redeliver one signed webhook payload; it must not run twice.
 

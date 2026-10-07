@@ -209,20 +209,20 @@ test('independent /removemanifest handles empty, invalid, and malformed states',
   );
 });
 
-test('independent /removemanifest denies non-admins before loading state', async () => {
+test('independent /removemanifest lets non-admins remove constraints', async () => {
   const { router, saves, getLoadCount } = createRemovemanifestRouter({
     state: { manifest: [createManifest(0)] },
     isAdmin: false,
   });
 
-  const routed = await router.run(createContext([], '999'));
+  const prompt = await router.run(createContext([], '999'));
+  const command = prompt.result.messages[0].actions[0].command.split(' ');
+  const routed = await router.run(createContext(command.slice(1), '999'));
 
-  assert.equal(
-    routed.result.messages[0].text,
-    REMOVEMANIFEST_MESSAGES.permissionDenied
-  );
-  assert.equal(getLoadCount(), 0);
-  assert.equal(saves.length, 0);
+  assert.match(routed.result.messages[0].text, /Đã xóa manifest/);
+  assert.equal(getLoadCount(), 2);
+  assert.equal(saves.length, 1);
+  assert.equal(saves[0].manifest, null);
 });
 
 test('independent /removemanifest reports repository load and save errors', async () => {

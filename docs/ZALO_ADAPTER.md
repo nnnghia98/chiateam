@@ -15,7 +15,7 @@ The Zalo adapter currently reuses the shared football core for:
 /unsubscribe (private chat only)
 /poll
 /vote
-/demvote
+/dempoll
 /bench
 /team
 ```
@@ -104,7 +104,7 @@ yarn dev:zalo
 Live checklist:
 
 1. Send `/start`. It must list `/subscribe`, `/unsubscribe`, `/poll`,
-   `/vote`, `/demvote`, `/bench`, and `/team`. It must hide `/zalosay` and `/say`.
+   `/vote`, `/dempoll`, `/bench`, and `/team`. It must hide `/zalosay` and `/say`.
 2. As a configured admin, send `/zalosay Hello team`. The bot must post
    `Hello team` in the same Zalo chat.
 3. In Zalo, send `/subscribe`. As a Telegram admin, send
@@ -113,11 +113,11 @@ Live checklist:
    Telegram must show delivery counts. See the broadcast guide before live testing.
 4. As a non-admin, send `/zalosay Hello team`. The bot must deny it.
 5. Send `/addme` and `/chiateam`. The bot must not reply or change state.
-6. Create an active vote from the Telegram admin flow with `/taovote QUESTION`.
+6. Create an active vote from the Telegram admin flow with `/taopoll QUESTION`.
 7. Send `/poll` in Zalo. It must show the question, two text choices, and tell users to send `/vote`.
 8. Send `/vote`. It must list “⚽️ Đá” (`/vote 1`) and “🫷 Thôi” (`/vote 0`).
 9. Send `/vote 1`, then `/vote 0`. The second choice must replace the first.
-10. Send `/demvote`. The Zalo voter must appear in the shared result.
+10. Send `/dempoll`. The Zalo voter must appear in the shared result.
 11. Send `/bench` and `/team`. Both must remain read-only.
 
 Historical checkpoint: the original non-broadcast steps passed against the

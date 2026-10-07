@@ -173,7 +173,7 @@ function createRemovemanifestCommand() {
     instruction: {
       usage: '/removemanifest [NUMBER]',
       description: 'Remove one team constraint',
-      permission: 'admin',
+      permission: 'player',
     },
     stateKeys: ['manifest'],
     condition: async (context, state) => {

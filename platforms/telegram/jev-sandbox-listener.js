@@ -19,7 +19,7 @@ const ACTIONS = Object.freeze({
   },
   vote_results: {
     label: 'Show attendance results',
-    command: '/demvote',
+    command: '/dempoll',
     meaning: 'Show who is coming or how many people are coming.',
   },
   bench: {

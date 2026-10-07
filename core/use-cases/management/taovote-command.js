@@ -73,10 +73,10 @@ function createTaovoteCommand({ votePublisher, now = () => new Date() } = {}) {
   }
 
   return createCommandDefinition({
-    name: 'taovote',
-    aliases: [],
+    name: 'taopoll',
+    aliases: ['taovote'],
     instruction: {
-      usage: '/taovote [QUESTION]',
+      usage: '/taopoll [QUESTION]',
       description: 'Create one attendance vote',
       permission: 'player',
     },
@@ -159,14 +159,14 @@ function createTaovoteCommand({ votePublisher, now = () => new Date() } = {}) {
       if (outcome.code === 'VOTE_QUESTION_REQUESTED') {
         return createTextResult(TAOVOTE_MESSAGES.prompt, [], {
           channel: 'default',
-          input: { command: 'taovote' },
+          input: { command: 'taopoll' },
         });
       }
 
       if (outcome.code === 'INVALID_QUESTION') {
         return createTextResult(TAOVOTE_MESSAGES.invalid, [], {
           channel: 'default',
-          input: { command: 'taovote' },
+          input: { command: 'taopoll' },
         });
       }
 

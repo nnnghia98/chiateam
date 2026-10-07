@@ -66,7 +66,7 @@ Restart the bot after updating the code.
 Set `TELEGRAM_JEV_SANDBOX=true` locally or on the Railway bot service to log
 Jev's chosen action, mapped command, and probability in readable language.
 Tagged group messages and private text messages go through Jev before running
-one of the six actions: `/vote 1`, `/vote 0`, `/vote`, `/demvote`, `/bench`, `/team`.
+one of the six actions: `/vote 1`, `/vote 0`, `/vote`, `/dempoll`, `/bench`, `/team`.
 Plain `vote` also goes through Jev. `/start` is not a Jev action option.
 Unclear or unmatched requests do not run commands. The normal confidence checks,
 cooldown, permission checks, and current-vote checks apply before execution.

@@ -322,7 +322,7 @@ test('independent /manifest handles invalid state and repository failures', asyn
   assert.equal(saveFailure.saves.length, 0);
 });
 
-test('independent /manifest blocks non-admin actors before state load', async () => {
+test('independent /manifest lets non-admin actors save constraints', async () => {
   const { router, saves, getLoadCount } = createManifestRouter({
     state: { bench: createBench(2), manifest: null },
     isAdmin: false,
@@ -330,10 +330,8 @@ test('independent /manifest blocks non-admin actors before state load', async ()
 
   const routed = await router.run(createContext(['1', 'SAME', '2'], '999'));
 
-  assert.equal(
-    routed.result.messages[0].text,
-    MANIFEST_MESSAGES.permissionDenied
-  );
-  assert.equal(getLoadCount(), 0);
-  assert.equal(saves.length, 0);
+  assert.match(routed.result.messages[0].text, /Đã nhận nguyện vọng/);
+  assert.equal(getLoadCount(), 1);
+  assert.equal(saves.length, 1);
+  assert.equal(saves[0].manifest[0].relation, 'same');
 });

@@ -174,7 +174,7 @@ for (const mode of ['polling', 'webhook']) {
     assert.match(client.sentMessages[0].text, /\/unsubscribe/);
     assert.match(client.sentMessages[0].text, /\/poll/);
     assert.match(client.sentMessages[0].text, /\/vote/);
-    assert.match(client.sentMessages[0].text, /\/demvote/);
+    assert.match(client.sentMessages[0].text, /\/dempoll/);
     assert.match(client.sentMessages[0].text, /\/bench/);
     assert.doesNotMatch(client.sentMessages[0].text, /\/team/);
     assert.doesNotMatch(client.sentMessages[0].text, /\/zalosay|\/say/);

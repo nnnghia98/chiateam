@@ -90,7 +90,7 @@ test('Messenger runtime exposes only shared vote and read commands', async () =>
     true
   );
   const help = client.sentMessages.at(-1).text;
-  ['/poll', '/vote', '/demvote', '/bench', '/team'].forEach(command => {
+  ['/poll', '/vote', '/dempoll', '/bench', '/team'].forEach(command => {
     assert.match(help, new RegExp(command));
   });
   assert.doesNotMatch(help, /\/addme|\/chiateam|\/register|\/zalosay/);
@@ -127,7 +127,7 @@ test('Messenger runtime exposes only shared vote and read commands', async () =>
 
   assert.equal(
     await runtime.adapter.handleUpdate(
-      createUpdate('/demvote', 'player-2', 'Minh', 'message-5')
+      createUpdate('/dempoll', 'player-2', 'Minh', 'message-5')
     ),
     true
   );

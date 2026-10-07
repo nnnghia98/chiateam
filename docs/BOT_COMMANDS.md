@@ -19,7 +19,7 @@ one football community.
 | Teams            | `/chiateam`, `/team`, `/addtoteam`, `/clearteam`                               |
 | Team constraints | `/manifest`, `/mf`, `/manifests`, `/removemanifest`, `/clearmanifests`         |
 | Venue and fees   | `/san`, `/clearsan`, `/tiensan`, `/tiennuoc`, `/winner`, `/loser`, `/chiatien` |
-| Attendance vote  | `/taovote`, `/vote`, `/clearvote`, `/demvote`, `/sync`                         |
+| Attendance vote  | `/taopoll`, `/vote`, `/clearpoll`, `/dempoll`, `/sync`                         |
 | Players          | `/register`, `/me`                                                             |
 | Matches          | `/match`, `/matches`                                                           |
 | Admin reset      | `/reset`                                                                       |
@@ -79,10 +79,10 @@ inline buttons stay unchanged. This menu is available only in Telegram.
 - Telegram is the primary adapter. It accepts all supported slash commands and
   alternate names, with menu buttons recommended for convenience.
 - Zalo uses the production webhook and exposes only `/start`, `/zalosay`,
-  `/subscribe`, `/unsubscribe`, `/poll`, `/vote`, `/demvote`, `/bench`, and `/team`.
+  `/subscribe`, `/unsubscribe`, `/poll`, `/vote`, `/dempoll`, `/bench`, and `/team`.
 - Zalo roster and team mutation commands are intentionally disabled.
 - Messenger has a local webhook MVP with only `/start`, `/poll`, `/vote`,
-  `/demvote`, `/bench`, and `/team`.
+  `/dempoll`, `/bench`, and `/team`.
 - Messenger `/vote` is the only write command. Admin, registration, roster,
   and team mutation commands are not available. Delivery is webhook-only.
 - One installation manages one football community.
@@ -106,7 +106,7 @@ Editing `.env` does not replace settings already saved in the admin panel.
 
 Private chats use the same team, bench, match and vote data. Admin commands
 still require the configured admin user ID. A confirmed `/zalosay` broadcast
-still sends to subscribed Zalo users. `/taovote` still publishes its team poll
+still sends to subscribed Zalo users. `/taopoll` still publishes its team poll
 to the configured group; without `CHAT_ID`, it uses the incoming chat.
 
 Help and greeting templates use standard emoji with bold section headings.
@@ -123,7 +123,7 @@ platform limits and checks after deployment.
   `/subscribe` in a private Zalo chat and can stop with `/unsubscribe`.
   `ZALO_BOT_OWNER_ID` is no longer the broadcast destination.
   See [Zalo broadcast setup](ZALO_BROADCAST.md) for deployment and status commands.
-- `/clearvote confirm` requires confirmation.
+- `/clearpoll confirm` requires confirmation.
 - `/reset` runs immediately and is admin-only.
 - `/register NUMBER`, `/register add NAME NUMBER`, or
   `/register delete NUMBER`.
@@ -144,10 +144,23 @@ Interactive commands that use inline keyboards:
 - `/manifest`
 - `/removemanifest`
 - `/clearmanifests`
-- `/clearvote`
+- `/clearpoll`
 
-These commands are admin-only when they show or handle inline keyboard actions.
+`/manifest` and `/removemanifest` are available to everyone, including inline
+keyboard actions. The other commands in this list require admin permission.
 Inline keyboards show at most 10 players or manifest entries per page. Their
 prompt and follow-up messages are sent back to the chat where the command or
 button was used, including the same Telegram topic when available, instead of
 using the configured `CHAT_ID`.
+
+## Poll names and permissions
+
+Use `/taopoll` to create an attendance poll, `/dempoll` to view results, and
+`/clearpoll` to close and clear it. `/taovote`, `/demvote`, and `/clearvote`
+remain compatible aliases. `/vote` still submits attendance; Zalo and Messenger
+`/poll` still show the question. Existing saved rules using old names remain
+effective; rules under the new names take precedence.
+
+Everyone can use Telegram `/add`, `/manifest`, and `/removemanifest`. Saved
+admin panel rules may still restrict these commands. `/clearmanifests` remains
+admin-only.

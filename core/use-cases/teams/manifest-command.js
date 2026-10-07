@@ -220,7 +220,7 @@ function createManifestCommand() {
     instruction: {
       usage: '/manifest [FIRST SAME|DIFFERENT SECOND]',
       description: 'Add or replace one team constraint',
-      permission: 'admin',
+      permission: 'player',
     },
     stateKeys: MANIFEST_STATE_KEYS,
     condition: async (context, state) => {

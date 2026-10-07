@@ -17,7 +17,7 @@ const {
 
 function createContext(args = [], actorId = '123') {
   return {
-    command: 'taovote',
+    command: 'taopoll',
     args,
     actor: {
       platform: 'telegram',
@@ -107,14 +107,14 @@ test('independent taovote action prompts an admin for the question', async () =>
 
   assert.equal(routed.result.messages[0].text, TAOVOTE_MESSAGES.prompt);
   assert.deepEqual(routed.result.messages[0].input, {
-    command: 'taovote',
+    command: 'taopoll',
     args: [],
   });
   assert.equal(published.length, 0);
   assert.equal(saves.length, 0);
 });
 
-test('independent /taovote denies a player before loading state', async () => {
+test('independent /taopoll denies a player before loading state', async () => {
   const { router, published, saves, getLoadCount } = createTaovoteRouter({
     isAdmin: false,
   });
@@ -130,7 +130,7 @@ test('independent /taovote denies a player before loading state', async () => {
   assert.equal(saves.length, 0);
 });
 
-test('independent /taovote refuses to replace an active vote', async () => {
+test('independent /taopoll refuses to replace an active vote', async () => {
   const { router, published, saves } = createTaovoteRouter({
     state: { activeVote: { id: 'current-poll' } },
   });
@@ -142,7 +142,7 @@ test('independent /taovote refuses to replace an active vote', async () => {
   assert.equal(saves.length, 0);
 });
 
-test('independent /taovote publishes and saves one platform-neutral vote', async () => {
+test('independent /taopoll publishes and saves one platform-neutral vote', async () => {
   const { router, state, published, saves } = createTaovoteRouter();
 
   const routed = await router.run(createContext(['Sân', 'A', '20h']));
@@ -174,7 +174,7 @@ test('independent /taovote publishes and saves one platform-neutral vote', async
   assert.equal(routed.result.messages[0].text, '✅ Đã tạo vote: Sân A 20h');
 });
 
-test('independent /taovote handles invalid state and external failures', async () => {
+test('independent /taopoll handles invalid state and external failures', async () => {
   const invalidQuestion = createTaovoteRouter();
   const invalidState = createTaovoteRouter({ state: { activeVote: 'bad' } });
   const loadFailure = createTaovoteRouter({

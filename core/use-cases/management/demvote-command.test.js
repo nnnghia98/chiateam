@@ -12,7 +12,7 @@ const { DEMVOTE_MESSAGES, createDemvoteCommand } = require('./demvote-command');
 
 function createContext(args = []) {
   return {
-    command: 'demvote',
+    command: 'dempoll',
     args,
     actor: {
       platform: 'telegram',
@@ -47,17 +47,50 @@ function createDemvoteRouter({ state = { activeVote: null }, loadError } = {}) {
   return { router, getSaveCount: () => saveCount };
 }
 
-test('independent /demvote reports no active vote', async () => {
+test('independent /dempoll reports no active vote', async () => {
   const { router, getSaveCount } = createDemvoteRouter();
 
-  const routed = await router.run(createContext());
-
-  assert.equal(routed.result.messages[0].text, DEMVOTE_MESSAGES.noVote);
-  assert.equal(routed.result.messages[0].channel, 'default');
+  for (const command of ['dempoll', 'demvote']) {
+    const routed = await router.run({ ...createContext(), command });
+    assert.equal(routed.command, 'dempoll');
+    assert.equal(routed.result.messages[0].text, DEMVOTE_MESSAGES.noVote);
+    assert.equal(routed.result.messages[0].channel, 'default');
+  }
   assert.equal(getSaveCount(), 0);
 });
 
-test('independent /demvote summarizes legacy and neutral choices', async () => {
+test('legacy poll rules still pause canonical and alias commands', async () => {
+  const {
+    createManagedCommandRules,
+  } = require('../../commands/managed-command-rules');
+  const definition = createDemvoteCommand();
+  const rules = createManagedCommandRules({
+    TELEGRAM_COMMAND_RULES: JSON.stringify({ demvote: { enabled: false } }),
+  });
+  const router = createCommandRouter({
+    registry: createCommandRegistry([definition]),
+    commandRules: rules,
+    stateRepository: createStateRepository({
+      load: async () => {
+        throw new Error('Paused commands must not load state');
+      },
+      save: async () => {},
+    }),
+  });
+  for (const command of ['dempoll', 'demvote']) {
+    const routed = await router.run({ ...createContext(), command });
+    assert.match(routed.result.messages[0].text, /paused/);
+  }
+  assert.deepEqual(
+    createManagedCommandRules({
+      TELEGRAM_COMMAND_RULES:
+        '{"demvote":{"enabled":false},"dempoll":{"enabled":true}}',
+    })(createContext(), definition),
+    { enabled: true }
+  );
+});
+
+test('independent /dempoll summarizes legacy and neutral choices', async () => {
   const { router, getSaveCount } = createDemvoteRouter({
     state: {
       activeVote: {
@@ -85,7 +118,7 @@ test('independent /demvote summarizes legacy and neutral choices', async () => {
   assert.equal(getSaveCount(), 0);
 });
 
-test('independent /demvote ignores retracted votes in the summary', async () => {
+test('independent /dempoll ignores retracted votes in the summary', async () => {
   const { router } = createDemvoteRouter({
     state: {
       activeVote: {
@@ -104,7 +137,7 @@ test('independent /demvote ignores retracted votes in the summary', async () => 
   assert.doesNotMatch(routed.result.messages[0].text, /Alice/);
 });
 
-test('independent /demvote handles invalid input, state, and load errors', async () => {
+test('independent /dempoll handles invalid input, state, and load errors', async () => {
   const valid = createDemvoteRouter();
   const invalidState = createDemvoteRouter({
     state: { activeVote: { question: 'bad' } },

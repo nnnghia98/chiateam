@@ -7,10 +7,10 @@ const {
 } = require('../../ports/attendance-vote-controller');
 
 const CLEARVOTE_MESSAGES = Object.freeze({
-  usage: '⚠️ Dùng /clearvote, /clearvote confirm hoặc /clearvote cancel.',
+  usage: '⚠️ Dùng /clearpoll, /clearpoll confirm hoặc /clearpoll cancel.',
   permissionDenied: '⛔ Chỉ admin mới có quyền xóa vote.',
   confirmation:
-    '⚠️ Đóng và xóa vote hiện tại?\nDùng /clearvote confirm để xác nhận.',
+    '⚠️ Đóng và xóa vote hiện tại?\nDùng /clearpoll confirm để xác nhận.',
   cancelled: '✅ Đã hủy xóa vote.',
   noVote: '📭 Không có vote nào đang hoạt động để xóa.',
   success: '🗑️ Đã đóng và xóa vote.',
@@ -50,12 +50,12 @@ function createClearvoteActions() {
     {
       id: 'clearvote_confirm',
       label: '✅ Xác nhận',
-      command: '/clearvote confirm',
+      command: '/clearpoll confirm',
     },
     {
       id: 'clearvote_cancel',
       label: 'Hủy',
-      command: '/clearvote cancel',
+      command: '/clearpoll cancel',
     },
   ];
 }
@@ -64,10 +64,10 @@ function createClearvoteCommand({ voteController } = {}) {
   const controller = assertAttendanceVoteController(voteController);
 
   return createCommandDefinition({
-    name: 'clearvote',
-    aliases: [],
+    name: 'clearpoll',
+    aliases: ['clearvote'],
     instruction: {
-      usage: '/clearvote [confirm|cancel]',
+      usage: '/clearpoll [confirm|cancel]',
       description: 'Close and clear the active attendance vote',
       permission: 'admin',
     },

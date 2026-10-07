@@ -141,9 +141,9 @@ test('a closed private topic retries in the same private chat', async t => {
 });
 
 for (const configuredChat of ['-100999', null]) {
-  test(`private /taovote confirms privately with group destination ${configuredChat}`, async t => {
+  test(`private /taopoll confirms privately with group destination ${configuredChat}`, async t => {
     const { runtime, sent, polls, state } = setup(t, configuredChat);
-    await runtime.adapter.handleEvent(privateEvent('/taovote Sân A 20h'));
+    await runtime.adapter.handleEvent(privateEvent('/taopoll Sân A 20h'));
     assert.equal(polls.length, 1);
     assert.equal(polls[0].chatId, configuredChat || '123');
     assert.equal(
