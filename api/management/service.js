@@ -414,7 +414,9 @@ function createManagementService({
       keys.some(
         key =>
           getEntry(key)?.secret ||
-          /OWNER|ADMIN_IDS|CHAT_ID|THREAD_ID|_URL|ZALO_MODE/.test(key)
+          /OWNER|ADMIN_IDS|CHAT_ID|THREAD_ID|CHANNEL_ROUTING|_URL|ZALO_MODE/.test(
+            key
+          )
       ) &&
       body.confirm !== true
     )

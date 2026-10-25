@@ -19,6 +19,8 @@ The admin panel backend's full service-token set is `MANAGEMENT_API_TOKEN`, `MAN
 
 The `.env.example` leaves managed startup **off**. Enable it explicitly only after the admin panel backend is ready. Stop old unmanaged receiver deployments when moving to this setup. An unmanaged process does not take part in leases or restart control.
 
+Telegram and API fall back to root `.env` settings if admin panel settings cannot be loaded at startup, even with `MANAGEMENT_BOOTSTRAP=true`. They stop checking the admin panel for that process run; restart to reconnect. Standalone workers do not use leases or acknowledge Apply, so run only one instance. Once managed settings load successfully, lease protection remains required during outages. Zalo startup behavior is unchanged.
+
 The root `.env` and `.env.example` use `BOT` and `API` sections. Keep
 `MANAGEMENT_*` settings under `API`, including tokens shared with bot services.
 The admin panel web app reads its own environment. Its `ADMIN_PASSWORD` and

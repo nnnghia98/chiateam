@@ -159,7 +159,7 @@ test('Zalo runtime exposes only announcement and player actions', async () => {
 
   assert.equal(
     await runtime.adapter.handleUpdate(
-      createUpdate('/dempoll', 'player-2', 'Minh', 'message-6')
+      createUpdate('/demvote', 'player-2', 'Minh', 'message-6')
     ),
     true
   );

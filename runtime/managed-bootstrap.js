@@ -98,11 +98,8 @@ function startManagedSupervisor({
   installSignals = true,
   supervisorOptions = {},
 } = {}) {
-  const client =
-    runtimeClient ||
-    (service === 'api'
-      ? directClient(service, env)
-      : createManagedRuntimeClient({ service, env }));
+  let client = runtimeClient;
+  let standalone = false;
   let currentSnapshot = null,
     stopped = false,
     timer = null,
@@ -118,6 +115,10 @@ function startManagedSupervisor({
     entrypoint: path.resolve(entrypoint),
     forkImpl,
     resolveEnv: async version => {
+      if (standalone)
+        return Object.fromEntries(
+          Object.entries(env).filter(([key]) => !key.startsWith('MANAGEMENT_'))
+        );
       if (currentSnapshot?.version !== version)
         throw Object.assign(new Error('STALE_VERSION'), {
           code: 'STALE_VERSION',
@@ -146,9 +147,14 @@ function startManagedSupervisor({
   }
   async function tick() {
     if (stopped) return;
+    if (standalone) return;
     if (working) return working;
     working = (async () => {
       try {
+        client ||=
+          service === 'api'
+            ? directClient(service, env)
+            : createManagedRuntimeClient({ service, env });
         const next = await client.getSettings();
         if (
           !Number.isInteger(next?.version) ||
@@ -209,6 +215,20 @@ function startManagedSupervisor({
           await report('failed', 'CHILD_EXIT');
         }
       } catch (error) {
+        if (!currentSnapshot && ['telegram', 'api'].includes(service)) {
+          standalone = true;
+          logger.warn?.(
+            `[managed:${service}] Admin panel backend unavailable; using root environment until restart.`
+          );
+          try {
+            await supervisor.apply(0);
+          } catch (startError) {
+            logger.error?.(
+              `[managed:${service}] ${safeError(startError).code}`
+            );
+          }
+          return;
+        }
         // Fail closed before the 30-second receiver lease can expire.
         if (leased && held) {
           held = false;
@@ -248,7 +268,7 @@ function startManagedSupervisor({
     clearInterval(renewTimer);
     await working;
     await stopReceiver();
-    await client.close?.();
+    await client?.close?.();
     if (installSignals) {
       process.removeListener('SIGTERM', onSignal);
       process.removeListener('SIGINT', onSignal);

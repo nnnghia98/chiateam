@@ -6,6 +6,9 @@ const { COMMAND_MANIFEST } = require('../../core/commands/command-manifest');
 const {
   ZALO_COMMAND_MANIFEST,
 } = require('../../runtime/create-zalo-command-definitions');
+const {
+  normalizeTelegramRouting,
+} = require('../../platforms/telegram/channel-routing');
 function seal(value, key, aad) {
   const iv = crypto.randomBytes(12),
     cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
@@ -258,7 +261,17 @@ function createManagementStore({
       }
       if (item.type === 'json') {
         if (!record(value) || JSON.stringify(value).length > 24000)
-          return 'INVALID_COMMAND_RULES';
+          return name === 'TELEGRAM_CHANNEL_ROUTING'
+            ? 'INVALID_TELEGRAM_CHANNEL_ROUTING'
+            : 'INVALID_COMMAND_RULES';
+        if (name === 'TELEGRAM_CHANNEL_ROUTING') {
+          try {
+            normalizeTelegramRouting(value);
+          } catch {
+            return 'INVALID_TELEGRAM_CHANNEL_ROUTING';
+          }
+          continue;
+        }
         const commands =
           name === 'TELEGRAM_COMMAND_RULES'
             ? COMMAND_MANIFEST

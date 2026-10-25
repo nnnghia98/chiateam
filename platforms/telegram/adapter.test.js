@@ -8,9 +8,180 @@ const {
 } = require('../../core/contracts/command-result');
 const {
   createTelegramAdapter,
+  createTelegramChannelConfig,
   parseCommandText,
   parseTelegramCommandAction,
 } = require('./adapter');
+
+test('unified Telegram routing sends default replies and photos to the configured destination or source', async () => {
+  for (const [destination, chat, thread, expectedChat, expectedThread] of [
+    [null, { id: 123, type: 'private' }, undefined, '123', undefined],
+    [null, { id: -456, type: 'supergroup' }, 10, '-456', '10'],
+    [
+      { chatId: '-100999', threadId: '88' },
+      { id: 123, type: 'private' },
+      undefined,
+      '-100999',
+      '88',
+    ],
+    [
+      { chatId: '-100999' },
+      { id: -456, type: 'group' },
+      10,
+      '-100999',
+      undefined,
+    ],
+  ]) {
+    const bot = new MockTelegramBot();
+    const adapter = createTelegramAdapter({
+      bot,
+      channelConfig: createTelegramChannelConfig({
+        TELEGRAM_CHANNEL_ROUTING: JSON.stringify({
+          default: destination,
+          channels: [],
+          routes: {},
+        }),
+        CHAT_ID: '-100777',
+        MAIN_THREAD_ID: '99',
+      }),
+      router: {
+        run: async () => ({
+          handled: true,
+          result: {
+            messages: [
+              'source',
+              'default',
+              'main',
+              'announcement',
+              'statistics',
+            ].map(channel => ({
+              text: channel,
+              channel,
+              segments: [],
+              actions: [],
+              photoUrl: 'https://example.test/chart.png',
+            })),
+          },
+        }),
+      },
+    });
+    await adapter.handleEvent({
+      ...createEvent('/start'),
+      chat,
+      message_thread_id: thread,
+    });
+    assert.equal(bot.sentMessages.length, 5);
+    for (const sent of [...bot.sentMessages, ...bot.sentPhotos]) {
+      assert.equal(sent.chatId, expectedChat);
+      assert.equal(sent.options.message_thread_id, expectedThread);
+    }
+  }
+});
+
+test('unified Telegram routes select extra IDs and keep recipient-only and compose messages stable', async () => {
+  const bot = new MockTelegramBot();
+  const adapter = createTelegramAdapter({
+    bot,
+    channelConfig: createTelegramChannelConfig({
+      TELEGRAM_CHANNEL_ROUTING: {
+        default: { chatId: '-100999', threadId: '11' },
+        channels: [{ chatId: '-100888', threadId: '22' }],
+        routes: { statistics: '-100888/22' },
+      },
+    }),
+    router: {
+      run: async () => ({
+        handled: true,
+        result: {
+          messages: [
+            { text: 'stats', channel: 'statistics', segments: [], actions: [] },
+            { text: 'private', channel: 'private', segments: [], actions: [] },
+          ],
+        },
+      }),
+    },
+  });
+  await adapter.handleEvent(createEvent('/match'));
+  assert.equal(bot.sentMessages[0].chatId, '-100888');
+  assert.equal(bot.sentMessages[0].options.message_thread_id, '22');
+  assert.equal(bot.sentMessages[1].chatId, '123');
+  assert.equal(bot.sentMessages[1].options.message_thread_id, undefined);
+  await adapter.handleEvent(createEvent('/zalosay'));
+  assert.equal(bot.sentMessages[2].chatId, '-456');
+  assert.equal(bot.sentMessages[2].options.message_thread_id, '10');
+});
+
+test('redirected Telegram prompts accept follow-up input in their destination', async () => {
+  const bot = new MockTelegramBot();
+  const contexts = [];
+  const adapter = createTelegramAdapter({
+    bot,
+    channelConfig: createTelegramChannelConfig({
+      TELEGRAM_CHANNEL_ROUTING: {
+        default: { chatId: '-100999', threadId: '88' },
+        channels: [],
+        routes: {},
+      },
+    }),
+    router: {
+      run: async context => {
+        contexts.push(context);
+        return {
+          handled: true,
+          result: createTextResult(
+            context.args.length ? 'Saved' : 'Enter a name',
+            [],
+            context.args.length
+              ? {}
+              : { input: { command: 'editbench', args: [] } }
+          ),
+        };
+      },
+    },
+  });
+  await adapter.handleEvent({
+    ...createEvent('/editbench'),
+    chat: { id: 123, type: 'private' },
+    message_thread_id: undefined,
+  });
+  assert.equal(
+    await adapter.handleEvent({
+      ...createEvent('New Name'),
+      chat: { id: -100999, type: 'supergroup' },
+      message_thread_id: 88,
+    }),
+    true
+  );
+  assert.deepEqual(contexts[1].args, ['New Name']);
+  assert.equal(contexts[1].command, 'editbench');
+  assert.equal(bot.sentMessages[1].text, 'Saved');
+});
+
+test('unified Telegram does not leak a closed-topic reply into the general group', async () => {
+  const bot = new MockTelegramBot();
+  let calls = 0;
+  bot.sendMessage = async () => {
+    calls++;
+    throw new Error('TOPIC_CLOSED');
+  };
+  const adapter = createTelegramAdapter({
+    bot,
+    channelConfig: createTelegramChannelConfig({
+      TELEGRAM_CHANNEL_ROUTING: {
+        default: { chatId: '-100999', threadId: '88' },
+        channels: [],
+        routes: {},
+      },
+    }),
+    router: { run: async () => ({ handled: false }) },
+  });
+  const context = adapter.toCommandContext(createEvent('/bench'));
+  await assert.rejects(
+    adapter.sendResult(context, createTextResult('Reply')),
+    /TOPIC_CLOSED/
+  );
+  assert.equal(calls, 1);
+});
 
 class MockTelegramBot extends EventEmitter {
   constructor() {

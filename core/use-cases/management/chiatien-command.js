@@ -86,7 +86,7 @@ function createChiatienCommand() {
     aliases: [],
     instruction: {
       usage: '/chiatien',
-      description: 'Preview each player’s fee without sending payment requests',
+      description: 'Preview each player’s fee',
       permission: 'player',
     },
     stateKeys: [

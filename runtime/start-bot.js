@@ -3,7 +3,10 @@ const { createCommandRouter } = require('../core/commands/command-router');
 const {
   createManagedCommandRules,
 } = require('../core/commands/managed-command-rules');
-const { createTelegramAdapter } = require('../platforms/telegram/adapter');
+const {
+  createTelegramAdapter,
+  createTelegramChannelConfig,
+} = require('../platforms/telegram/adapter');
 const {
   createApiStateRepository,
 } = require('./repositories/api-state-repository');
@@ -40,7 +43,7 @@ function startBotRuntime({
   const adapter = createTelegramAdapter({
     bot,
     router,
-    channelConfig: telegramChannelConfig,
+    channelConfig: telegramChannelConfig || createTelegramChannelConfig(env),
     registerActionHandler: registerTelegramActionHandler,
     onError,
     naturalLanguage,

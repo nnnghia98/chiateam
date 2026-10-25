@@ -20,23 +20,10 @@ const TELEGRAM_CAPABILITIES = Object.freeze({
   threads: true,
 });
 
-function normalizeTelegramConfigValue(value) {
-  const normalized = String(value ?? '').trim();
-  return normalized || null;
-}
-
-function createTelegramChannelConfig(env = process.env) {
-  return Object.freeze({
-    chatId: normalizeTelegramConfigValue(env.CHAT_ID),
-    threads: Object.freeze({
-      default: normalizeTelegramConfigValue(env.DEFAULT_THREAD_ID),
-      main: normalizeTelegramConfigValue(env.MAIN_THREAD_ID),
-      announcement: normalizeTelegramConfigValue(env.ANNOUNCEMENT_THREAD_ID),
-      vip: normalizeTelegramConfigValue(env.VIP_THREAD_ID),
-      statistics: normalizeTelegramConfigValue(env.STATISTICS_THREAD_ID),
-    }),
-  });
-}
+const {
+  createTelegramChannelConfig,
+  resolveTelegramDestination,
+} = require('./channel-routing');
 
 function getDisplayName(from) {
   return [from.first_name, from.last_name].filter(Boolean).join(' ') || null;
@@ -328,36 +315,23 @@ function createTelegramAdapter({
         options.reply_markup = createReplyKeyboard();
         replyKeyboardAttached = true;
       }
-      const hasConfiguredChannel = Object.prototype.hasOwnProperty.call(
-        channelConfig.threads || {},
+      const { chatId, threadId } = resolveTelegramDestination(
+        channelConfig,
+        context,
         message.channel
       );
-      const isPrivateRecipient = message.channel === 'private';
-      const isPrivateChat = context.conversation.type === 'private';
-      const useSource =
-        !isPrivateRecipient &&
-        (isPrivateChat ||
-          isStartCommand ||
-          message.channel === 'source' ||
-          !channelConfig.chatId ||
-          !hasConfiguredChannel);
-      const chatId = isPrivateRecipient
-        ? context.actor.externalId
-        : useSource
-          ? context.conversation.externalId
-          : channelConfig.chatId || context.conversation.externalId;
-      const threadId = isPrivateRecipient
-        ? null
-        : useSource
-          ? context.conversation.threadId
-          : channelConfig.threads?.[message.channel];
-
-      if (isPrivateRecipient || useSource) {
-        delete options.message_thread_id;
-      }
-      if (threadId != null) {
-        options.message_thread_id = threadId;
-      }
+      delete options.message_thread_id;
+      if (threadId != null) options.message_thread_id = threadId;
+      const inputContext = channelConfig.routing
+        ? {
+            ...context,
+            conversation: {
+              ...context.conversation,
+              externalId: String(chatId),
+              threadId: threadId == null ? null : String(threadId),
+            },
+          }
+        : context;
 
       if (message.photoUrl) {
         await bot.sendPhoto(
@@ -368,25 +342,11 @@ function createTelegramAdapter({
         if (!isCurrent(context, version)) return;
       }
 
-      if (message.photoBuffer) {
-        const photoOptions = { caption: rendered.text };
-        if (threadId != null) {
-          photoOptions.message_thread_id = threadId;
-        }
-
-        await bot.sendPhoto(chatId, message.photoBuffer, photoOptions, {
-          filename: 'payment-qr.png',
-          contentType: 'image/png',
-        });
-        if (!isCurrent(context, version)) return;
-        rememberInput(context, message.input);
-        continue;
-      }
-
       try {
         await bot.sendMessage(chatId, rendered.text, options);
       } catch (error) {
         const shouldRetryWithoutThread =
+          !channelConfig.routing &&
           threadId != null &&
           (error.message?.includes('message thread not found') ||
             error.message?.includes('TOPIC_CLOSED'));
@@ -398,9 +358,11 @@ function createTelegramAdapter({
         const fallbackOptions = { ...options };
         delete fallbackOptions.message_thread_id;
         await bot.sendMessage(chatId, rendered.text, fallbackOptions);
+        if (channelConfig.routing) inputContext.conversation.threadId = null;
       }
 
-      if (isCurrent(context, version)) rememberInput(context, message.input);
+      if (isCurrent(context, version))
+        rememberInput(inputContext, message.input);
     }
   }
 
@@ -542,10 +504,13 @@ function createTelegramAdapter({
     }
 
     try {
-      await bot.sendMessage(context.conversation.externalId, errorMessage, {
-        ...(context.conversation.threadId != null
-          ? { message_thread_id: context.conversation.threadId }
-          : {}),
+      const { chatId, threadId } = resolveTelegramDestination(
+        channelConfig,
+        context,
+        'source'
+      );
+      await bot.sendMessage(chatId, errorMessage, {
+        ...(threadId != null ? { message_thread_id: threadId } : {}),
       });
     } catch (sendError) {
       onError(sendError);
@@ -554,17 +519,28 @@ function createTelegramAdapter({
 
   async function reportActionError(query, error) {
     onError(error);
-    const chatId = query?.message?.chat?.id;
+    const sourceChatId = query?.message?.chat?.id;
 
-    if (chatId == null) {
+    if (sourceChatId == null) {
       return;
     }
 
     try {
+      const { chatId, threadId } = resolveTelegramDestination(
+        channelConfig,
+        {
+          actor: { externalId: query.from?.id },
+          conversation: {
+            externalId: sourceChatId,
+            threadId: query.message.message_thread_id,
+            type: query.message.chat.type,
+          },
+          command: parseTelegramCommandAction(query.data)?.command,
+        },
+        'source'
+      );
       await bot.sendMessage(chatId, errorMessage, {
-        ...(query.message.message_thread_id != null
-          ? { message_thread_id: query.message.message_thread_id }
-          : {}),
+        ...(threadId != null ? { message_thread_id: threadId } : {}),
       });
     } catch (sendError) {
       onError(sendError);
@@ -577,10 +553,13 @@ function createTelegramAdapter({
         ? '⚠️ Bot commands are temporarily unavailable. Please try again later.'
         : '⏸️ Bot commands are currently paused.';
     try {
-      await bot.sendMessage(context.conversation.externalId, text, {
-        ...(context.conversation.threadId != null
-          ? { message_thread_id: context.conversation.threadId }
-          : {}),
+      const { chatId, threadId } = resolveTelegramDestination(
+        channelConfig,
+        context,
+        'source'
+      );
+      await bot.sendMessage(chatId, text, {
+        ...(threadId != null ? { message_thread_id: threadId } : {}),
       });
     } catch (error) {
       onError(error);

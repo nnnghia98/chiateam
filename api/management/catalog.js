@@ -34,6 +34,7 @@ const entries = [
     'text',
     ['telegram'],
     'restart',
+    { advanced: true },
   ],
   [
     'DEFAULT_THREAD_ID',
@@ -43,6 +44,7 @@ const entries = [
     'text',
     ['telegram'],
     'restart',
+    { advanced: true },
   ],
   [
     'MAIN_THREAD_ID',
@@ -52,6 +54,7 @@ const entries = [
     'text',
     ['telegram'],
     'restart',
+    { advanced: true },
   ],
   [
     'ANNOUNCEMENT_THREAD_ID',
@@ -61,6 +64,7 @@ const entries = [
     'text',
     ['telegram'],
     'restart',
+    { advanced: true },
   ],
   [
     'VIP_THREAD_ID',
@@ -70,6 +74,7 @@ const entries = [
     'text',
     ['telegram'],
     'restart',
+    { advanced: true },
   ],
   [
     'STATISTICS_THREAD_ID',
@@ -77,6 +82,16 @@ const entries = [
     'Statistics topic ID',
     'ID topic thống kê (message_thread_id trong nhóm)',
     'text',
+    ['telegram'],
+    'restart',
+    { advanced: true },
+  ],
+  [
+    'TELEGRAM_CHANNEL_ROUTING',
+    'Telegram',
+    'Telegram channel routing',
+    'Định tuyến các kênh Telegram',
+    'json',
     ['telegram'],
     'restart',
   ],
@@ -505,6 +520,7 @@ function makeEntry(item) {
     services: [...services],
     apply,
     ...(section === 'Deployment' ? { advanced: true } : {}),
+    ...(extra.advanced ? { advanced: true } : {}),
     ...(extra.options ? { options: [...extra.options] } : {}),
     ...(extra.default !== undefined ? { default: extra.default } : {}),
   };
@@ -548,6 +564,11 @@ for (const entry of CATALOG) {
     entry.description = {
       en: 'Optional Telegram group destination. Private command replies stay in the sender’s chat. Team polls use this destination when set. Leave empty for source-chat routing.',
       vi: 'ID nhóm Telegram tùy chọn. Lệnh trong chat riêng được trả lời tại chat đó. Vote của đội gửi vào nhóm này nếu đã đặt. Để trống để dùng chat gửi lệnh.',
+    };
+  if (entry.key === 'TELEGRAM_CHANNEL_ROUTING')
+    entry.description = {
+      en: 'One optional default destination, extra chat/topic IDs and message-purpose overrides. An unset default replies at the source; a configured default includes ordinary private-chat replies. Apply restarts the managed Telegram worker.',
+      vi: 'Một đích mặc định tùy chọn, các ID chat/topic bổ sung và định tuyến theo mục đích tin nhắn. Chưa đặt mặc định thì trả lời tại nguồn; đã đặt thì nhận cả trả lời thông thường từ chat riêng. Áp dụng khởi động lại tiến trình Telegram có quản lý.',
     };
   if (entry.key.endsWith('THREAD_ID'))
     entry.description = {

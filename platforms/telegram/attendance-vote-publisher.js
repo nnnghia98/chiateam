@@ -4,7 +4,10 @@ const {
 const {
   ATTENDANCE_VOTE_LABELS,
 } = require('../../core/use-cases/management/attendance-vote');
-const { createTelegramChannelConfig } = require('./adapter');
+const {
+  createTelegramChannelConfig,
+  resolveTelegramDestination,
+} = require('./channel-routing');
 
 function createTelegramAttendanceVotePublisher({
   bot,
@@ -18,15 +21,11 @@ function createTelegramAttendanceVotePublisher({
 
   return createAttendanceVotePublisher({
     async publish(vote, context) {
-      const hasConfiguredChat = Boolean(channelConfig.chatId);
-      const chatId = channelConfig.chatId || context.conversation.externalId;
-      const threadId =
-        // /taopoll is an explicit team publication. Keep its configured
-        // announcement destination when a team chat exists; without one,
-        // publish in the source conversation and never use a stray group ID.
-        hasConfiguredChat
-          ? (channelConfig.threads?.announcement ?? null)
-          : context.conversation.threadId;
+      const { chatId, threadId } = resolveTelegramDestination(
+        channelConfig,
+        context,
+        'poll'
+      );
       const baseOptions = {
         is_anonymous: false,
         allows_multiple_answers: false,
@@ -50,6 +49,7 @@ function createTelegramAttendanceVotePublisher({
         );
       } catch (error) {
         const shouldRetryWithoutThread =
+          !channelConfig.routing &&
           threadId != null &&
           (error.message?.includes('message thread not found') ||
             error.message?.includes('TOPIC_CLOSED'));

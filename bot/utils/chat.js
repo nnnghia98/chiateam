@@ -1,56 +1,47 @@
 const bot = require('../telegram-client');
 const { logEvent } = require('./logger');
 
-const normalizeConfigValue = value => {
-  const normalized = String(value ?? '').trim();
-  return normalized || null;
-};
+const {
+  createTelegramChannelConfig,
+  resolveTelegramDestination,
+} = require('../../platforms/telegram/channel-routing');
+const channelConfig = createTelegramChannelConfig();
+const CHAT_ID = channelConfig.chatId;
+const THREAD_TYPES = Object.fromEntries(
+  Object.entries(channelConfig.threads).map(([key, value]) => [
+    key.toUpperCase(),
+    value,
+  ])
+);
 
-const THREAD_TYPES = {
-  DEFAULT: normalizeConfigValue(process.env.DEFAULT_THREAD_ID),
-  MAIN: normalizeConfigValue(process.env.MAIN_THREAD_ID),
-  ANNOUNCEMENT: normalizeConfigValue(process.env.ANNOUNCEMENT_THREAD_ID),
-  VIP: normalizeConfigValue(process.env.VIP_THREAD_ID),
-  STATISTICS: normalizeConfigValue(process.env.STATISTICS_THREAD_ID),
-};
-
-const CHAT_ID = normalizeConfigValue(process.env.CHAT_ID);
-
-logEvent('telegram.config', 'threads loaded', {
+logEvent('telegram.config', 'routing loaded', {
+  unified: Boolean(channelConfig.routing),
   chat: CHAT_ID,
-  default: THREAD_TYPES.DEFAULT,
-  main: THREAD_TYPES.MAIN,
-  announcement: THREAD_TYPES.ANNOUNCEMENT,
-  vip: THREAD_TYPES.VIP,
-  statistics: THREAD_TYPES.STATISTICS,
 });
 
 const sendMessage = async ({ msg, type, message, options = {} }) => {
   const { useSourceChat = false, ...providedOptions } = options;
-  const sourceChat = useSourceChat || msg?.chat?.type === 'private' || !CHAT_ID;
+  const context = {
+    actor: { externalId: msg.from?.id },
+    conversation: {
+      externalId: msg.chat.id,
+      threadId: msg.message_thread_id,
+      type: msg.chat.type,
+    },
+  };
+  const { chatId, threadId } = resolveTelegramDestination(
+    channelConfig,
+    context,
+    useSourceChat && !channelConfig.routing
+      ? 'source'
+      : String(type || 'default').toLowerCase()
+  );
   const baseOptions = { ...providedOptions };
-  if (sourceChat) {
-    delete baseOptions.message_thread_id;
-  }
-  const chatId = sourceChat ? msg.chat.id : CHAT_ID;
-  const threadId = sourceChat ? msg.message_thread_id : THREAD_TYPES[type];
-
+  delete baseOptions.message_thread_id;
   const sendOptions =
-    threadId != null
-      ? {
-          ...baseOptions,
-          message_thread_id: threadId,
-        }
-      : baseOptions;
-
-  if (!sourceChat && type && threadId == null) {
-    logEvent(
-      'telegram.send',
-      'unknown thread type',
-      { type, chat: chatId },
-      'warn'
-    );
-  }
+    threadId == null
+      ? { ...baseOptions }
+      : { ...baseOptions, message_thread_id: threadId };
 
   try {
     return await bot.sendMessage(chatId, message, sendOptions);
@@ -65,6 +56,7 @@ const sendMessage = async ({ msg, type, message, options = {} }) => {
 
     // If thread not found or closed, try sending without thread (fallback to main chat)
     const shouldFallback =
+      !channelConfig.routing &&
       threadId != null &&
       (error.message?.includes('message thread not found') ||
         error.message?.includes('TOPIC_CLOSED'));

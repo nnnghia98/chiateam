@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('crypto');
 const { createManagementService } = require('./service');
+const { createTelegramAdapter } = require('../../platforms/telegram/adapter');
 function fakePool() {
   const db = { row: null, lock: false, waiting: [] };
   const acquire = async () => {
@@ -151,6 +152,77 @@ test('candidate test resolves the saved draft secret and enforces expectedVersio
     true
   );
   assert.equal(calls[0].env.TELEGRAM_BOT_TOKEN, 'managed-token');
+});
+
+test('canonical Telegram routing requires confirmation and reaches Telegram runtime after apply', async () => {
+  const s = createManagementService({ env: env(), db: fakePool() });
+  const routing = {
+    default: { chatId: '-1001' },
+    channels: [{ chatId: '-1002', threadId: '9' }],
+    routes: { announcement: '-1002/9' },
+  };
+  assert.equal(
+    (
+      await s.save(
+        { expectedVersion: 0, changes: { TELEGRAM_CHANNEL_ROUTING: routing } },
+        'admin'
+      )
+    ).code,
+    'CONFIRM_REQUIRED'
+  );
+  const saved = await s.save(
+    {
+      expectedVersion: 0,
+      confirm: true,
+      changes: { TELEGRAM_CHANNEL_ROUTING: routing },
+    },
+    'admin'
+  );
+  assert.equal(saved.version, 1);
+  const beforeApply = await s.runtime('telegram');
+  assert.ok(!beforeApply.env.TELEGRAM_CHANNEL_ROUTING);
+  await s.apply({ expectedVersion: 1, confirm: true }, 'admin');
+  const runtime = await s.runtime('telegram');
+  assert.deepEqual(JSON.parse(runtime.env.TELEGRAM_CHANNEL_ROUTING), routing);
+  const sent = [];
+  const bot = {
+    on() {},
+    removeListener() {},
+    sendMessage: async (chatId, text, options) =>
+      sent.push({ chatId, text, options }),
+    sendPhoto: async () => {},
+  };
+  const adapter = createTelegramAdapter({
+    bot,
+    channelConfig:
+      require('../../platforms/telegram/channel-routing').createTelegramChannelConfig(
+        runtime.env
+      ),
+    router: {
+      run: async () => ({
+        handled: true,
+        result: {
+          messages: [
+            { text: 'hello', channel: 'default', segments: [], actions: [] },
+          ],
+        },
+      }),
+    },
+  });
+  await adapter.handleEvent({
+    text: '/start',
+    chat: { id: 123, type: 'private' },
+    from: { id: 123 },
+    message_id: 1,
+  });
+  assert.equal(sent[0].chatId, '-1001');
+  assert.equal(sent[0].options.message_thread_id, undefined);
+  const report = await s.report('telegram', {
+    version: runtime.version,
+    state: 'applied',
+    healthy: true,
+  });
+  assert.equal(report.ok, true);
 });
 
 test('failed candidate test prevents apply and leaves active version unchanged', async () => {

@@ -217,3 +217,59 @@ test('store rejects credential destinations and hidden plaintext objects', async
     true
   );
 });
+
+test('store validates canonical Telegram routing and preserves it through apply', async () => {
+  const p = fakePool();
+  const s = createManagementStore({ env: env(), db: p });
+  const routing = {
+    default: { chatId: '-1001', threadId: '7' },
+    channels: [{ chatId: '-1002' }],
+    routes: { announcement: '-1002/' },
+  };
+  const saved = await s.save({
+    expectedVersion: 0,
+    changes: { TELEGRAM_CHANNEL_ROUTING: routing },
+  });
+  assert.equal(saved.ok, true);
+  assert.deepEqual(
+    (await s.readDraft()).values.TELEGRAM_CHANNEL_ROUTING,
+    routing
+  );
+  await s.apply(1, 'test');
+  assert.deepEqual(
+    JSON.parse(
+      (await s.resolveActive('telegram')).env.TELEGRAM_CHANNEL_ROUTING
+    ),
+    routing
+  );
+});
+
+test('store rejects duplicate and dangling Telegram routing destinations', async () => {
+  const s = createManagementStore({ env: env(), db: fakePool() });
+  const base = { default: null, channels: [{ chatId: '-1001' }], routes: {} };
+  assert.equal(
+    (
+      await s.save({
+        expectedVersion: 0,
+        changes: {
+          TELEGRAM_CHANNEL_ROUTING: {
+            ...base,
+            channels: [{ chatId: '-1001' }, { chatId: '-1001' }],
+          },
+        },
+      })
+    ).code,
+    'INVALID_TELEGRAM_CHANNEL_ROUTING'
+  );
+  assert.equal(
+    (
+      await s.save({
+        expectedVersion: 0,
+        changes: {
+          TELEGRAM_CHANNEL_ROUTING: { ...base, routes: { main: '-999/' } },
+        },
+      })
+    ).code,
+    'INVALID_TELEGRAM_CHANNEL_ROUTING'
+  );
+});

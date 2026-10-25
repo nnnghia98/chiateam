@@ -3,6 +3,33 @@ const assert = require('node:assert/strict');
 const { EventEmitter } = require('node:events');
 const { registerMentionLogger } = require('./mention-logger');
 
+test('unified mention replies use the default without quoting an unrelated destination message', t => {
+  const previous = process.env.TELEGRAM_CHANNEL_ROUTING;
+  t.after(() => {
+    if (previous == null) delete process.env.TELEGRAM_CHANNEL_ROUTING;
+    else process.env.TELEGRAM_CHANNEL_ROUTING = previous;
+  });
+  process.env.TELEGRAM_CHANNEL_ROUTING = JSON.stringify({
+    default: { chatId: '-100999', threadId: '88' },
+    channels: [],
+    routes: {},
+  });
+  const bot = new EventEmitter();
+  const replies = [];
+  bot.sendMessage = async (...args) => replies.push(args);
+  registerMentionLogger(bot, { id: 144, username: 'routing_bot' });
+  bot.emit('message', {
+    from: { id: 123, first_name: 'Nghia' },
+    chat: { id: 123, type: 'private' },
+    message_id: 12,
+    text: '@routing_bot',
+    entities: [{ type: 'mention', offset: 0, length: 12 }],
+  });
+  assert.deepEqual(replies, [
+    ['-100999', 'Hi Nghia', { message_thread_id: '88' }],
+  ]);
+});
+
 test('message listener logs only mentions of its own bot, including captions', t => {
   let now = 10000;
   t.mock.method(Date, 'now', () => now);

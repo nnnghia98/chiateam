@@ -25,12 +25,6 @@ Default port resolution order: `API_PORT` → `UI_API_PORT` → `PORT` → `8787
 - [db/tables.sql](./db/tables.sql)
   Reference schema for core tables. Runtime bootstrapping also ensures helper tables such as `storage`, `current_match`, and World Cup prediction tables.
 
-- [db/host-tables.js](./db/host-tables.js)
-  Ensures the `host` and `host_bank_accounts` PostgreSQL tables for existing databases.
-
-- [db/fee-delivery-tables.js](./db/fee-delivery-tables.js)
-  Ensures the fee batch and per-player delivery tables for `/guichiatien`.
-
 - [db/init-database.js](./db/init-database.js)
   One-shot script to ensure runtime tables in the target database.
 
@@ -66,10 +60,6 @@ Default port resolution order: `API_PORT` → `UI_API_PORT` → `PORT` → `8787
 | Table                | Key columns                                                                                                   |
 | -------------------- | ------------------------------------------------------------------------------------------------------------- |
 | `players`            | `id`, `user_id` (Telegram ID, negative = placeholder), `number` (shirt), `name`, `username`, `avatar`         |
-| `host`               | `id`, optional `player_id`, `display_name`, `is_active`                                                       |
-| `host_bank_accounts` | `host_id`, `bank_bin`, `account_number`, `account_name`, `is_active`, `is_default`                            |
-| `fee_batches`        | `bill_date`, `account_id`, `account_snapshot`, `source_hash`, `created_by`                                    |
-| `fee_requests`       | `batch_id`, `telegram_user_id`, `amount`, `transfer_note`, `delivery_status`                                  |
 | `matches`            | `id`, `match_date` (unique, YYYY-MM-DD), `san`, `tiensan`, `home_score`, `away_score`, `winner_side`, `notes` |
 | `match_players`      | `match_id`, `player_id` (nullable for guests), `side` (`HOME`/`AWAY`/`EXTRA`), `display_name`                 |
 | `match_player_stats` | `match_id`, `player_id`, `goals`, `assists`, `is_mvp`, `result`                                               |
@@ -101,23 +91,16 @@ Header: `x-internal-api-auth: <INTERNAL_API_AUTH_TOKEN>` and `x-admin-role: view
 
 Header: `x-admin-role: admin` in addition to auth header above.
 
-| Method   | Path                           | Description                                                                    |
-| -------- | ------------------------------ | ------------------------------------------------------------------------------ |
-| `POST`   | `/api/settings`                | Update `maintenanceMode`, `debugLogging`, `botCommandPrefix`, `allowedChatIds` |
-| `POST`   | `/api/players`                 | Create admin-managed player (no Telegram ID)                                   |
-| `PUT`    | `/api/players/:number`         | Update player `name`, `username`, or `avatar` by shirt number                  |
-| `POST`   | `/api/players/:number/avatar`  | Upload a player avatar image to Supabase Storage and update `players.avatar`   |
-| `DELETE` | `/api/players/:number`         | Delete a player by shirt number                                                |
-| `POST`   | `/api/hosts`                   | Create a payment host                                                          |
-| `POST`   | `/api/hosts/:id/accounts`      | Add a host bank account                                                        |
-| `GET`    | `/api/fee-accounts`            | List active host accounts                                                      |
-| `POST`   | `/api/fee-batches`             | Create or reuse today's fee batch                                              |
-| `GET`    | `/api/fee-batches/today`       | Review today's codes and delivery state                                        |
-| `POST`   | `/api/fee-requests/:id/claim`  | Claim a fee request for private delivery                                       |
-| `POST`   | `/api/fee-requests/:id/finish` | Save a private delivery result                                                 |
-| `POST`   | `/api/matches`                 | Create a new match                                                             |
-| `PUT`    | `/api/matches/:date`           | Update match fields (`san`, `tiensan`, scores, `notes`)                        |
-| `DELETE` | `/api/matches/:date`           | Delete match (cascades to players and stats)                                   |
+| Method   | Path                          | Description                                                                    |
+| -------- | ----------------------------- | ------------------------------------------------------------------------------ |
+| `POST`   | `/api/settings`               | Update `maintenanceMode`, `debugLogging`, `botCommandPrefix`, `allowedChatIds` |
+| `POST`   | `/api/players`                | Create admin-managed player (no Telegram ID)                                   |
+| `PUT`    | `/api/players/:number`        | Update player `name`, `username`, or `avatar` by shirt number                  |
+| `POST`   | `/api/players/:number/avatar` | Upload a player avatar image to Supabase Storage and update `players.avatar`   |
+| `DELETE` | `/api/players/:number`        | Delete a player by shirt number                                                |
+| `POST`   | `/api/matches`                | Create a new match                                                             |
+| `PUT`    | `/api/matches/:date`          | Update match fields (`san`, `tiensan`, scores, `notes`)                        |
+| `DELETE` | `/api/matches/:date`          | Delete match (cascades to players and stats)                                   |
 
 ---
 

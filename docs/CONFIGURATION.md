@@ -23,12 +23,6 @@ Shared settings appear once. `NODE_ENV`, `INTERNAL_API_AUTH_TOKEN`, and
 maintenance settings under `API` are also used by bot services. Optional
 feature settings stay in the example even when that feature is not enabled.
 
-Payment receiver details are stored in `host` and `host_bank_accounts` in
-PostgreSQL. The admin panel backend provides `POST /api/hosts` and
-`POST /api/hosts/:id/accounts` to add them. See
-[DATABASE_SETUP.md](DATABASE_SETUP.md). Private fee delivery is
-temporarily disabled in the bot.
-
 `BOT_API_BASE_URL` is the main bot-to-API address. `API_INTERNAL_URL` remains
 a supported fallback and can also seed the first admin panel settings import.
 `WEB_UI_URL` and `ADMIN_UI_URL` both add allowed web origins and may have

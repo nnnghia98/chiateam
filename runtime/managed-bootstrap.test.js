@@ -62,6 +62,11 @@ function fixture(service = 'telegram') {
     setSnapshot: v => {
       snapshot = v;
     },
+    disconnect: () => {
+      client.getSettings = async () => {
+        throw new Error('offline');
+      };
+    },
     deny: () => {
       granted = false;
     },
@@ -269,5 +274,74 @@ test('removing the managed database stops API rather than starting a default dat
     assert.equal(reports.at(-1).state, 'stopped');
   } finally {
     await runtime.stop();
+  }
+});
+
+for (const service of ['telegram', 'api']) {
+  test(`${service} starts from root environment when settings are unavailable`, async () => {
+    let requests = 0;
+    const children = [];
+    const runtime = startManagedSupervisor({
+      service,
+      entrypoint: __filename,
+      env: {
+        TELEGRAM_BOT_TOKEN: 'local-token',
+        DATABASE_URL: 'postgres://local.test/app',
+        INTERNAL_API_AUTH_TOKEN: 'local-auth',
+        MANAGEMENT_ENCRYPTION_KEY: 'never-child',
+        MANAGEMENT_BOOTSTRAP: 'true',
+      },
+      runtimeClient: {
+        getSettings: async () => {
+          requests++;
+          throw new Error('offline');
+        },
+        close: async () => {},
+      },
+      forkImpl: (_file, _args, options) => {
+        const child = new EventEmitter();
+        child.options = options;
+        child.send = () => {};
+        child.kill = () => queueMicrotask(() => child.emit('exit', 0));
+        children.push(child);
+        queueMicrotask(() => child.emit('message', { type: 'ready', service }));
+        return child;
+      },
+      installSignals: false,
+      logger: { warn() {}, error() {} },
+    });
+    try {
+      await runtime.ready;
+      assert.equal(runtime.getState().running, true);
+      assert.equal(children[0].options.env.TELEGRAM_BOT_TOKEN, 'local-token');
+      assert.equal(
+        children[0].options.env.DATABASE_URL,
+        'postgres://local.test/app'
+      );
+      assert.equal(
+        children[0].options.env.MANAGEMENT_ENCRYPTION_KEY,
+        undefined
+      );
+      await runtime.tick();
+      assert.equal(requests, 1);
+      assert.equal(children.length, 1);
+    } finally {
+      await runtime.stop();
+    }
+  });
+}
+
+test('an outage after managed startup preserves lease protection', async () => {
+  const f = fixture();
+  try {
+    await f.runtime.ready;
+    f.disconnect();
+    await f.runtime.tick();
+    assert.equal(f.runtime.getState().running, false);
+    assert.equal(f.children.length, 1);
+    await f.runtime.tick();
+    assert.equal(f.children.length, 1);
+  } finally {
+    await f.runtime.stop();
   }
 });

@@ -59,72 +59,80 @@ Zalo splits long messages at readable boundaries, keeps each part within the
 configured limit, and avoids cutting an emoji's surrogate pair (the two
 JavaScript string units used for some characters).
 
-## Why private Telegram replies went to the group
+## Unified Telegram destinations
 
-Most commands return a named channel such as `main`, `default`, or `statistics`.
-The Telegram adapter used `CHAT_ID` and the matching topic setting for those
-channels. It did not keep the incoming chat type, so it could not tell a private
-chat from a group. `/start` and some interactive prompts already used the source
-chat, which made the behavior look inconsistent.
+The admin panel at `/bots` supports `TELEGRAM_CHANNEL_ROUTING` with one default
+and any additional destinations. Destinations have a Telegram chat ID and an
+optional topic ID (`message_thread_id`). A topic ID belongs to its chat; it is
+not a standalone destination across groups. No destination names are needed.
 
-The adapter now keeps the chat type. Private command results, buttons and
-follow-up input replies use the incoming chat and topic. The older send helper,
-which is still used by maintenance messages, follows the same rule.
-Group commands keep their configured channel routing. If `CHAT_ID` is empty,
-the incoming chat and topic are used; leftover group topic IDs are ignored.
+- With no default, ordinary replies use the incoming chat and topic.
+- With a default, ordinary replies from groups and private chats go there,
+  including `/start`, errors, paused notices, maintenance and mention greetings.
+- Message-purpose overrides can select a configured destination for main
+  messages, announcements, statistics, VIP messages or native attendance polls.
+  Unmapped messages use the default (or the source if the default is unset).
+- Follow-up prompts are tracked in the destination where they were delivered.
+- Explicit recipient-only messages stay private. `/zalosay` and `/say` compose flows stay in their originating
+  conversation so drafts, confirmations and Zalo delivery remain compatible.
+- A closed or missing topic fails delivery in unified mode. The bot does not
+  silently send that message to the group's general chat.
 
-## Setup for private use
+Example:
 
-For group and private use together, keep the current group settings. Deploy the
-updated code and restart the Telegram process. Users can open the bot and send
-`/start`, then `/bench`, `/team` or another supported command.
-
-For use without a group, leave these values empty in the root `.env`:
-
-```dotenv
-CHAT_ID=
-DEFAULT_THREAD_ID=
-MAIN_THREAD_ID=
-ANNOUNCEMENT_THREAD_ID=
-VIP_THREAD_ID=
-STATISTICS_THREAD_ID=
+```json
+{
+  "default": { "chatId": "-1001234567890", "threadId": "10" },
+  "channels": [{ "chatId": "-1001234567890", "threadId": "20" }],
+  "routes": { "announcement": "-1001234567890/20", "poll": "-1001234567890/20" }
+}
 ```
 
-Keep the bot token and owner/admin IDs. The bot and API must still be running.
-These settings do not block group chats; they remove the fixed group
-destination. A separate bot instance is not needed for each user.
+Setting `default` to `null` selects source routing. Empty `routes` means all
+ordinary messages use the default. Destination keys are `chatId/threadId`, or
+`chatId/` for a chat without a topic. Duplicate destinations and routes pointing
+to missing destinations are rejected before saving.
 
-With `MANAGEMENT_BOOTSTRAP=true`, use the saved settings on `/bots` and Apply.
-After initial setup, changing `.env` alone does not replace managed values.
+Existing `CHAT_ID` and named topic aliases remain supported when the canonical
+setting is absent. Applying unified routing takes precedence over those aliases.
+Zalo and Messenger routing do not change. One installation still manages one
+team; choosing destinations does not create separate data or permissions.
 
-Zalo already replies to its incoming chat. Do not add a Telegram chat ID or
-topic ID to make Zalo private replies work. Keep the current Zalo delivery
-method. Do not start polling while its production webhook is active.
+## Local admin panel routing checks
 
-## Shared data and deliberate sends
+Use a separate test bot and test database for these checks. Each project loads
+its own root `.env`; do not create environment-suffixed files.
 
-One installation still manages one team. Private users see the same bench,
-teams, matches and active vote. Allowed edits affect that shared data. Admin
-permissions still depend on the sender's configured user ID.
+1. In the bot/backend root `.env`, set the existing admin panel bootstrap
+   credentials and encryption key, `MANAGEMENT_API_URL=http://127.0.0.1:8790`,
+   and `MANAGEMENT_BOOTSTRAP=true`. See the
+   [admin panel guide](BOT_MANAGEMENT_GUIDE.md) for the required credentials.
+2. The admin panel web app's root `.env` needs the matching
+   `MANAGEMENT_API_URL`, `MANAGEMENT_ADMIN_TOKEN`, and
+   `MANAGEMENT_ADMIN_SERVICE_TOKEN`, plus its existing login settings.
+3. Start the admin panel backend with `yarn start:admin`, the data API with
+   `yarn start:api`, and Telegram with `yarn start:bot`. In `chiateam-admin`,
+   run `yarn dev` and open `http://localhost:8389/bots`.
+4. Open **Advanced bot configuration**, enable unified routing, leave the
+   default unset, Save, then Apply. Verify
+   the Telegram service shows **Applied** with the active version. Send a
+   command by DM and from a group topic; each reply should stay at its source.
+5. Set a test group's chat ID and topic ID as the default. Save creates a draft
+   and must not change bot delivery. Apply, verify Telegram's applied version,
+   then send `/start` and `/bench` by DM: replies should arrive at the default.
+6. Add a second topic by ID and select it for announcements or polls. Save and
+   Apply; test that message purpose and an ordinary command to verify the
+   override and default separately.
+7. Exercise a prompt and follow-up in its destination. Check `/zalosay` stays
+   in its originating conversation.
 
-`/taopoll` deliberately publishes the team poll to `CHAT_ID` and
-`ANNOUNCEMENT_THREAD_ID` when a group is configured. Its confirmation or error
-returns to the requesting private chat. Without `CHAT_ID`, the poll uses the
-incoming chat and topic. Closing an existing vote still closes its stored poll.
+Managed startup is required for admin panel Apply. A bot started without
+`MANAGEMENT_BOOTSTRAP=true`, or falling back when settings are unavailable at
+startup, uses its root environment and cannot acknowledge Apply. Restart it
+with the admin panel backend available to reconnect.
+Saving settings is not proof that a running Telegram child applied them. Match
+the Telegram service's applied version to the active version and verify delivery.
 
-A confirmed Telegram `/zalosay` broadcast still sends to subscribed Zalo users.
-Private reply routing does not change that broadcast action.
-
-## Checks after deployment
-
-1. Keep a group configured. Send `/bench` and `/team` privately. Replies must
-   appear only in that private chat.
-2. Use a private inline button or a follow-up text prompt. Its reply must stay
-   in the same chat.
-3. Run a command in the group. Its existing topic routing must still work.
-4. Check `/start` and the Zalo first-contact greeting for readable icons.
-5. For a setup without a group, clear the six values above, restart or apply
-   settings, then repeat the private checks.
-
-Automated checks use fake clients. They do not send real messages or modify
-stored football data. Live delivery must be checked after deployment.
+Automated tests use fake Telegram clients and isolated settings-store fixtures.
+They do not send real messages or modify stored football data. Live delivery
+must still be checked with the test bot after local Apply.

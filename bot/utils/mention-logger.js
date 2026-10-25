@@ -1,9 +1,14 @@
 const { logEvent } = require('./logger');
 const { isOnCooldown } = require('./cooldown');
 const { safeError } = require('../../runtime/managed-process');
+const {
+  createTelegramChannelConfig,
+  resolveTelegramDestination,
+} = require('../../platforms/telegram/channel-routing');
 
 function registerMentionLogger(bot, identity, { replyToMentions = true } = {}) {
   const username = identity.username?.toLowerCase();
+  const channelConfig = createTelegramChannelConfig();
 
   bot.on('message', async msg => {
     if (msg.from?.is_bot) return;
@@ -50,11 +55,25 @@ function registerMentionLogger(bot, identity, { replyToMentions = true } = {}) {
         allow_sending_without_reply: true,
       },
     };
-    if (msg.message_thread_id != null) {
-      options.message_thread_id = msg.message_thread_id;
-    }
+    const { chatId, threadId } = resolveTelegramDestination(
+      channelConfig,
+      {
+        actor: { externalId: msg.from?.id },
+        conversation: {
+          externalId: msg.chat.id,
+          threadId: msg.message_thread_id,
+        },
+      },
+      'source'
+    );
+    if (
+      String(chatId) !== String(msg.chat.id) ||
+      String(threadId ?? '') !== String(msg.message_thread_id ?? '')
+    )
+      delete options.reply_parameters;
+    if (threadId != null) options.message_thread_id = threadId;
     try {
-      await bot.sendMessage(msg.chat.id, `Hi ${name}`, options);
+      await bot.sendMessage(chatId, `Hi ${name}`, options);
     } catch (error) {
       logEvent(
         'telegram.mention',
